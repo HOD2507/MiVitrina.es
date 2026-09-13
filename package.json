@@ -15,6 +15,7 @@
     "typecheck": "turbo run typecheck",
     "db:generate": "pnpm --filter @mivitrina/database generate",
     "db:migrate": "pnpm --filter @mivitrina/database migrate",
+    "db:seed": "pnpm --filter @mivitrina/database seed",
     "docker:up": "docker compose -f infra/docker-compose.yml up -d",
     "docker:down": "docker compose -f infra/docker-compose.yml down"
   },

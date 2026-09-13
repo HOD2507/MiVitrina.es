@@ -1,15 +1,23 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { HealthModule } from "./health/health.module";
+import { PrismaModule } from "./prisma/prisma.module";
+import { MailModule } from "./mail/mail.module";
+import { AuthModule } from "./auth/auth.module";
+import { envValidationSchema } from "./config/env.validation";
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: [".env"],
+      validationSchema: envValidationSchema,
     }),
+    PrismaModule,
+    MailModule,
+    AuthModule,
     HealthModule,
-    // Modules à venir : AuthModule, UsersModule, CommercantsModule,
+    // Modules à venir : UsersModule (admin), CommercantsModule,
     // AnnonceursModule, VitrineSpacesModule, ReservationsModule,
     // PaymentsModule, ChatModule, NotificationsModule, AdminModule...
   ],

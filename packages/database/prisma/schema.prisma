@@ -144,6 +144,9 @@ model User {
   emailVerified Boolean   @default(false)
   /// Suspension par l'admin (litige grave, fraude...) sans supprimer l'historique.
   suspended     Boolean   @default(false)
+  /// Incrémenté pour invalider tous les refresh tokens existants
+  /// (déconnexion globale, changement de mot de passe, suspension).
+  tokenVersion  Int       @default(0)
   lastLoginAt   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -186,8 +189,11 @@ model CommercantProfile {
   addressLine2 String?
   city         String
   postalCode   String
-  latitude     Float
-  longitude    Float
+  /// Renseignées par géocodage (Google Maps) à l'étape "Ma vitrine" ;
+  /// nulles tant que l'adresse n'a pas été géocodée (le commerce
+  /// n'apparaît pas encore dans la recherche géolocalisée).
+  latitude     Float?
+  longitude    Float?
 
   /// Horaires d'ouverture hebdomadaires, format libre en JSON, ex:
   /// { "monday": [{ "open": "09:00", "close": "19:00" }], "sunday": [] }
