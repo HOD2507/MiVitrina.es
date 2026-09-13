@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@mivitrina/shared": "workspace:*",
+    "lottie-web": "^5.12.2",
     "next": "^15.1.3",
     "next-intl": "^4.14.4",
     "react": "^19.0.0",

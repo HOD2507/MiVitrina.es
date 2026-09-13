@@ -1,15 +1,26 @@
 import { useTranslations } from "next-intl";
+import { LottiePlayer } from "@/components/lottie-player";
 
 /**
  * Landing page — placeholder de scaffolding.
  * Le contenu final (présentation du concept, sections pour commerçants
  * et annonceurs, preuve sociale...) sera construit à l'étape "pages".
+ *
+ * L'animation hero (public/animations/hero-poster-loop.json) a été générée
+ * avec le skill "text-to-lottie" (.claude/skills/text-to-lottie, MIT,
+ * diffusionstudio/lottie) : une affiche se pose sur une vitrine, confirmée
+ * par un badge, en boucle — illustre le concept produit.
  */
 export default function LandingPage() {
   const t = useTranslations("Landing");
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center gap-6 px-4 text-center">
+      <LottiePlayer
+        src="/animations/hero-poster-loop.json"
+        className="h-40 w-40"
+        ariaLabel="Une affiche publicitaire se pose sur une vitrine de commerce"
+      />
       <h1 className="text-4xl font-bold">{t("title")}</h1>
       <p className="text-lg text-gray-600">{t("subtitle")}</p>
       <div className="flex gap-4">
