@@ -1,0 +1,42 @@
+// Schéma Prisma - MiVitrina.es
+//
+// STADE ACTUEL : squelette de scaffolding pour valider la chaîne
+// Postgres <-> Prisma <-> NestJS. Le schéma relationnel complet
+// (CommercantProfile, VitrineSpace, PricingOption, Reservation,
+// Transaction, Invoice, Review, Chat, Dispute...) sera ajouté à
+// l'étape suivante ("base de données / modèles"), validée séparément.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Pays de marché supportés au MVP (France, Espagne).
+enum Country {
+  FR
+  ES
+}
+
+/// Rôle applicatif d'un utilisateur.
+enum UserRole {
+  ADMIN
+  ANNONCEUR
+  COMMERCANT
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  role          UserRole
+  emailVerified Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("users")
+}

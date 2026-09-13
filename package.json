@@ -1,0 +1,26 @@
+{
+  "name": "mivitrina",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Plateforme de location d'espaces publicitaires en vitrine",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "db:generate": "pnpm --filter @mivitrina/database generate",
+    "db:migrate": "pnpm --filter @mivitrina/database migrate",
+    "docker:up": "docker compose -f infra/docker-compose.yml up -d",
+    "docker:down": "docker compose -f infra/docker-compose.yml down"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2",
+    "prettier": "^3.4.2"
+  }
+}

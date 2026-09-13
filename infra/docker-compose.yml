@@ -1,0 +1,42 @@
+name: mivitrina
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mivitrina
+      POSTGRES_PASSWORD: mivitrina
+      POSTGRES_DB: mivitrina
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./.data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mivitrina"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./.data/redis:/data
+
+  # Stockage compatible S3 pour le développement local (photos vitrine,
+  # affiches, photos de pose/retrait). En production : AWS S3.
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: mivitrina
+      MINIO_ROOT_PASSWORD: mivitrina-local
+    ports:
+      - "9000:9000" # API S3
+      - "9001:9001" # Console web
+    volumes:
+      - ./.data/minio:/data
