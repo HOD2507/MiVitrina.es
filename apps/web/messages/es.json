@@ -4,5 +4,53 @@
     "subtitle": "MiVitrina conecta a los comercios con escaparate con los anunciantes que buscan un espacio publicitario físico.",
     "ctaCommercant": "Soy comerciante",
     "ctaAnnonceur": "Soy anunciante"
+  },
+  "Auth": {
+    "login": {
+      "title": "Iniciar sesión",
+      "email": "Correo electrónico",
+      "password": "Contraseña",
+      "submit": "Iniciar sesión",
+      "noAccount": "¿Aún no tienes cuenta?",
+      "registerLink": "Regístrate",
+      "forgotPassword": "¿Olvidaste tu contraseña?"
+    },
+    "register": {
+      "title": "Crear una cuenta",
+      "chooseRole": "Eres...",
+      "roleCommercant": "Comerciante",
+      "roleCommercantDesc": "Ofrezco un espacio de escaparate para alquilar",
+      "roleAnnonceur": "Anunciante",
+      "roleAnnonceurDesc": "Busco un espacio para mi publicidad",
+      "email": "Correo electrónico",
+      "password": "Contraseña",
+      "passwordHint": "Mínimo 8 caracteres",
+      "country": "País",
+      "countryFR": "Francia",
+      "countryES": "España",
+      "businessName": "Nombre del comercio",
+      "businessIdNumber": "Número SIRET",
+      "businessIdNumberES": "Número NIF/CIF",
+      "addressLine1": "Dirección",
+      "addressLine2": "Complemento de dirección (opcional)",
+      "city": "Ciudad",
+      "postalCode": "Código postal",
+      "companyName": "Razón social (opcional)",
+      "submit": "Crear mi cuenta",
+      "hasAccount": "¿Ya tienes cuenta?",
+      "loginLink": "Iniciar sesión",
+      "verificationNote": "Verificación manual: tu justificante de identidad se subirá desde tu panel de comerciante."
+    },
+    "errors": {
+      "generic": "Ha ocurrido un error. Inténtalo de nuevo.",
+      "passwordMismatch": "Las contraseñas no coinciden."
+    }
+  },
+  "Dashboard": {
+    "welcome": "Bienvenido, {email}",
+    "role": "Tipo de cuenta: {role}",
+    "emailNotVerified": "Tu correo aún no está verificado.",
+    "verificationPending": "Tu comercio está pendiente de verificación por el equipo de MiVitrina.",
+    "logout": "Cerrar sesión"
   }
 }

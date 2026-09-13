@@ -4,5 +4,53 @@
     "subtitle": "MiVitrina connecte les commerces avec vitrine et les annonceurs qui cherchent un espace publicitaire physique.",
     "ctaCommercant": "Je suis commerçant",
     "ctaAnnonceur": "Je suis annonceur"
+  },
+  "Auth": {
+    "login": {
+      "title": "Connexion",
+      "email": "Email",
+      "password": "Mot de passe",
+      "submit": "Se connecter",
+      "noAccount": "Pas encore de compte ?",
+      "registerLink": "S'inscrire",
+      "forgotPassword": "Mot de passe oublié ?"
+    },
+    "register": {
+      "title": "Créer un compte",
+      "chooseRole": "Vous êtes...",
+      "roleCommercant": "Commerçant",
+      "roleCommercantDesc": "Je propose un espace vitrine à louer",
+      "roleAnnonceur": "Annonceur",
+      "roleAnnonceurDesc": "Je cherche un espace pour ma publicité",
+      "email": "Email",
+      "password": "Mot de passe",
+      "passwordHint": "8 caractères minimum",
+      "country": "Pays",
+      "countryFR": "France",
+      "countryES": "Espagne",
+      "businessName": "Nom du commerce",
+      "businessIdNumber": "Numéro SIRET",
+      "businessIdNumberES": "Numéro NIF/CIF",
+      "addressLine1": "Adresse",
+      "addressLine2": "Complément d'adresse (optionnel)",
+      "city": "Ville",
+      "postalCode": "Code postal",
+      "companyName": "Raison sociale (optionnel)",
+      "submit": "Créer mon compte",
+      "hasAccount": "Déjà un compte ?",
+      "loginLink": "Se connecter",
+      "verificationNote": "Vérification manuelle : votre justificatif d'identité sera à téléverser depuis votre espace commerçant."
+    },
+    "errors": {
+      "generic": "Une erreur est survenue. Réessayez.",
+      "passwordMismatch": "Les mots de passe ne correspondent pas."
+    }
+  },
+  "Dashboard": {
+    "welcome": "Bienvenue, {email}",
+    "role": "Type de compte : {role}",
+    "emailNotVerified": "Votre email n'est pas encore vérifié.",
+    "verificationPending": "Votre commerce est en attente de vérification par l'équipe MiVitrina.",
+    "logout": "Se déconnecter"
   }
 }
