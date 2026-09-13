@@ -4,6 +4,9 @@ import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { api, ApiError } from "@/lib/api-client";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, CheckCircle2 } from "lucide-react";
 
 interface PresignedUploadResponse {
   url: string;
@@ -65,20 +68,33 @@ export function VerificationUpload() {
   }
 
   return (
-    <div className="rounded-md border border-gray-200 p-4">
-      <p className="mb-2 text-sm font-medium">{t("title")}</p>
-      <p className="mb-3 text-xs text-gray-500">{t("hint")}</p>
-      <input
+    <div className="rounded-lg border border-border bg-muted/30 p-4">
+      <p className="mb-1 text-sm font-medium">{t("title")}</p>
+      <p className="mb-3 text-xs text-muted-foreground">{t("hint")}</p>
+      <Input
         ref={inputRef}
         type="file"
         accept={ACCEPTED_TYPES.join(",")}
         onChange={handleFileChange}
         disabled={status === "uploading"}
-        className="text-sm"
       />
-      {status === "uploading" && <p className="mt-2 text-sm text-gray-500">{t("uploading")}</p>}
-      {status === "success" && <p className="mt-2 text-sm text-green-700">{t("success")}</p>}
-      {status === "error" && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {status === "uploading" && (
+        <p className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Loader2 className="size-3.5 animate-spin" />
+          {t("uploading")}
+        </p>
+      )}
+      {status === "success" && (
+        <p className="mt-2 flex items-center gap-1.5 text-sm text-green-700">
+          <CheckCircle2 className="size-3.5" />
+          {t("success")}
+        </p>
+      )}
+      {status === "error" && (
+        <Alert variant="destructive" className="mt-2">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
     </div>
   );
 }

@@ -1,9 +1,21 @@
 {
+  "Nav": {
+    "login": "Iniciar sesión",
+    "register": "Regístrate"
+  },
+  "Footer": {
+    "tagline": "Alquilar un escaparate nunca ha sido tan sencillo."
+  },
   "Landing": {
     "title": "Alquila tu escaparate, gana ingresos pasivos",
     "subtitle": "MiVitrina conecta a los comercios con escaparate con los anunciantes que buscan un espacio publicitario físico.",
     "ctaCommercant": "Soy comerciante",
-    "ctaAnnonceur": "Soy anunciante"
+    "ctaAnnonceur": "Soy anunciante",
+    "howItWorksTitle": "Cómo funciona",
+    "cardCommercantTitle": "¿Tienes un escaparate?",
+    "cardCommercantDesc": "Publica tu espacio, fija tus tarifas por tamaño de cartel y consigue ingresos pasivos sin adelantar nada.",
+    "cardAnnonceurTitle": "¿Buscas visibilidad?",
+    "cardAnnonceurDesc": "Encuentra un comercio cerca de ti, reserva un espacio y paga en línea con total seguridad."
   },
   "Auth": {
     "login": {
@@ -54,6 +66,9 @@
     "verificationMissingDocument": "Envía un justificante de identidad para verificar tu comercio.",
     "verificationApproved": "Tu comercio está verificado ✓",
     "verificationRejected": "Tu justificante fue rechazado — envía uno nuevo.",
+    "verified": "Verificado",
+    "pendingBadge": "Pendiente",
+    "rejectedBadge": "Rechazado",
     "logout": "Cerrar sesión",
     "verification": {
       "title": "Justificante de identidad (SIRET/NIF-CIF)",

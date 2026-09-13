@@ -3,8 +3,18 @@ import { redirect } from "@/i18n/navigation";
 import { UserRole, VerificationStatus } from "@mivitrina/shared";
 import { serverApiGet } from "@/lib/api-server";
 import type { AuthUser } from "@/lib/types";
+import { AppHeader } from "@/components/app-header";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LogoutButton } from "./logout-button";
 import { VerificationUpload } from "./verification-upload";
+
+const ROLE_LABELS: Record<UserRole, string> = {
+  [UserRole.ADMIN]: "Administrateur",
+  [UserRole.COMMERCANT]: "Commerçant",
+  [UserRole.ANNONCEUR]: "Annonceur",
+};
 
 /**
  * Dashboard générique post-connexion — placeholder en attendant les
@@ -24,41 +34,69 @@ export default async function DashboardPage() {
   const commercantProfile = authedUser.commercantProfile;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-6 px-4 py-12">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold break-words">{t("welcome", { email: authedUser.email })}</h1>
-          <p className="text-gray-600">{t("role", { role: authedUser.role })}</p>
-        </div>
-        <LogoutButton />
-      </div>
+    <div className="flex min-h-screen flex-col bg-muted/30">
+      <AppHeader />
 
-      {!authedUser.emailVerified && (
-        <p className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">{t("emailNotVerified")}</p>
-      )}
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-10">
+        <Card>
+          <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-4 space-y-0">
+            <div className="min-w-0">
+              <CardTitle className="text-xl break-words">{t("welcome", { email: authedUser.email })}</CardTitle>
+              <CardDescription className="mt-1">
+                <Badge variant="secondary">{ROLE_LABELS[authedUser.role]}</Badge>
+              </CardDescription>
+            </div>
+            <LogoutButton />
+          </CardHeader>
+        </Card>
 
-      {authedUser.role === UserRole.COMMERCANT && commercantProfile && (
-        <section className="flex flex-col gap-3">
-          {commercantProfile.verificationStatus === VerificationStatus.VERIFIED && (
-            <p className="rounded-md bg-green-50 px-4 py-3 text-sm text-green-800">{t("verificationApproved")}</p>
-          )}
+        {!authedUser.emailVerified && (
+          <Alert>
+            <AlertDescription>{t("emailNotVerified")}</AlertDescription>
+          </Alert>
+        )}
 
-          {commercantProfile.verificationStatus === VerificationStatus.REJECTED && (
-            <p className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-800">
-              {t("verificationRejected")}
-              {commercantProfile.verificationNote ? ` ${commercantProfile.verificationNote}` : ""}
-            </p>
-          )}
+        {authedUser.role === UserRole.COMMERCANT && commercantProfile && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                {commercantProfile.businessName}
+                {commercantProfile.verificationStatus === VerificationStatus.VERIFIED && (
+                  <Badge className="bg-green-600 text-white">✓ {t("verified")}</Badge>
+                )}
+                {commercantProfile.verificationStatus === VerificationStatus.PENDING && (
+                  <Badge variant="outline">{t("pendingBadge")}</Badge>
+                )}
+                {commercantProfile.verificationStatus === VerificationStatus.REJECTED && (
+                  <Badge variant="destructive">{t("rejectedBadge")}</Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              {commercantProfile.verificationStatus === VerificationStatus.REJECTED && (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    {t("verificationRejected")}
+                    {commercantProfile.verificationNote ? ` ${commercantProfile.verificationNote}` : ""}
+                  </AlertDescription>
+                </Alert>
+              )}
 
-          {commercantProfile.verificationStatus === VerificationStatus.PENDING && (
-            <p className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              {commercantProfile.verificationDocumentUrl ? t("verificationPending") : t("verificationMissingDocument")}
-            </p>
-          )}
+              {commercantProfile.verificationStatus === VerificationStatus.PENDING && (
+                <Alert>
+                  <AlertDescription>
+                    {commercantProfile.verificationDocumentUrl
+                      ? t("verificationPending")
+                      : t("verificationMissingDocument")}
+                  </AlertDescription>
+                </Alert>
+              )}
 
-          {commercantProfile.verificationStatus !== VerificationStatus.VERIFIED && <VerificationUpload />}
-        </section>
-      )}
-    </main>
+              {commercantProfile.verificationStatus !== VerificationStatus.VERIFIED && <VerificationUpload />}
+            </CardContent>
+          </Card>
+        )}
+      </main>
+    </div>
   );
 }

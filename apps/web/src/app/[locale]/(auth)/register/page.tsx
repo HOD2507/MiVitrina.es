@@ -7,12 +7,47 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { UserRole, Country } from "@mivitrina/shared";
 import { api, ApiError } from "@/lib/api-client";
 import type { AuthUser } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Store, Megaphone, ArrowLeft } from "lucide-react";
 
 /** Rôles ouverts à l'inscription publique — reflète apps/api/.../register.dto.ts. */
 type RegisterableRole = typeof UserRole.COMMERCANT | typeof UserRole.ANNONCEUR;
 
 function isRegisterableRole(value: string | null): value is RegisterableRole {
   return value === UserRole.COMMERCANT || value === UserRole.ANNONCEUR;
+}
+
+function RoleCard({
+  icon: Icon,
+  title,
+  description,
+  onClick,
+}: {
+  icon: typeof Store;
+  title: string;
+  description: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-start gap-4 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:border-primary hover:bg-accent"
+    >
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+        <Icon className="size-5" />
+      </span>
+      <span>
+        <span className="block font-semibold">{title}</span>
+        <span className="block text-sm text-muted-foreground">{description}</span>
+      </span>
+    </button>
+  );
 }
 
 function RegisterForm() {
@@ -30,15 +65,12 @@ function RegisterForm() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // Champs commerçant
   const [businessName, setBusinessName] = useState("");
   const [businessIdNumber, setBusinessIdNumber] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
   const [city, setCity] = useState("");
   const [postalCode, setPostalCode] = useState("");
-
-  // Champ annonceur
   const [companyName, setCompanyName] = useState("");
 
   const [error, setError] = useState<string | null>(null);
@@ -75,185 +107,167 @@ function RegisterForm() {
 
   if (!role) {
     return (
-      <>
-        <h1 className="mb-6 text-2xl font-bold">{t("chooseRole")}</h1>
-        <div className="flex flex-col gap-4">
-          <button
-            type="button"
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl">{t("chooseRole")}</CardTitle>
+          <CardDescription>
+            {t("hasAccount")}{" "}
+            <Link href="/login" className="font-medium text-primary underline-offset-4 hover:underline">
+              {t("loginLink")}
+            </Link>
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <RoleCard
+            icon={Store}
+            title={t("roleCommercant")}
+            description={t("roleCommercantDesc")}
             onClick={() => setRole(UserRole.COMMERCANT)}
-            className="rounded-lg border border-gray-300 p-4 text-left hover:border-black"
-          >
-            <span className="block font-semibold">{t("roleCommercant")}</span>
-            <span className="block text-sm text-gray-600">{t("roleCommercantDesc")}</span>
-          </button>
-          <button
-            type="button"
+          />
+          <RoleCard
+            icon={Megaphone}
+            title={t("roleAnnonceur")}
+            description={t("roleAnnonceurDesc")}
             onClick={() => setRole(UserRole.ANNONCEUR)}
-            className="rounded-lg border border-gray-300 p-4 text-left hover:border-black"
-          >
-            <span className="block font-semibold">{t("roleAnnonceur")}</span>
-            <span className="block text-sm text-gray-600">{t("roleAnnonceurDesc")}</span>
-          </button>
-        </div>
-        <p className="mt-6 text-center text-sm text-gray-600">
-          {t("hasAccount")}{" "}
-          <Link href="/login" className="font-medium text-black underline">
-            {t("loginLink")}
-          </Link>
-        </p>
-      </>
+          />
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <>
-      <h1 className="mb-6 text-2xl font-bold">
-        {role === UserRole.COMMERCANT ? t("roleCommercant") : t("roleAnnonceur")}
-      </h1>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">{t("country")}</span>
-          <select
-            value={country}
-            onChange={(e) => setCountry(e.target.value as Country)}
-            className="rounded-md border border-gray-300 px-3 py-2"
-          >
-            <option value={Country.FR}>{t("countryFR")}</option>
-            <option value={Country.ES}>{t("countryES")}</option>
-          </select>
-        </label>
-
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">{t("email")}</span>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-2"
-          />
-        </label>
-
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">{t("password")}</span>
-          <input
-            type="password"
-            required
-            minLength={8}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-2"
-          />
-          <span className="text-xs text-gray-500">{t("passwordHint")}</span>
-        </label>
-
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">{t("password")} (confirmation)</span>
-          <input
-            type="password"
-            required
-            minLength={8}
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-2"
-          />
-        </label>
-
-        {role === UserRole.COMMERCANT && (
-          <>
-            <label className="flex flex-col gap-1">
-              <span className="text-sm font-medium">{t("businessName")}</span>
-              <input
-                type="text"
-                required
-                value={businessName}
-                onChange={(e) => setBusinessName(e.target.value)}
-                className="rounded-md border border-gray-300 px-3 py-2"
-              />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-sm font-medium">
-                {country === Country.FR ? t("businessIdNumber") : t("businessIdNumberES")}
-              </span>
-              <input
-                type="text"
-                required
-                value={businessIdNumber}
-                onChange={(e) => setBusinessIdNumber(e.target.value)}
-                className="rounded-md border border-gray-300 px-3 py-2"
-              />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-sm font-medium">{t("addressLine1")}</span>
-              <input
-                type="text"
-                required
-                value={addressLine1}
-                onChange={(e) => setAddressLine1(e.target.value)}
-                className="rounded-md border border-gray-300 px-3 py-2"
-              />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-sm font-medium">{t("addressLine2")}</span>
-              <input
-                type="text"
-                value={addressLine2}
-                onChange={(e) => setAddressLine2(e.target.value)}
-                className="rounded-md border border-gray-300 px-3 py-2"
-              />
-            </label>
-            <div className="flex gap-4">
-              <label className="flex flex-1 flex-col gap-1">
-                <span className="text-sm font-medium">{t("city")}</span>
-                <input
-                  type="text"
-                  required
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  className="rounded-md border border-gray-300 px-3 py-2"
-                />
-              </label>
-              <label className="flex flex-1 flex-col gap-1">
-                <span className="text-sm font-medium">{t("postalCode")}</span>
-                <input
-                  type="text"
-                  required
-                  value={postalCode}
-                  onChange={(e) => setPostalCode(e.target.value)}
-                  className="rounded-md border border-gray-300 px-3 py-2"
-                />
-              </label>
-            </div>
-            <p className="text-xs text-gray-500">{t("verificationNote")}</p>
-          </>
-        )}
-
-        {role === UserRole.ANNONCEUR && (
-          <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium">{t("companyName")}</span>
-            <input
-              type="text"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              className="rounded-md border border-gray-300 px-3 py-2"
-            />
-          </label>
-        )}
-
-        {error && <p className="text-sm text-red-600">{error}</p>}
-
+    <Card>
+      <CardHeader>
         <button
-          type="submit"
-          disabled={submitting}
-          className="mt-2 rounded-md bg-black px-6 py-3 text-white disabled:opacity-50"
+          type="button"
+          onClick={() => setRole(null)}
+          className="mb-1 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
-          {t("submit")}
+          <ArrowLeft className="size-3.5" />
+          {t("chooseRole")}
         </button>
-        <button type="button" onClick={() => setRole(null)} className="text-sm text-gray-500 underline">
-          ← {t("chooseRole")}
-        </button>
-      </form>
-    </>
+        <CardTitle className="text-2xl">
+          {role === UserRole.COMMERCANT ? t("roleCommercant") : t("roleAnnonceur")}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="country">{t("country")}</Label>
+            <Select value={country} onValueChange={(v) => setCountry(v as Country)}>
+              <SelectTrigger id="country" className="w-full">
+                <SelectValue>{(value: Country) => (value === Country.FR ? t("countryFR") : t("countryES"))}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={Country.FR}>{t("countryFR")}</SelectItem>
+                <SelectItem value={Country.ES}>{t("countryES")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="email">{t("email")}</Label>
+            <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="password">{t("password")}</Label>
+            <Input
+              id="password"
+              type="password"
+              required
+              minLength={8}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">{t("passwordHint")}</p>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="confirmPassword">{t("password")} (confirmation)</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              required
+              minLength={8}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
+          </div>
+
+          {role === UserRole.COMMERCANT && (
+            <>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="businessName">{t("businessName")}</Label>
+                <Input
+                  id="businessName"
+                  required
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="businessIdNumber">
+                  {country === Country.FR ? t("businessIdNumber") : t("businessIdNumberES")}
+                </Label>
+                <Input
+                  id="businessIdNumber"
+                  required
+                  value={businessIdNumber}
+                  onChange={(e) => setBusinessIdNumber(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="addressLine1">{t("addressLine1")}</Label>
+                <Input
+                  id="addressLine1"
+                  required
+                  value={addressLine1}
+                  onChange={(e) => setAddressLine1(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="addressLine2">{t("addressLine2")}</Label>
+                <Input id="addressLine2" value={addressLine2} onChange={(e) => setAddressLine2(e.target.value)} />
+              </div>
+              <div className="flex gap-4">
+                <div className="flex flex-1 flex-col gap-1.5">
+                  <Label htmlFor="city">{t("city")}</Label>
+                  <Input id="city" required value={city} onChange={(e) => setCity(e.target.value)} />
+                </div>
+                <div className="flex flex-1 flex-col gap-1.5">
+                  <Label htmlFor="postalCode">{t("postalCode")}</Label>
+                  <Input
+                    id="postalCode"
+                    required
+                    value={postalCode}
+                    onChange={(e) => setPostalCode(e.target.value)}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">{t("verificationNote")}</p>
+            </>
+          )}
+
+          {role === UserRole.ANNONCEUR && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="companyName">{t("companyName")}</Label>
+              <Input id="companyName" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
+            </div>
+          )}
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <Button type="submit" disabled={submitting} className="mt-1 w-full" size="lg">
+            {t("submit")}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 

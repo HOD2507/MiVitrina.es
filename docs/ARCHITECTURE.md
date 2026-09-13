@@ -37,7 +37,7 @@ Outillage : pnpm workspaces + Turborepo.
 
 | Domaine | Choix | Justification |
 |---|---|---|
-| Frontend | Next.js 15 (App Router) + TS + Tailwind | SEO pour landing + pages commerces publiques |
+| Frontend | Next.js 15 (App Router) + TS + Tailwind v4 + shadcn/ui | SEO pour landing + pages commerces publiques ; composants accessibles standardisés |
 | i18n | next-intl | Routing par préfixe de langue, fr + es |
 | Backend | NestJS (TS) | DI, guards RBAC (ADMIN/ANNONCEUR/COMMERCANT), validation par decorators |
 | Base de données | PostgreSQL + Prisma | Migrations typées, schéma relationnel clair |
@@ -106,13 +106,14 @@ réservation → transaction avec calcul de commission depuis `PlatformSettings`
 2. ✅ Schéma de base de données complet + migration initiale
 3. ✅ Authentification (3 rôles) + pages login/inscription
 4. ✅ Stockage S3/MinIO (upload présigné) + justificatif d'identité commerçant
-5. Pages commerçant (vitrine, tarifs, disponibilités)
-6. Recherche géolocalisée annonceur + fiche commerce
-7. Réservation + upload affiche + modération basique
-8. Paiement Stripe Connect (split commission)
-9. Chat + confirmations photo pose/retrait
-10. Dashboard admin
-11. Avis, renouvellement automatique, notifications avancées (post-MVP)
+5. ✅ Système de design (Tailwind v4 + shadcn/ui) + refonte visuelle landing/auth/dashboard
+6. Pages commerçant (vitrine, tarifs, disponibilités)
+7. Recherche géolocalisée annonceur + fiche commerce
+8. Réservation + upload affiche + modération basique
+9. Paiement Stripe Connect (split commission)
+10. Chat + confirmations photo pose/retrait
+11. Dashboard admin
+12. Avis, renouvellement automatique, notifications avancées (post-MVP)
 
 ### Stockage fichiers (étape 4)
 
@@ -127,3 +128,23 @@ réservation → transaction avec calcul de commission depuis `PlatformSettings`
 - MinIO en dev via `quay.io/minio/minio` (pas `docker.io/minio/minio`,
   dont la distribution anonyme a été retirée début 2025 lors du virage
   commercial "AIStor" de MinIO).
+
+### Système de design (étape 5)
+
+- **shadcn/ui** (style "base-nova", composants sur **Base UI** — pas
+  Radix) + **Tailwind v4** (upgrade depuis v3, requis par ce style :
+  thème CSS-first via `@theme inline`, plus de `tailwind.config.ts`
+  nécessaire). Composants copiés dans `src/components/ui/` (pas une
+  dépendance npm figée), donc modifiables directement.
+- Palette de marque : accent ambre (`oklch(0.666 0.179 58.318)`, cohérent
+  avec l'affiche de l'animation hero) sur fond neutre chaud, typographie
+  Plus Jakarta Sans (`next/font/google`).
+- Base UI utilise un prop `render` (élément React) au lieu du `asChild`
+  de Radix pour faire porter un composant par un autre élément (ex:
+  `<Button render={<Link href="..." />}>`) — et **exige `nativeButton=false`
+  explicitement** quand le rendu final n'est pas un vrai `<button>` (un
+  lien, notamment), sous peine d'avertissements console. Le composant
+  `Button` local le déduit automatiquement de la présence de `render`.
+- `Select.Value` de Base UI n'affiche pas automatiquement le libellé de
+  l'item sélectionné (contrairement à Radix) : il faut lui passer une
+  fonction `(value) => label` explicite.

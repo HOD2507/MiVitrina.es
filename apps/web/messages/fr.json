@@ -1,9 +1,21 @@
 {
+  "Nav": {
+    "login": "Connexion",
+    "register": "S'inscrire"
+  },
+  "Footer": {
+    "tagline": "Louer une vitrine n'a jamais été aussi simple."
+  },
   "Landing": {
     "title": "Louez votre vitrine, gagnez un revenu passif",
     "subtitle": "MiVitrina connecte les commerces avec vitrine et les annonceurs qui cherchent un espace publicitaire physique.",
     "ctaCommercant": "Je suis commerçant",
-    "ctaAnnonceur": "Je suis annonceur"
+    "ctaAnnonceur": "Je suis annonceur",
+    "howItWorksTitle": "Comment ça marche",
+    "cardCommercantTitle": "Vous avez une vitrine ?",
+    "cardCommercantDesc": "Publiez votre espace, fixez vos tarifs par taille d'affiche et touchez un revenu passif sans rien avancer.",
+    "cardAnnonceurTitle": "Vous cherchez de la visibilité ?",
+    "cardAnnonceurDesc": "Trouvez un commerce près de chez vous, réservez un emplacement et payez en ligne en toute sécurité."
   },
   "Auth": {
     "login": {
@@ -54,6 +66,9 @@
     "verificationMissingDocument": "Merci d'envoyer un justificatif d'identité pour faire vérifier votre commerce.",
     "verificationApproved": "Votre commerce est vérifié ✓",
     "verificationRejected": "Votre justificatif a été refusé — merci d'en envoyer un nouveau.",
+    "verified": "Vérifié",
+    "pendingBadge": "En attente",
+    "rejectedBadge": "Refusé",
     "logout": "Se déconnecter",
     "verification": {
       "title": "Justificatif d'identité (SIRET/NIF-CIF)",
