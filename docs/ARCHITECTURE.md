@@ -57,31 +57,53 @@ Outillage : pnpm workspaces + Turborepo.
 - `ANNONCEUR` : recherche, réservation, paiement, chat
 - `COMMERCANT` : gestion vitrine/tarifs, validation réservations, revenus, chat
 
-## Schéma relationnel (aperçu — sera détaillé à l'étape "base de données")
+## Schéma relationnel (finalisé — `packages/database/prisma/schema.prisma`)
 
 ```
-User (id, email, role, ...)
-├── CommercantProfile (pays, numéroIdentificationFiscale, statutVérification, adresse, lat/lng, horaires)
-│   └── VitrineSpace (nom, dimensions, photos[])
-│       └── PricingOption (taille, durée, prix)
-└── AnnonceurProfile (raison sociale, adresse facturation)
+User (id, email, role[ADMIN|ANNONCEUR|COMMERCANT], locale, suspended, ...)
+├── CommercantProfile (1-1, pays, businessIdType[SIRET|NIF_CIF], businessIdNumber,
+│                       verificationStatus, adresse, lat/lng, openingHours (JSON),
+│                       allInOneServiceEnabled, stripeAccountId)
+│   ├── ShowcasePhoto[] (photos générales de la vitrine)
+│   └── VitrineSpace[] (un espace = une taille précise sur la vitrine)
+│       ├── SpacePhoto[]
+│       ├── PricingOption[] (durationType[SEMAINE|MOIS|LIBRE], price)
+│       └── Reservation[] (disponibilité déduite des réservations actives,
+│                           pas de calendrier séparé)
+└── AnnonceurProfile (1-1, raison sociale optionnelle, adresse facturation)
 
-Reservation (annonceurId, spaceId, pricingOptionId, période, statut,
-             posterUrl, moderationStatus, installPhotoUrl, removalPhotoUrl)
-├── Transaction (montant, commission, statut paiement Stripe)
-├── Invoice (destinataire: commerçant ou plateforme)
-├── Review (note, commentaire)
-└── Dispute (statut, résolution)
+Reservation (annonceurProfileId, spaceId, pricingOptionId, startDate, endDate,
+             status[PENDING_VALIDATION|CONFIRMED|ACTIVE|COMPLETED|
+                    CANCELLED_BY_*|NO_SHOW|DISPUTE],
+             posterFileUrl, moderationStatus[PENDING|APPROVED|REJECTED],
+             installPhotoUrl/removalPhotoUrl (double confirmation photo),
+             autoRenew, allInOneServiceRequested)
+├── Transaction (1-1 ; amount, commissionRate FIGÉ au moment du paiement,
+│                 commissionAmount, commercantPayoutAmount, refundedAmount,
+│                 stripePaymentIntentId, stripeTransferId)
+│   └── Invoice[] (recipientType[COMMERCANT|PLATEFORME], invoiceNumber, pdfUrl)
+├── Review[] (auteur, cible, note, commentaire — unique par (reservation, auteur))
+├── Dispute[] (raisedBy, status[OPEN|RESOLVED|REJECTED], resolution, refundAmount)
+└── ChatThread (1-1 optionnel ; peut aussi exister sans réservation)
+    └── ChatMessage[] (flagged/flagReason pour anti-contournement)
 
-ChatThread → ChatMessage
-Notification
-PlatformSettings (taux de commission, délais d'annulation...)
+Notification (userId, type, title, body, payload JSON, readAt)
+
+PlatformSettings — ligne unique (id="global"), éditée uniquement par l'admin :
+  - commissionRate (Decimal 0.1500 = 15% par défaut) — chaque Transaction
+    fige ce taux au moment du paiement, donc un changement ultérieur par
+    l'admin n'affecte jamais les transactions déjà passées.
+  - freeCancellationHours (48h par défaut)
 ```
+
+**Validé** : migration Postgres réelle appliquée (17 tables), smoke-test bout-en-bout
+(création user → profil commerçant FR/SIRET → espace → tarif → profil annonceur ES →
+réservation → transaction avec calcul de commission depuis `PlatformSettings`).
 
 ## Étapes de développement
 
-1. ✅ Scaffolding monorepo (ce commit)
-2. Schéma de base de données complet + migrations
+1. ✅ Scaffolding monorepo
+2. ✅ Schéma de base de données complet + migration initiale
 3. Authentification (3 rôles)
 4. Pages commerçant (vitrine, tarifs, disponibilités)
 5. Recherche géolocalisée annonceur + fiche commerce

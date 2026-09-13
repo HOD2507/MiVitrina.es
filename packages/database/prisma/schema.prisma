@@ -1,10 +1,17 @@
 // Schéma Prisma - MiVitrina.es
 //
-// STADE ACTUEL : squelette de scaffolding pour valider la chaîne
-// Postgres <-> Prisma <-> NestJS. Le schéma relationnel complet
-// (CommercantProfile, VitrineSpace, PricingOption, Reservation,
-// Transaction, Invoice, Review, Chat, Dispute...) sera ajouté à
-// l'étape suivante ("base de données / modèles"), validée séparément.
+// Schéma relationnel complet du MVP : utilisateurs (3 rôles), profils
+// commerçant/annonceur, espaces vitrine, tarification, réservations,
+// paiements/commission, avis, chat, litiges, notifications et
+// paramètres plateforme.
+//
+// Conventions :
+// - id : cuid() pour tous les modèles (identifiants non séquentiels,
+//   pas de fuite d'information sur le volume).
+// - Montants monétaires : Decimal(10, 2) (EUR uniquement au MVP).
+// - Les enums métier (statuts, rôles...) sont dupliqués dans
+//   @mivitrina/shared avec les mêmes valeurs, pour être utilisables
+//   côté frontend sans dépendre du client Prisma.
 
 generator client {
   provider = "prisma-client-js"
@@ -16,8 +23,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
 /// Pays de marché supportés au MVP (France, Espagne).
 enum Country {
+  FR
+  ES
+}
+
+/// Langue préférée d'un utilisateur (emails, notifications).
+enum Locale {
   FR
   ES
 }
@@ -29,14 +46,544 @@ enum UserRole {
   COMMERCANT
 }
 
+/// Type de numéro d'identification d'entreprise, dépendant du pays
+/// (FR -> SIRET, ES -> NIF/CIF). Permet de valider le format côté
+/// application sans coder un format unique en dur dans le schéma.
+enum BusinessIdType {
+  SIRET
+  NIF_CIF
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+/// Taille d'affiche proposée par le commerçant pour un espace donné.
+/// CUSTOM permet une dimension libre (voir VitrineSpace.customSizeLabel).
+enum PosterSizePreset {
+  A5
+  A4
+  A3
+  A2
+  A1
+  VITRINE_ENTIERE
+  CUSTOM
+}
+
+enum RentalDurationType {
+  SEMAINE
+  MOIS
+  LIBRE
+}
+
+enum ReservationStatus {
+  PENDING_VALIDATION
+  CONFIRMED
+  ACTIVE
+  COMPLETED
+  CANCELLED_BY_ANNONCEUR
+  CANCELLED_BY_COMMERCANT
+  NO_SHOW
+  DISPUTE
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TransactionStatus {
+  PENDING
+  PAID
+  REFUNDED
+  PARTIALLY_REFUNDED
+  FAILED
+}
+
+enum InvoiceRecipientType {
+  COMMERCANT
+  PLATEFORME
+}
+
+enum DisputeStatus {
+  OPEN
+  RESOLVED
+  REJECTED
+}
+
+enum NotificationType {
+  RESERVATION_REQUESTED
+  RESERVATION_CONFIRMED
+  RESERVATION_REJECTED
+  RESERVATION_CANCELLED
+  PAYMENT_RECEIVED
+  RDV_REMINDER
+  POSTER_INSTALLED
+  CONTRACT_ENDING
+  DISPUTE_OPENED
+  DISPUTE_RESOLVED
+  NEW_CHAT_MESSAGE
+  REVIEW_RECEIVED
+}
+
+// ---------------------------------------------------------------------------
+// Utilisateurs & profils
+// ---------------------------------------------------------------------------
+
 model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
+  id            String    @id @default(cuid())
+  email         String    @unique
   passwordHash  String
   role          UserRole
-  emailVerified Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  locale        Locale    @default(FR)
+  phone         String?
+  avatarUrl     String?
+  emailVerified Boolean   @default(false)
+  /// Suspension par l'admin (litige grave, fraude...) sans supprimer l'historique.
+  suspended     Boolean   @default(false)
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  commercantProfile CommercantProfile?
+  annonceurProfile  AnnonceurProfile?
+
+  chatMessages            ChatMessage[]
+  notifications           Notification[]
+  reviewsWritten          Review[]           @relation("ReviewAuthor")
+  reviewsReceived         Review[]           @relation("ReviewTarget")
+  disputesRaised          Dispute[]          @relation("DisputeRaisedBy")
+  disputesResolved        Dispute[]          @relation("DisputeResolvedBy")
+  moderatedPosters        Reservation[]      @relation("PosterModeratedBy")
+  cancelledReservations   Reservation[]      @relation("ReservationCancelledBy")
+  platformSettingsUpdates PlatformSettings[] @relation("PlatformSettingsUpdatedBy")
 
   @@map("users")
+}
+
+model CommercantProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  businessName String
+
+  country          Country
+  businessIdType   BusinessIdType
+  /// SIRET (FR) ou NIF/CIF (ES), brut (sans espaces/tirets).
+  businessIdNumber String
+
+  verificationStatus      VerificationStatus @default(PENDING)
+  verificationDocumentUrl String?
+  verificationNote        String?
+
+  description String?
+
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  postalCode   String
+  latitude     Float
+  longitude    Float
+
+  /// Horaires d'ouverture hebdomadaires, format libre en JSON, ex:
+  /// { "monday": [{ "open": "09:00", "close": "19:00" }], "sunday": [] }
+  openingHours Json?
+
+  /// Service tout-en-un (impression + pose) proposé par les imprimeries.
+  allInOneServiceEnabled Boolean @default(false)
+
+  stripeAccountId          String?
+  stripeOnboardingComplete Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  photos ShowcasePhoto[]
+  spaces VitrineSpace[]
+
+  chatThreads ChatThread[]
+
+  @@unique([country, businessIdNumber])
+  @@index([latitude, longitude])
+  @@map("commercant_profiles")
+}
+
+/// Photos générales de la vitrine/du commerce (indépendantes d'un espace précis).
+model ShowcasePhoto {
+  id                  String            @id @default(cuid())
+  commercantProfileId String
+  commercantProfile   CommercantProfile @relation(fields: [commercantProfileId], references: [id], onDelete: Cascade)
+  url                 String
+  position            Int               @default(0)
+  createdAt           DateTime          @default(now())
+
+  @@index([commercantProfileId])
+  @@map("showcase_photos")
+}
+
+model AnnonceurProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Raison sociale optionnelle (un particulier peut aussi être annonceur).
+  companyName String?
+  country     Country
+
+  billingAddressLine1 String?
+  billingAddressLine2 String?
+  billingCity         String?
+  billingPostalCode   String?
+
+  stripeCustomerId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reservations Reservation[]
+  chatThreads  ChatThread[]
+
+  @@map("annonceur_profiles")
+}
+
+// ---------------------------------------------------------------------------
+// Espaces vitrine & tarification
+// ---------------------------------------------------------------------------
+
+/// Un espace physique précis sur la vitrine d'un commerçant (une taille
+/// donnée). Un commerçant avec plusieurs tailles disponibles crée
+/// plusieurs VitrineSpace. Un espace n'accueille qu'une affiche à la fois :
+/// la disponibilité se déduit des Reservation actives sur cet espace,
+/// pas d'un calendrier séparé.
+model VitrineSpace {
+  id                  String            @id @default(cuid())
+  commercantProfileId String
+  commercantProfile   CommercantProfile @relation(fields: [commercantProfileId], references: [id], onDelete: Cascade)
+
+  name            String
+  sizePreset      PosterSizePreset
+  /// Libellé libre si sizePreset = CUSTOM (ex: "1.20m x 0.80m").
+  customSizeLabel String?
+  widthCm         Int?
+  heightCm        Int?
+  description     String?
+  isActive        Boolean          @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  photos         SpacePhoto[]
+  pricingOptions PricingOption[]
+  reservations   Reservation[]
+
+  @@index([commercantProfileId])
+  @@map("vitrine_spaces")
+}
+
+model SpacePhoto {
+  id        String       @id @default(cuid())
+  spaceId   String
+  space     VitrineSpace @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  url       String
+  position  Int          @default(0)
+  createdAt DateTime     @default(now())
+
+  @@index([spaceId])
+  @@map("space_photos")
+}
+
+/// Tarif défini par le commerçant pour un espace, selon la durée de location.
+model PricingOption {
+  id      String       @id @default(cuid())
+  spaceId String
+  space   VitrineSpace @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  durationType    RentalDurationType
+  price           Decimal            @db.Decimal(10, 2)
+  /// Utilisé si durationType = LIBRE : durée minimale facturable.
+  minDurationDays Int?
+  isActive        Boolean            @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reservations Reservation[]
+
+  @@index([spaceId])
+  @@map("pricing_options")
+}
+
+// ---------------------------------------------------------------------------
+// Réservations
+// ---------------------------------------------------------------------------
+
+model Reservation {
+  id String @id @default(cuid())
+
+  annonceurProfileId String
+  annonceurProfile   AnnonceurProfile @relation(fields: [annonceurProfileId], references: [id])
+
+  spaceId String
+  space   VitrineSpace @relation(fields: [spaceId], references: [id])
+
+  pricingOptionId String
+  pricingOption   PricingOption @relation(fields: [pricingOptionId], references: [id])
+
+  startDate DateTime
+  endDate   DateTime
+
+  status ReservationStatus @default(PENDING_VALIDATION)
+
+  posterFileUrl    String?
+  moderationStatus ModerationStatus @default(PENDING)
+  moderationNote   String?
+  moderatedById    String?
+  moderatedBy      User?            @relation("PosterModeratedBy", fields: [moderatedById], references: [id])
+  moderatedAt      DateTime?
+
+  installPhotoUrl    String?
+  installConfirmedAt DateTime?
+  removalPhotoUrl    String?
+  removalConfirmedAt DateTime?
+
+  /// Service tout-en-un (impression + pose) demandé pour cette réservation.
+  allInOneServiceRequested Boolean @default(false)
+  autoRenew                Boolean @default(false)
+
+  cancelledAt        DateTime?
+  cancelledById      String?
+  cancelledBy        User?     @relation("ReservationCancelledBy", fields: [cancelledById], references: [id])
+  cancellationReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transaction Transaction?
+  reviews     Review[]
+  disputes    Dispute[]
+  chatThread  ChatThread?
+
+  @@index([spaceId, startDate, endDate])
+  @@index([annonceurProfileId])
+  @@index([status])
+  @@map("reservations")
+}
+
+// ---------------------------------------------------------------------------
+// Paiement & commission
+// ---------------------------------------------------------------------------
+
+model Transaction {
+  id String @id @default(cuid())
+
+  reservationId String      @unique
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+
+  stripePaymentIntentId String? @unique
+  stripeTransferId      String?
+
+  /// Montant total payé par l'annonceur.
+  amount Decimal @db.Decimal(10, 2)
+
+  /// Taux de commission appliqué, figé au moment de la transaction
+  /// (indépendant d'un changement ultérieur du taux global par l'admin).
+  commissionRate         Decimal @db.Decimal(5, 4)
+  commissionAmount       Decimal @db.Decimal(10, 2)
+  /// Montant reversé au commerçant (amount - commissionAmount, ajusté
+  /// des remboursements/retenues no-show).
+  commercantPayoutAmount Decimal @db.Decimal(10, 2)
+
+  refundedAmount Decimal @default(0) @db.Decimal(10, 2)
+
+  status TransactionStatus @default(PENDING)
+
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  invoices Invoice[]
+
+  @@index([status])
+  @@map("transactions")
+}
+
+model Invoice {
+  id String @id @default(cuid())
+
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+
+  recipientType   InvoiceRecipientType
+  recipientUserId String
+
+  invoiceNumber String  @unique
+  amount        Decimal @db.Decimal(10, 2)
+  pdfUrl        String?
+
+  issuedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([transactionId])
+  @@index([recipientUserId])
+  @@map("invoices")
+}
+
+// ---------------------------------------------------------------------------
+// Avis
+// ---------------------------------------------------------------------------
+
+model Review {
+  id String @id @default(cuid())
+
+  reservationId String
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+
+  authorId String
+  author   User   @relation("ReviewAuthor", fields: [authorId], references: [id])
+
+  targetId String
+  target   User   @relation("ReviewTarget", fields: [targetId], references: [id])
+
+  rating  Int
+  comment String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([reservationId, authorId])
+  @@index([targetId])
+  @@map("reviews")
+}
+
+// ---------------------------------------------------------------------------
+// Chat
+// ---------------------------------------------------------------------------
+
+/// Un fil de discussion par binôme (commerçant, annonceur), optionnellement
+/// rattaché à une réservation. Permet d'échanger avant même de réserver.
+model ChatThread {
+  id String @id @default(cuid())
+
+  commercantProfileId String
+  commercantProfile   CommercantProfile @relation(fields: [commercantProfileId], references: [id])
+
+  annonceurProfileId String
+  annonceurProfile   AnnonceurProfile @relation(fields: [annonceurProfileId], references: [id])
+
+  reservationId String?      @unique
+  reservation   Reservation? @relation(fields: [reservationId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages ChatMessage[]
+
+  @@unique([commercantProfileId, annonceurProfileId])
+  @@map("chat_threads")
+}
+
+model ChatMessage {
+  id String @id @default(cuid())
+
+  threadId String
+  thread   ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  senderId String
+  sender   User   @relation(fields: [senderId], references: [id])
+
+  content String
+
+  /// Détection anti-contournement (regex téléphone/email/lien externe) ou anti-spam.
+  flagged    Boolean @default(false)
+  flagReason String?
+
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([threadId])
+  @@map("chat_messages")
+}
+
+// ---------------------------------------------------------------------------
+// Litiges
+// ---------------------------------------------------------------------------
+
+model Dispute {
+  id String @id @default(cuid())
+
+  reservationId String
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+
+  raisedById String
+  raisedBy   User   @relation("DisputeRaisedBy", fields: [raisedById], references: [id])
+
+  reason String
+  status DisputeStatus @default(OPEN)
+
+  resolution   String?
+  resolvedById String?
+  resolvedBy   User?     @relation("DisputeResolvedBy", fields: [resolvedById], references: [id])
+  resolvedAt   DateTime?
+  /// Montant remboursé décidé par l'admin dans le cadre de la résolution, le cas échéant.
+  refundAmount Decimal?  @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([reservationId])
+  @@index([status])
+  @@map("disputes")
+}
+
+// ---------------------------------------------------------------------------
+// Notifications
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type    NotificationType
+  title   String
+  body    String
+  /// Données additionnelles pour le deep-link côté frontend (ex: { "reservationId": "..." }).
+  payload Json?
+
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+// ---------------------------------------------------------------------------
+// Paramètres plateforme (singleton géré par l'admin)
+// ---------------------------------------------------------------------------
+
+/// Table à une seule ligne (id fixe "global"), éditable uniquement par
+/// l'admin depuis son dashboard. Centralise les paramètres business
+/// modifiables sans déploiement : taux de commission, délai d'annulation
+/// gratuite...
+model PlatformSettings {
+  /// Toujours "global" — garantit une seule ligne en usage applicatif.
+  id String @id @default("global")
+
+  /// Taux de commission plateforme, ex: 0.15 = 15%. Chaque transaction
+  /// fige ce taux au moment du paiement (voir Transaction.commissionRate).
+  commissionRate Decimal @default(0.15) @db.Decimal(5, 4)
+
+  /// Délai (en heures) avant le RDV en-deçà duquel l'annulation n'est
+  /// plus gratuite pour l'annonceur.
+  freeCancellationHours Int @default(48)
+
+  updatedById String?
+  updatedBy   User?    @relation("PlatformSettingsUpdatedBy", fields: [updatedById], references: [id])
+  updatedAt   DateTime @updatedAt
+
+  @@map("platform_settings")
 }

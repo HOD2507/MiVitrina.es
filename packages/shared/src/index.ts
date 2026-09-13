@@ -21,6 +21,16 @@ export const DEFAULT_LOCALE: SupportedLocale = "fr";
 /** Devise unique pour le MVP (FR + ES sont toutes deux en zone euro). */
 export const DEFAULT_CURRENCY = "EUR" as const;
 
+/**
+ * Langue préférée d'un utilisateur, stockée en base (miroir de l'enum
+ * Prisma `Locale`, en majuscules). À ne pas confondre avec
+ * `SupportedLocale` ci-dessus, qui code le préfixe d'URL (minuscules).
+ */
+export enum Locale {
+  FR = "FR",
+  ES = "ES",
+}
+
 // ---------------------------------------------------------------------------
 // Rôles utilisateurs
 // ---------------------------------------------------------------------------
@@ -114,11 +124,37 @@ export enum InvoiceRecipientType {
   PLATEFORME = "PLATEFORME",
 }
 
+export enum DisputeStatus {
+  OPEN = "OPEN",
+  RESOLVED = "RESOLVED",
+  REJECTED = "REJECTED",
+}
+
+export enum NotificationType {
+  RESERVATION_REQUESTED = "RESERVATION_REQUESTED",
+  RESERVATION_CONFIRMED = "RESERVATION_CONFIRMED",
+  RESERVATION_REJECTED = "RESERVATION_REJECTED",
+  RESERVATION_CANCELLED = "RESERVATION_CANCELLED",
+  PAYMENT_RECEIVED = "PAYMENT_RECEIVED",
+  RDV_REMINDER = "RDV_REMINDER",
+  POSTER_INSTALLED = "POSTER_INSTALLED",
+  CONTRACT_ENDING = "CONTRACT_ENDING",
+  DISPUTE_OPENED = "DISPUTE_OPENED",
+  DISPUTE_RESOLVED = "DISPUTE_RESOLVED",
+  NEW_CHAT_MESSAGE = "NEW_CHAT_MESSAGE",
+  REVIEW_RECEIVED = "REVIEW_RECEIVED",
+}
+
 // ---------------------------------------------------------------------------
 // Paramètres plateforme (configurables par l'admin, valeurs par défaut ici)
 // ---------------------------------------------------------------------------
 
-/** Taux de commission par défaut appliqué par la plateforme (15%). */
+/**
+ * Taux de commission par défaut appliqué par la plateforme (15%).
+ * Valeur de référence uniquement (ex: formulaire admin avant premier
+ * chargement) : la valeur qui fait foi est celle stockée dans
+ * `PlatformSettings.commissionRate`, modifiable par l'admin à tout moment.
+ */
 export const DEFAULT_COMMISSION_RATE = 0.15;
 
 /** Délai (en heures) avant le RDV en-deçà duquel une annulation n'est plus gratuite. */
