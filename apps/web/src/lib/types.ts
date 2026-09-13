@@ -24,6 +24,8 @@ export interface CommercantProfileSummary {
   businessIdType: BusinessIdType;
   businessIdNumber: string;
   verificationStatus: VerificationStatus;
+  verificationDocumentUrl: string | null;
+  verificationNote: string | null;
   city: string;
 }
 

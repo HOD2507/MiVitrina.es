@@ -27,9 +27,13 @@ services:
       - ./.data/redis:/data
 
   # Stockage compatible S3 pour le développement local (photos vitrine,
-  # affiches, photos de pose/retrait). En production : AWS S3.
+  # affiches, photos de pose/retrait, justificatifs de vérification).
+  # En production : AWS S3. Image tirée de quay.io (pas docker.io) :
+  # MinIO a retiré la distribution anonyme de `minio/minio` sur Docker Hub
+  # début 2025 (bascule commerciale "AIStor") — quay.io/minio/minio reste
+  # l'image communautaire à jour.
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -40,3 +44,8 @@ services:
       - "9001:9001" # Console web
     volumes:
       - ./.data/minio:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

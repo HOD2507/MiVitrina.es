@@ -25,4 +25,18 @@ export const envValidationSchema = Joi.object({
 
   RESEND_API_KEY: Joi.string().allow("").optional(),
   RESEND_FROM_EMAIL: Joi.string().default("MiVitrina <no-reply@mivitrina.es>"),
+
+  /// Stockage fichiers (S3 en prod, MinIO en dev — voir infra/docker-compose.yml).
+  S3_ENDPOINT: Joi.string().uri().required(),
+  S3_REGION: Joi.string().default("eu-west-3"),
+  S3_BUCKET: Joi.string().required(),
+  S3_ACCESS_KEY_ID: Joi.string().required(),
+  S3_SECRET_ACCESS_KEY: Joi.string().required(),
+  /// Base d'URL publique pour lire les fichiers uploadés (ex: un domaine
+  /// CDN devant le bucket en prod). Par défaut, dérivée de S3_ENDPOINT +
+  /// bucket (accès "path-style", ce que sert MinIO nativement).
+  S3_PUBLIC_URL_BASE: Joi.string().uri().allow("").optional(),
+  /// true pour MinIO (accès path-style obligatoire) ; false pour un vrai
+  /// bucket AWS S3 (accès virtual-hosted-style par défaut).
+  S3_FORCE_PATH_STYLE: Joi.boolean().default(true),
 }).unknown(true);

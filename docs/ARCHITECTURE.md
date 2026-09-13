@@ -104,11 +104,26 @@ réservation → transaction avec calcul de commission depuis `PlatformSettings`
 
 1. ✅ Scaffolding monorepo
 2. ✅ Schéma de base de données complet + migration initiale
-3. Authentification (3 rôles)
-4. Pages commerçant (vitrine, tarifs, disponibilités)
-5. Recherche géolocalisée annonceur + fiche commerce
-6. Réservation + upload affiche + modération basique
-7. Paiement Stripe Connect (split commission)
-8. Chat + confirmations photo pose/retrait
-9. Dashboard admin
-10. Avis, renouvellement automatique, notifications avancées (post-MVP)
+3. ✅ Authentification (3 rôles) + pages login/inscription
+4. ✅ Stockage S3/MinIO (upload présigné) + justificatif d'identité commerçant
+5. Pages commerçant (vitrine, tarifs, disponibilités)
+6. Recherche géolocalisée annonceur + fiche commerce
+7. Réservation + upload affiche + modération basique
+8. Paiement Stripe Connect (split commission)
+9. Chat + confirmations photo pose/retrait
+10. Dashboard admin
+11. Avis, renouvellement automatique, notifications avancées (post-MVP)
+
+### Stockage fichiers (étape 4)
+
+- Upload direct navigateur -> S3/MinIO via POST présigné (`@aws-sdk/s3-presigned-post`) :
+  le fichier ne transite jamais par l'API. Taille max et type MIME imposés
+  par des conditions de policy S3, pas seulement côté client.
+- **Bucket privé par défaut** (indispensable pour les justificatifs
+  d'identité) : la lecture passe par une URL signée à durée limitée
+  (`StorageService.getPresignedReadUrl`), jamais par une URL stockée en
+  clair. Les photos réellement publiques (vitrine, espaces) auront leur
+  propre politique d'accès à l'étape "Ma vitrine".
+- MinIO en dev via `quay.io/minio/minio` (pas `docker.io/minio/minio`,
+  dont la distribution anonyme a été retirée début 2025 lors du virage
+  commercial "AIStor" de MinIO).

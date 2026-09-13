@@ -4,6 +4,7 @@ import { UserRole, VerificationStatus } from "@mivitrina/shared";
 import { serverApiGet } from "@/lib/api-server";
 import type { AuthUser } from "@/lib/types";
 import { LogoutButton } from "./logout-button";
+import { VerificationUpload } from "./verification-upload";
 
 /**
  * Dashboard générique post-connexion — placeholder en attendant les
@@ -20,6 +21,7 @@ export default async function DashboardPage() {
   }
 
   const authedUser = user as AuthUser;
+  const commercantProfile = authedUser.commercantProfile;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-6 px-4 py-12">
@@ -35,10 +37,28 @@ export default async function DashboardPage() {
         <p className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">{t("emailNotVerified")}</p>
       )}
 
-      {authedUser.role === UserRole.COMMERCANT &&
-        authedUser.commercantProfile?.verificationStatus === VerificationStatus.PENDING && (
-          <p className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">{t("verificationPending")}</p>
-        )}
+      {authedUser.role === UserRole.COMMERCANT && commercantProfile && (
+        <section className="flex flex-col gap-3">
+          {commercantProfile.verificationStatus === VerificationStatus.VERIFIED && (
+            <p className="rounded-md bg-green-50 px-4 py-3 text-sm text-green-800">{t("verificationApproved")}</p>
+          )}
+
+          {commercantProfile.verificationStatus === VerificationStatus.REJECTED && (
+            <p className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-800">
+              {t("verificationRejected")}
+              {commercantProfile.verificationNote ? ` ${commercantProfile.verificationNote}` : ""}
+            </p>
+          )}
+
+          {commercantProfile.verificationStatus === VerificationStatus.PENDING && (
+            <p className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              {commercantProfile.verificationDocumentUrl ? t("verificationPending") : t("verificationMissingDocument")}
+            </p>
+          )}
+
+          {commercantProfile.verificationStatus !== VerificationStatus.VERIFIED && <VerificationUpload />}
+        </section>
+      )}
     </main>
   );
 }

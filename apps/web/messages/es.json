@@ -50,7 +50,18 @@
     "welcome": "Bienvenido, {email}",
     "role": "Tipo de cuenta: {role}",
     "emailNotVerified": "Tu correo aún no está verificado.",
-    "verificationPending": "Tu comercio está pendiente de verificación por el equipo de MiVitrina.",
-    "logout": "Cerrar sesión"
+    "verificationPending": "Tu justificante ha sido recibido, pendiente de verificación por el equipo de MiVitrina.",
+    "verificationMissingDocument": "Envía un justificante de identidad para verificar tu comercio.",
+    "verificationApproved": "Tu comercio está verificado ✓",
+    "verificationRejected": "Tu justificante fue rechazado — envía uno nuevo.",
+    "logout": "Cerrar sesión",
+    "verification": {
+      "title": "Justificante de identidad (SIRET/NIF-CIF)",
+      "hint": "PDF, JPG, PNG o WEBP, máximo 10 MB.",
+      "uploading": "Enviando...",
+      "success": "Documento enviado con éxito.",
+      "invalidType": "Formato no compatible (solo PDF, JPG, PNG o WEBP).",
+      "genericError": "El envío ha fallado. Inténtalo de nuevo."
+    }
   }
 }

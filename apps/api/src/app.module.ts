@@ -4,6 +4,8 @@ import { HealthModule } from "./health/health.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { MailModule } from "./mail/mail.module";
 import { AuthModule } from "./auth/auth.module";
+import { StorageModule } from "./storage/storage.module";
+import { CommercantsModule } from "./commercants/commercants.module";
 import { envValidationSchema } from "./config/env.validation";
 
 @Module({
@@ -16,10 +18,12 @@ import { envValidationSchema } from "./config/env.validation";
     PrismaModule,
     MailModule,
     AuthModule,
+    StorageModule,
+    CommercantsModule,
     HealthModule,
-    // Modules à venir : UsersModule (admin), CommercantsModule,
-    // AnnonceursModule, VitrineSpacesModule, ReservationsModule,
-    // PaymentsModule, ChatModule, NotificationsModule, AdminModule...
+    // Modules à venir : UsersModule (admin), AnnonceursModule,
+    // VitrineSpacesModule, ReservationsModule, PaymentsModule, ChatModule,
+    // NotificationsModule, AdminModule...
   ],
 })
 export class AppModule {}

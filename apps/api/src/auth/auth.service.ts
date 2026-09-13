@@ -38,6 +38,15 @@ export class AuthService {
       throw new ConflictException("Un compte existe déjà avec cet email.");
     }
 
+    if (dto.role === UserRole.COMMERCANT) {
+      const existingBusiness = await this.prisma.commercantProfile.findUnique({
+        where: { country_businessIdNumber: { country: dto.country, businessIdNumber: dto.businessIdNumber! } },
+      });
+      if (existingBusiness) {
+        throw new ConflictException("Un commerce est déjà enregistré avec ce numéro SIRET/NIF-CIF.");
+      }
+    }
+
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_SALT_ROUNDS);
     const locale = dto.locale ?? DEFAULT_LOCALE_BY_COUNTRY[dto.country];
 
