@@ -6,17 +6,19 @@ import { UserRole } from "@mivitrina/shared";
 import { AuthService } from "./auth.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { MailService } from "../mail/mail.service";
+import { GeocodingService } from "../geocoding/geocoding.service";
 import { RegisterDto } from "./dto/register.dto";
 
 describe("AuthService", () => {
   let service: AuthService;
   let prisma: {
     user: { findUnique: jest.Mock; create: jest.Mock; update: jest.Mock; findUniqueOrThrow: jest.Mock };
-    commercantProfile: { create: jest.Mock };
+    commercantProfile: { create: jest.Mock; findUnique: jest.Mock };
     annonceurProfile: { create: jest.Mock };
     $transaction: jest.Mock;
   };
   let mail: { send: jest.Mock };
+  let geocoding: { geocode: jest.Mock };
 
   beforeEach(() => {
     prisma = {
@@ -26,11 +28,14 @@ describe("AuthService", () => {
         update: jest.fn(),
         findUniqueOrThrow: jest.fn(),
       },
-      commercantProfile: { create: jest.fn() },
+      commercantProfile: { create: jest.fn(), findUnique: jest.fn().mockResolvedValue(null) },
       annonceurProfile: { create: jest.fn() },
       $transaction: jest.fn(async (cb) => cb(prisma)),
     };
     mail = { send: jest.fn() };
+    // Pas d'appel réseau Nominatim dans les tests unitaires : le géocodage
+    // est testé séparément (voir GeocodingService), ici on le neutralise.
+    geocoding = { geocode: jest.fn().mockResolvedValue(null) };
 
     const jwt = new JwtService();
     const config = new ConfigService({
@@ -47,6 +52,7 @@ describe("AuthService", () => {
       jwt,
       config,
       mail as unknown as MailService,
+      geocoding as unknown as GeocodingService,
     );
   });
 

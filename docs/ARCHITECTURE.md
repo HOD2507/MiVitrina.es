@@ -13,8 +13,12 @@ commerces physiques (annonceurs de l'espace) et des annonceurs publicitaires.
   générique + pays, avec validation dépendant du pays :
   - FR → SIRET (14 chiffres), vérifiable via l'API INSEE (SIRENE)
   - ES → NIF/CIF
-- **Cartographie / géolocalisation** : Google Maps (Places API, Geocoding API,
-  Maps JavaScript API)
+- **Cartographie / géolocalisation** : OpenStreetMap + Leaflet (carte) et
+  Nominatim (géocodage) — gratuit, sans clé API ni facturation à activer
+  (décision utilisateur du 2026-09-14). Remplaçable par Google Maps plus
+  tard (Places/Geocoding/Maps JS) sans réécrire la logique métier : il
+  suffirait d'un autre service implémentant la même interface
+  `geocode(address)` côté API, et d'un composant carte équivalent côté web.
 
 ## Monorepo
 
@@ -47,7 +51,7 @@ Outillage : pnpm workspaces + Turborepo.
 | Jobs asynchrones | BullMQ + Redis | Rappels, auto-annulation, facturation, renouvellement |
 | Stockage fichiers | S3 (prod) / MinIO (dev), URLs présignées | Photos vitrine, affiches, photos pose/retrait |
 | Emails | Resend | Transactionnel |
-| Cartographie | Google Maps (Places, Geocoding, Maps JS) | Recherche géolocalisée par rayon |
+| Cartographie | OpenStreetMap + Leaflet (carte), Nominatim (géocodage) | Gratuit, sans clé — recherche géolocalisée par rayon (Haversine SQL) |
 | Tests | Jest (unit API) + Playwright (e2e) | |
 | CI | GitHub Actions | Lint, typecheck, test sur chaque PR |
 
@@ -107,8 +111,8 @@ réservation → transaction avec calcul de commission depuis `PlatformSettings`
 3. ✅ Authentification (3 rôles) + pages login/inscription
 4. ✅ Stockage S3/MinIO (upload présigné) + justificatif d'identité commerçant
 5. ✅ Système de design (Tailwind v4 + shadcn/ui) + refonte visuelle landing/auth/dashboard
-6. Pages commerçant (vitrine, tarifs, disponibilités)
-7. Recherche géolocalisée annonceur + fiche commerce
+6. ✅ Page commerçant "Ma vitrine" (espaces, tarifs, photos)
+7. ✅ Recherche géolocalisée annonceur + fiche commerce
 8. Réservation + upload affiche + modération basique
 9. Paiement Stripe Connect (split commission)
 10. Chat + confirmations photo pose/retrait
@@ -148,3 +152,25 @@ réservation → transaction avec calcul de commission depuis `PlatformSettings`
 - `Select.Value` de Base UI n'affiche pas automatiquement le libellé de
   l'item sélectionné (contrairement à Radix) : il faut lui passer une
   fonction `(value) => label` explicite.
+
+### Recherche géolocalisée (étape 7)
+
+- **Géocodage** (`apps/api/src/geocoding`) : adresse commerçant géocodée
+  automatiquement à l'inscription via Nominatim (OpenStreetMap), avant la
+  transaction DB (jamais d'appel réseau dans une transaction ouverte). Un
+  échec de géocodage ne bloque jamais l'inscription — le commerce reste
+  simplement invisible en recherche tant que ses coordonnées sont nulles.
+  Limité à 1 req/s (politique d'usage Nominatim) via un throttle en mémoire.
+- **Recherche par rayon** (`apps/api/src/discovery`) : distance calculée
+  en SQL (formule de Haversine, pas de PostGIS au MVP), filtrée d'abord
+  par une bounding box grossière sur (latitude, longitude) pour rester
+  performant, affinée ensuite par la distance exacte. `LEAST`/`GREATEST`
+  protègent `acos()` d'un dépassement de [-1, 1] dû aux imprécisions
+  flottantes. Seuls les commerces `VERIFIED` avec coordonnées connues
+  apparaissent. Endpoints publics (`@Public()`), consultables sans compte.
+- Comparer un enum Postgres à un paramètre texte dans `$queryRaw` exige un
+  cast explicite (`= ${valeur}::"NomDeLEnum"`), sans quoi Postgres renvoie
+  une erreur d'opérateur — piège rencontré en testant, pas visible au
+  typecheck TypeScript.
+- **Carte** : Leaflet + react-leaflet, chargés uniquement côté client
+  (`next/dynamic`, `ssr:false`) car Leaflet touche `window` à l'import.

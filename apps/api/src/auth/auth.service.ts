@@ -5,6 +5,7 @@ import * as bcrypt from "bcrypt";
 import { BUSINESS_ID_TYPE_BY_COUNTRY, Country, Locale, UserRole } from "@mivitrina/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { MailService } from "../mail/mail.service";
+import { GeocodingService } from "../geocoding/geocoding.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { EMAIL_VERIFY_TOKEN_TTL, PASSWORD_RESET_TOKEN_TTL, asJwtExpiry } from "./auth.constants";
@@ -16,6 +17,12 @@ const BCRYPT_SALT_ROUNDS = 12;
 const DEFAULT_LOCALE_BY_COUNTRY: Record<Country, Locale> = {
   [Country.FR]: Locale.FR,
   [Country.ES]: Locale.ES,
+};
+
+/** Nom complet du pays, plus fiable que le code ISO pour le géocodage Nominatim. */
+const COUNTRY_NAME_FOR_GEOCODING: Record<Country, string> = {
+  [Country.FR]: "France",
+  [Country.ES]: "España",
 };
 
 export interface AuthTokens {
@@ -30,6 +37,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly mail: MailService,
+    private readonly geocoding: GeocodingService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -49,6 +57,19 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_SALT_ROUNDS);
     const locale = dto.locale ?? DEFAULT_LOCALE_BY_COUNTRY[dto.country];
+
+    // Géocodage AVANT la transaction : c'est un appel réseau externe, il
+    // ne doit jamais rester dans une transaction DB ouverte. Un échec ne
+    // bloque pas l'inscription — le commerce reste juste invisible dans
+    // la recherche tant que ses coordonnées ne sont pas connues (voir
+    // GeocodingService).
+    let coordinates: { latitude: number; longitude: number } | null = null;
+    if (dto.role === UserRole.COMMERCANT) {
+      const fullAddress = [dto.addressLine1, dto.postalCode, dto.city, COUNTRY_NAME_FOR_GEOCODING[dto.country]]
+        .filter(Boolean)
+        .join(", ");
+      coordinates = await this.geocoding.geocode(fullAddress);
+    }
 
     const user = await this.prisma.$transaction(async (tx) => {
       const created = await tx.user.create({
@@ -72,6 +93,8 @@ export class AuthService {
             addressLine2: dto.addressLine2,
             city: dto.city!,
             postalCode: dto.postalCode!,
+            latitude: coordinates?.latitude,
+            longitude: coordinates?.longitude,
           },
         });
       } else {

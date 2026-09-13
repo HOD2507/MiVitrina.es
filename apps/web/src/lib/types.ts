@@ -82,3 +82,33 @@ export interface MyVitrine {
   showcasePhotos: Photo[];
   spaces: VitrineSpace[];
 }
+
+/** Résultat de GET /discovery/search. */
+export interface NearbyCommerce {
+  id: string;
+  businessName: string;
+  city: string;
+  postalCode: string;
+  latitude: number;
+  longitude: number;
+  distanceKm: number;
+  spaceCount: number;
+  minPrice: number | null;
+  thumbnailUrl: string | null;
+}
+
+/** Résultat de GET /discovery/commercants/:id. */
+export interface PublicCommerceProfile {
+  id: string;
+  businessName: string;
+  description: string | null;
+  addressLine1: string;
+  addressLine2: string | null;
+  city: string;
+  postalCode: string;
+  country: Country;
+  latitude: number;
+  longitude: number;
+  showcasePhotos: Photo[];
+  spaces: VitrineSpace[];
+}

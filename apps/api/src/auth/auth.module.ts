@@ -8,6 +8,7 @@ import { JwtAccessStrategy } from "./strategies/jwt-access.strategy";
 import { JwtRefreshStrategy } from "./strategies/jwt-refresh.strategy";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { RolesGuard } from "./guards/roles.guard";
+import { GeocodingModule } from "../geocoding/geocoding.module";
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { RolesGuard } from "./guards/roles.guard";
     // Pas de config par défaut : chaque signature (access/refresh/email)
     // précise explicitement son secret et sa durée de vie (voir AuthService).
     JwtModule.register({}),
+    GeocodingModule,
   ],
   controllers: [AuthController],
   providers: [

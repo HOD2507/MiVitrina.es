@@ -7,6 +7,7 @@ import { AuthModule } from "./auth/auth.module";
 import { StorageModule } from "./storage/storage.module";
 import { CommercantsModule } from "./commercants/commercants.module";
 import { VitrineSpacesModule } from "./vitrine-spaces/vitrine-spaces.module";
+import { DiscoveryModule } from "./discovery/discovery.module";
 import { envValidationSchema } from "./config/env.validation";
 
 @Module({
@@ -22,6 +23,7 @@ import { envValidationSchema } from "./config/env.validation";
     StorageModule,
     CommercantsModule,
     VitrineSpacesModule,
+    DiscoveryModule,
     HealthModule,
     // Modules à venir : UsersModule (admin), AnnonceursModule,
     // ReservationsModule, PaymentsModule, ChatModule,

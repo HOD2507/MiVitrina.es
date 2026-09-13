@@ -18,6 +18,9 @@ export async function SiteHeader() {
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          <Button variant="ghost" size="sm" className="hidden sm:inline-flex" render={<Link href="/recherche" />}>
+            {t("search")}
+          </Button>
           <ThemeToggle />
           <LocaleSwitcher />
           <Button variant="ghost" size="sm" render={<Link href="/login" />}>
