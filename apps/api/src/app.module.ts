@@ -6,6 +6,7 @@ import { MailModule } from "./mail/mail.module";
 import { AuthModule } from "./auth/auth.module";
 import { StorageModule } from "./storage/storage.module";
 import { CommercantsModule } from "./commercants/commercants.module";
+import { VitrineSpacesModule } from "./vitrine-spaces/vitrine-spaces.module";
 import { envValidationSchema } from "./config/env.validation";
 
 @Module({
@@ -20,9 +21,10 @@ import { envValidationSchema } from "./config/env.validation";
     AuthModule,
     StorageModule,
     CommercantsModule,
+    VitrineSpacesModule,
     HealthModule,
     // Modules à venir : UsersModule (admin), AnnonceursModule,
-    // VitrineSpacesModule, ReservationsModule, PaymentsModule, ChatModule,
+    // ReservationsModule, PaymentsModule, ChatModule,
     // NotificationsModule, AdminModule...
   ],
 })

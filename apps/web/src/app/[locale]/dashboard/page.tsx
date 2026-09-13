@@ -1,5 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { redirect } from "@/i18n/navigation";
+import { redirect, Link } from "@/i18n/navigation";
 import { UserRole, VerificationStatus } from "@mivitrina/shared";
 import { serverApiGet } from "@/lib/api-server";
 import type { AuthUser } from "@/lib/types";
@@ -7,6 +7,8 @@ import { AppHeader } from "@/components/app-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Store } from "lucide-react";
 import { LogoutButton } from "./logout-button";
 import { VerificationUpload } from "./verification-upload";
 
@@ -58,7 +60,7 @@ export default async function DashboardPage() {
 
         {authedUser.role === UserRole.COMMERCANT && commercantProfile && (
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-4 space-y-0">
               <CardTitle className="flex items-center gap-2 text-lg">
                 {commercantProfile.businessName}
                 {commercantProfile.verificationStatus === VerificationStatus.VERIFIED && (
@@ -71,6 +73,10 @@ export default async function DashboardPage() {
                   <Badge variant="destructive">{t("rejectedBadge")}</Badge>
                 )}
               </CardTitle>
+              <Button size="sm" variant="outline" render={<Link href="/dashboard/vitrine" />}>
+                <Store className="size-4" />
+                Ma vitrine
+              </Button>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               {commercantProfile.verificationStatus === VerificationStatus.REJECTED && (
