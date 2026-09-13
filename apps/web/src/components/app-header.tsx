@@ -1,5 +1,6 @@
 import { Link } from "@/i18n/navigation";
 import { LocaleSwitcher } from "@/components/locale-switcher";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 /** En-tête minimal pour les pages authentifiées (pas de liens connexion/inscription). */
 export function AppHeader() {
@@ -12,7 +13,10 @@ export function AppHeader() {
           </span>
           <span className="text-lg">MiVitrina</span>
         </Link>
-        <LocaleSwitcher />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <LocaleSwitcher />
+        </div>
       </div>
     </header>
   );

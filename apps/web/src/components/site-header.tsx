@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { LocaleSwitcher } from "@/components/locale-switcher";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export async function SiteHeader() {
   const t = await getTranslations("Nav");
@@ -16,7 +17,8 @@ export async function SiteHeader() {
           <span className="text-lg">MiVitrina</span>
         </Link>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <ThemeToggle />
           <LocaleSwitcher />
           <Button variant="ghost" size="sm" render={<Link href="/login" />}>
             {t("login")}

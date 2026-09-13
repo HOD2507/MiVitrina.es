@@ -5,6 +5,7 @@ import { getMessages } from "next-intl/server";
 import { hasLocale } from "next-intl";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -39,9 +40,11 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} className={jakarta.variable}>
+    <html lang={locale} className={jakarta.variable} suppressHydrationWarning>
       <body>
-        <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

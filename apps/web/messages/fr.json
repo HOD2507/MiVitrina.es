@@ -7,15 +7,24 @@
     "tagline": "Louer une vitrine n'a jamais été aussi simple."
   },
   "Landing": {
+    "eyebrow": "Disponible en France et en Espagne",
     "title": "Louez votre vitrine, gagnez un revenu passif",
     "subtitle": "MiVitrina connecte les commerces avec vitrine et les annonceurs qui cherchent un espace publicitaire physique.",
     "ctaCommercant": "Je suis commerçant",
     "ctaAnnonceur": "Je suis annonceur",
+    "trustNoUpfrontTitle": "0€ à avancer",
+    "trustNoUpfrontDesc": "Le commerçant ne débourse jamais rien pour prêter son espace.",
+    "trustVerifiedTitle": "Vérification manuelle",
+    "trustVerifiedDesc": "Chaque commerce est vérifié avant de pouvoir publier une annonce.",
+    "trustSecurePaymentTitle": "Paiement sécurisé",
+    "trustSecurePaymentDesc": "L'argent est bloqué en ligne jusqu'à la pose de l'affiche.",
     "howItWorksTitle": "Comment ça marche",
     "cardCommercantTitle": "Vous avez une vitrine ?",
     "cardCommercantDesc": "Publiez votre espace, fixez vos tarifs par taille d'affiche et touchez un revenu passif sans rien avancer.",
     "cardAnnonceurTitle": "Vous cherchez de la visibilité ?",
-    "cardAnnonceurDesc": "Trouvez un commerce près de chez vous, réservez un emplacement et payez en ligne en toute sécurité."
+    "cardAnnonceurDesc": "Trouvez un commerce près de chez vous, réservez un emplacement et payez en ligne en toute sécurité.",
+    "finalCtaTitle": "Prêt à commencer ?",
+    "finalCtaSubtitle": "Créez votre compte en quelques minutes, c'est gratuit et sans engagement."
   },
   "Auth": {
     "login": {

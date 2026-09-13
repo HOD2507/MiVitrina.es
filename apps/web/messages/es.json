@@ -7,15 +7,24 @@
     "tagline": "Alquilar un escaparate nunca ha sido tan sencillo."
   },
   "Landing": {
+    "eyebrow": "Disponible en Francia y España",
     "title": "Alquila tu escaparate, gana ingresos pasivos",
     "subtitle": "MiVitrina conecta a los comercios con escaparate con los anunciantes que buscan un espacio publicitario físico.",
     "ctaCommercant": "Soy comerciante",
     "ctaAnnonceur": "Soy anunciante",
+    "trustNoUpfrontTitle": "0€ por adelantado",
+    "trustNoUpfrontDesc": "El comerciante nunca paga nada por ceder su espacio.",
+    "trustVerifiedTitle": "Verificación manual",
+    "trustVerifiedDesc": "Cada comercio se verifica antes de poder publicar un anuncio.",
+    "trustSecurePaymentTitle": "Pago seguro",
+    "trustSecurePaymentDesc": "El dinero queda retenido en línea hasta que se coloca el cartel.",
     "howItWorksTitle": "Cómo funciona",
     "cardCommercantTitle": "¿Tienes un escaparate?",
     "cardCommercantDesc": "Publica tu espacio, fija tus tarifas por tamaño de cartel y consigue ingresos pasivos sin adelantar nada.",
     "cardAnnonceurTitle": "¿Buscas visibilidad?",
-    "cardAnnonceurDesc": "Encuentra un comercio cerca de ti, reserva un espacio y paga en línea con total seguridad."
+    "cardAnnonceurDesc": "Encuentra un comercio cerca de ti, reserva un espacio y paga en línea con total seguridad.",
+    "finalCtaTitle": "¿Listo para empezar?",
+    "finalCtaSubtitle": "Crea tu cuenta en pocos minutos, es gratis y sin compromiso."
   },
   "Auth": {
     "login": {
