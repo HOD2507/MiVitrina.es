@@ -5,9 +5,15 @@ import { serverApiGet } from "@/lib/api-server";
 import type { AuthUser, Reservation } from "@/lib/types";
 import { AppHeader } from "@/components/app-header";
 import { ReservationCard } from "@/components/reservation-card";
+import { PaymentStatusToast } from "./payment-status-toast";
 
-export default async function MesReservationsPage() {
+export default async function MesReservationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ payment?: string }>;
+}) {
   const locale = await getLocale();
+  const params = await searchParams;
 
   const { data: user, status } = await serverApiGet<AuthUser>("/auth/me");
   if (status === 401 || !user) {
@@ -22,6 +28,7 @@ export default async function MesReservationsPage() {
   return (
     <div className="flex min-h-screen flex-col bg-muted/30">
       <AppHeader />
+      <PaymentStatusToast payment={params.payment} />
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10">
         <h1 className="mb-6 text-2xl font-bold">Mes réservations</h1>
 

@@ -116,6 +116,12 @@ export interface PublicCommerceProfile {
   spaces: VitrineSpace[];
 }
 
+/** Résultat de GET /commercants/me/stripe/status. */
+export interface StripeStatus {
+  connected: boolean;
+  onboardingComplete: boolean;
+}
+
 export interface ReservationTransaction {
   amount: string;
   commissionRate: string;

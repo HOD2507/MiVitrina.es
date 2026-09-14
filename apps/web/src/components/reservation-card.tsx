@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { CalendarDays, Loader2, MapPin, Store } from "lucide-react";
+import { CalendarDays, CreditCard, Loader2, MapPin, Store } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
 import { api, ApiError } from "@/lib/api-client";
 import type { Reservation } from "@/lib/types";
-import { ReservationStatus } from "@mivitrina/shared";
+import { ReservationStatus, TransactionStatus } from "@mivitrina/shared";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,13 @@ const DURATION_LABELS: Record<string, string> = {
   LIBRE: "durée libre",
 };
 
+/** Badge de statut de paiement — affiché seulement pour les statuts qui apportent une info utile. */
+const PAYMENT_BADGE: Partial<Record<TransactionStatus, { label: string; className: string }>> = {
+  PAID: { label: "Payée", className: "bg-green-600 text-white" },
+  REFUNDED: { label: "Remboursée", className: "" },
+  PARTIALLY_REFUNDED: { label: "Partiellement remboursée", className: "" },
+};
+
 interface ReservationCardProps {
   reservation: Reservation;
   viewer: "annonceur" | "commercant";
@@ -50,9 +57,27 @@ export function ReservationCard({ reservation, viewer, onUpdated }: ReservationC
   const [rejectionReason, setRejectionReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const [paying, setPaying] = useState(false);
+
   const statusInfo = STATUS_LABELS[reservation.status];
+  const paymentBadge = PAYMENT_BADGE[reservation.transaction.status];
   const canRespond = viewer === "commercant" && reservation.status === ReservationStatus.PENDING_VALIDATION;
   const canCancel = viewer === "annonceur" && reservation.status === ReservationStatus.PENDING_VALIDATION;
+  const canPay =
+    viewer === "annonceur" &&
+    reservation.status === ReservationStatus.PENDING_VALIDATION &&
+    reservation.transaction.status === TransactionStatus.PENDING;
+
+  async function handlePay() {
+    setPaying(true);
+    try {
+      const { url } = await api.post<{ url: string }>(`/reservations/${reservation.id}/checkout`);
+      window.location.href = url;
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Impossible de démarrer le paiement.");
+      setPaying(false);
+    }
+  }
 
   async function respond(action: "approve" | "reject") {
     setSubmitting(true);
@@ -107,7 +132,10 @@ export function ReservationCard({ reservation, viewer, onUpdated }: ReservationC
             )}
           </p>
         </div>
-        <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
+        <div className="flex flex-col items-end gap-1.5">
+          <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
+          {paymentBadge && <Badge className={paymentBadge.className}>{paymentBadge.label}</Badge>}
+        </div>
       </CardHeader>
 
       <CardContent className="flex flex-col gap-3">
@@ -133,9 +161,26 @@ export function ReservationCard({ reservation, viewer, onUpdated }: ReservationC
           </Alert>
         )}
 
+        {canPay && (
+          <Button size="sm" disabled={paying} onClick={handlePay} className="self-start">
+            {paying ? <Loader2 className="size-3.5 animate-spin" /> : <CreditCard className="size-3.5" />}
+            Payer {Number(reservation.transaction.amount).toFixed(2)} €
+          </Button>
+        )}
+
+        {canRespond && reservation.transaction.status !== TransactionStatus.PAID && (
+          <p className="text-sm text-muted-foreground">
+            En attente du paiement de l'annonceur — vous ne pouvez pas encore accepter cette demande.
+          </p>
+        )}
+
         {canRespond && (
           <div className="flex gap-2">
-            <Button size="sm" disabled={submitting} onClick={() => respond("approve")}>
+            <Button
+              size="sm"
+              disabled={submitting || reservation.transaction.status !== TransactionStatus.PAID}
+              onClick={() => respond("approve")}
+            >
               {submitting && <Loader2 className="size-3.5 animate-spin" />}
               Accepter
             </Button>

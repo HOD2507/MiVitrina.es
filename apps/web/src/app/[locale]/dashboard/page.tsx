@@ -2,7 +2,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { redirect, Link } from "@/i18n/navigation";
 import { UserRole, VerificationStatus } from "@mivitrina/shared";
 import { serverApiGet } from "@/lib/api-server";
-import type { AuthUser } from "@/lib/types";
+import type { AuthUser, StripeStatus } from "@/lib/types";
 import { AppHeader } from "@/components/app-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Store, CalendarCheck, Search } from "lucide-react";
 import { LogoutButton } from "./logout-button";
 import { VerificationUpload } from "./verification-upload";
+import { StripeConnectCard } from "./stripe-connect-card";
 
 const ROLE_LABELS: Record<UserRole, string> = {
   [UserRole.ADMIN]: "Administrateur",
@@ -23,8 +24,13 @@ const ROLE_LABELS: Record<UserRole, string> = {
  * dashboards dédiés par rôle (ADMIN/ANNONCEUR/COMMERCANT) à l'étape "pages".
  * Protection : Server Component, redirige vers /login si /auth/me échoue.
  */
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ stripe?: string }>;
+}) {
   const t = await getTranslations("Dashboard");
+  const params = await searchParams;
   const { data: user, status } = await serverApiGet<AuthUser>("/auth/me");
 
   if (status === 401 || !user) {
@@ -34,6 +40,12 @@ export default async function DashboardPage() {
 
   const authedUser = user as AuthUser;
   const commercantProfile = authedUser.commercantProfile;
+
+  let stripeStatus: StripeStatus | null = null;
+  if (authedUser.role === UserRole.COMMERCANT) {
+    const res = await serverApiGet<StripeStatus>("/commercants/me/stripe/status");
+    stripeStatus = res.data ?? { connected: false, onboardingComplete: false };
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-muted/30">
@@ -106,6 +118,10 @@ export default async function DashboardPage() {
               {commercantProfile.verificationStatus !== VerificationStatus.VERIFIED && <VerificationUpload />}
             </CardContent>
           </Card>
+        )}
+
+        {authedUser.role === UserRole.COMMERCANT && stripeStatus && (
+          <StripeConnectCard status={stripeStatus} justReturned={params.stripe === "return"} />
         )}
 
         {authedUser.role === UserRole.ANNONCEUR && (
