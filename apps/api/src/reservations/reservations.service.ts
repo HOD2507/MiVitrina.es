@@ -8,6 +8,7 @@ import {
 } from "@mivitrina/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { StorageService } from "../storage/storage.service";
+import { StripeService } from "../stripe/stripe.service";
 import { CreateReservationDto } from "./dto/create-reservation.dto";
 import { RespondReservationDto } from "./dto/respond-reservation.dto";
 
@@ -18,11 +19,17 @@ const BLOCKING_STATUSES: ReservationStatus[] = [
   ReservationStatus.ACTIVE,
 ];
 
+/** Convertit un montant euros (Decimal Prisma/number/string) en centimes entiers pour l'API Stripe. */
+function toCents(amount: { toString(): string } | number): number {
+  return Math.round(Number(amount) * 100);
+}
+
 @Injectable()
 export class ReservationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly stripe: StripeService,
   ) {}
 
   /**
@@ -130,7 +137,7 @@ export class ReservationsService {
   private async getOwnReservationOrThrow(userId: string, reservationId: string) {
     const reservation = await this.prisma.reservation.findUnique({
       where: { id: reservationId },
-      include: { annonceurProfile: true },
+      include: { annonceurProfile: { include: { user: true } }, transaction: true },
     });
     if (!reservation || reservation.annonceurProfile.userId !== userId) {
       throw new NotFoundException("Réservation introuvable.");
@@ -157,10 +164,42 @@ export class ReservationsService {
     });
   }
 
+  /**
+   * Crée une session Stripe Checkout hébergée pour régler la réservation.
+   * L'argent est encaissé sur le compte PLATEFORME (pas de virement direct
+   * au commerçant ici) : il ne sera transféré qu'à l'approbation de la
+   * demande (voir `respond`), ce qui permet un remboursement intégral et
+   * immédiat si le commerçant refuse.
+   */
+  async createCheckoutSession(userId: string, reservationId: string, webAppUrl: string) {
+    const reservation = await this.getOwnReservationOrThrow(userId, reservationId);
+    if (reservation.status !== ReservationStatus.PENDING_VALIDATION) {
+      throw new BadRequestException("Cette réservation n'est plus modifiable.");
+    }
+    if (reservation.transaction!.status === TransactionStatus.PAID) {
+      throw new BadRequestException("Cette réservation est déjà payée.");
+    }
+
+    const session = await this.stripe.createCheckoutSession({
+      amountCents: toCents(reservation.transaction!.amount),
+      reservationId,
+      customerEmail: reservation.annonceurProfile.user.email,
+      successUrl: `${webAppUrl}/mes-reservations?payment=success`,
+      cancelUrl: `${webAppUrl}/mes-reservations?payment=cancelled`,
+    });
+
+    return { url: session.url };
+  }
+
   async cancel(userId: string, reservationId: string) {
     const reservation = await this.getOwnReservationOrThrow(userId, reservationId);
     if (reservation.status !== ReservationStatus.PENDING_VALIDATION) {
       throw new BadRequestException("Seule une demande en attente peut être annulée.");
+    }
+
+    const wasPaid = reservation.transaction!.status === TransactionStatus.PAID;
+    if (wasPaid && reservation.transaction!.stripePaymentIntentId) {
+      await this.stripe.refund(reservation.transaction!.stripePaymentIntentId);
     }
 
     return this.prisma.reservation.update({
@@ -170,7 +209,11 @@ export class ReservationsService {
         cancelledAt: new Date(),
         cancelledById: userId,
         cancellationReason: "Annulée par l'annonceur avant réponse du commerçant.",
-        transaction: { update: { status: TransactionStatus.FAILED } },
+        transaction: {
+          update: wasPaid
+            ? { status: TransactionStatus.REFUNDED, refundedAmount: reservation.transaction!.amount }
+            : { status: TransactionStatus.FAILED },
+        },
       },
     });
   }
@@ -213,7 +256,7 @@ export class ReservationsService {
   async respond(userId: string, reservationId: string, dto: RespondReservationDto) {
     const reservation = await this.prisma.reservation.findUnique({
       where: { id: reservationId },
-      include: { space: { include: { commercantProfile: true } } },
+      include: { space: { include: { commercantProfile: true } }, transaction: true },
     });
     if (!reservation || reservation.space.commercantProfile.userId !== userId) {
       throw new NotFoundException("Réservation introuvable.");
@@ -226,6 +269,23 @@ export class ReservationsService {
       if (!reservation.posterFileUrl) {
         throw new BadRequestException("L'annonceur n'a pas encore envoyé son affiche.");
       }
+      if (reservation.transaction!.status !== TransactionStatus.PAID) {
+        throw new BadRequestException("L'annonceur n'a pas encore réglé cette réservation.");
+      }
+
+      const { commercantProfile } = reservation.space;
+      if (!commercantProfile.stripeAccountId || !commercantProfile.stripeOnboardingComplete) {
+        throw new BadRequestException(
+          "Connectez votre compte Stripe (voir votre tableau de bord) avant d'accepter des réservations payantes.",
+        );
+      }
+
+      const transfer = await this.stripe.createTransfer({
+        amountCents: toCents(reservation.transaction!.commercantPayoutAmount),
+        destinationAccountId: commercantProfile.stripeAccountId,
+        reservationId,
+      });
+
       return this.prisma.reservation.update({
         where: { id: reservationId },
         data: {
@@ -234,11 +294,17 @@ export class ReservationsService {
           moderationNote: dto.moderationNote,
           moderatedById: userId,
           moderatedAt: new Date(),
+          transaction: { update: { stripeTransferId: transfer.id } },
         },
       });
     }
 
     // action === "reject"
+    const wasPaid = reservation.transaction!.status === TransactionStatus.PAID;
+    if (wasPaid && reservation.transaction!.stripePaymentIntentId) {
+      await this.stripe.refund(reservation.transaction!.stripePaymentIntentId);
+    }
+
     return this.prisma.reservation.update({
       where: { id: reservationId },
       data: {
@@ -250,12 +316,23 @@ export class ReservationsService {
         cancelledAt: new Date(),
         cancelledById: userId,
         cancellationReason: dto.rejectionReason,
-        // Rien n'a encore été réellement débité (paiement Stripe pas
-        // encore branché) : FAILED documente qu'aucun encaissement
-        // n'aura lieu, plutôt que REFUNDED qui impliquerait un
-        // remboursement d'argent effectivement perçu.
-        transaction: { update: { status: TransactionStatus.FAILED } },
+        transaction: {
+          update: wasPaid
+            ? { status: TransactionStatus.REFUNDED, refundedAmount: reservation.transaction!.amount }
+            : // Rien n'a encore été débité : FAILED documente qu'aucun
+              // encaissement n'aura lieu, plutôt que REFUNDED qui
+              // impliquerait un remboursement d'argent effectivement perçu.
+              { status: TransactionStatus.FAILED },
+        },
       },
+    });
+  }
+
+  /** Appelé par le webhook Stripe `checkout.session.completed`. */
+  async markPaid(reservationId: string, paymentIntentId: string) {
+    await this.prisma.transaction.update({
+      where: { reservationId },
+      data: { status: TransactionStatus.PAID, paidAt: new Date(), stripePaymentIntentId: paymentIntentId },
     });
   }
 

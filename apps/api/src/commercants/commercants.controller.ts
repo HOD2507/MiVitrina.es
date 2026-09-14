@@ -13,6 +13,7 @@ import {
 import { UserRole, VerificationStatus } from "@mivitrina/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { StorageService, UploadPurpose } from "../storage/storage.service";
+import { StripeService } from "../stripe/stripe.service";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { CurrentUser, AuthenticatedUser } from "../auth/decorators/current-user.decorator";
 import { UpdateVerificationDocumentDto } from "./dto/update-verification-document.dto";
@@ -25,6 +26,7 @@ export class CommercantsController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly stripe: StripeService,
   ) {}
 
   /**
@@ -81,6 +83,7 @@ export class CommercantsController {
         city: profile.city,
         postalCode: profile.postalCode,
         verificationStatus: profile.verificationStatus,
+        stripeOnboardingComplete: profile.stripeOnboardingComplete,
       },
       showcasePhotos,
       spaces,
@@ -167,5 +170,55 @@ export class CommercantsController {
 
     const key = this.storage.getKeyFromFileUrl(profile.verificationDocumentUrl);
     return { readUrl: await this.storage.getPresignedReadUrl(key) };
+  }
+
+  /**
+   * Crée (au premier appel) le compte Stripe Express du commerçant puis
+   * renvoie un lien d'onboarding à usage unique. Rappelable tant que
+   * l'onboarding n'est pas terminé (Stripe régénère un lien frais).
+   */
+  @Post("me/stripe/onboarding")
+  async createStripeOnboardingLink(@CurrentUser() user: AuthenticatedUser) {
+    const profile = await this.prisma.commercantProfile.findUnique({ where: { userId: user.id } });
+    if (!profile) {
+      throw new BadRequestException("Profil commerçant introuvable.");
+    }
+
+    let stripeAccountId = profile.stripeAccountId;
+    if (!stripeAccountId) {
+      stripeAccountId = await this.stripe.createExpressAccount(user.email, profile.country);
+      await this.prisma.commercantProfile.update({ where: { id: profile.id }, data: { stripeAccountId } });
+    }
+
+    const webAppUrl = process.env.WEB_APP_URL ?? "http://localhost:3000";
+    const returnUrl = `${webAppUrl}/dashboard?stripe=return`;
+    const url = await this.stripe.createAccountLink(stripeAccountId, returnUrl, returnUrl);
+    return { url };
+  }
+
+  /**
+   * Relit le statut réel auprès de Stripe et met à jour la base — utile
+   * juste après le retour d'onboarding, sans attendre le webhook
+   * `account.updated` (qui met généralement à jour la même donnée, mais
+   * pas forcément avant que l'utilisateur revienne sur la page).
+   */
+  @Get("me/stripe/status")
+  async getStripeStatus(@CurrentUser() user: AuthenticatedUser) {
+    const profile = await this.prisma.commercantProfile.findUnique({ where: { userId: user.id } });
+    if (!profile?.stripeAccountId) {
+      return { connected: false, onboardingComplete: false };
+    }
+
+    const { chargesEnabled, payoutsEnabled } = await this.stripe.getAccountStatus(profile.stripeAccountId);
+    const onboardingComplete = chargesEnabled && payoutsEnabled;
+
+    if (onboardingComplete !== profile.stripeOnboardingComplete) {
+      await this.prisma.commercantProfile.update({
+        where: { id: profile.id },
+        data: { stripeOnboardingComplete: onboardingComplete },
+      });
+    }
+
+    return { connected: true, onboardingComplete };
   }
 }

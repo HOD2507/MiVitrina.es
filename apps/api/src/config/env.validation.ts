@@ -39,4 +39,11 @@ export const envValidationSchema = Joi.object({
   /// true pour MinIO (accès path-style obligatoire) ; false pour un vrai
   /// bucket AWS S3 (accès virtual-hosted-style par défaut).
   S3_FORCE_PATH_STYLE: Joi.boolean().default(true),
+
+  /// Paiement (Stripe Connect, comptes Express). Clés de test tant que
+  /// le compte Stripe n'est pas passé en production.
+  STRIPE_SECRET_KEY: Joi.string().required(),
+  /// Secret de signature des webhooks — fourni par `stripe listen` en
+  /// dev local, ou par le endpoint webhook créé dans le dashboard en prod.
+  STRIPE_WEBHOOK_SECRET: Joi.string().required(),
 }).unknown(true);

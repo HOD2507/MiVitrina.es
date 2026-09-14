@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { UserRole } from "@mivitrina/shared";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { CurrentUser, AuthenticatedUser } from "../auth/decorators/current-user.decorator";
@@ -9,12 +10,23 @@ import { ConfirmPhotoDto } from "../commercants/dto/confirm-photo.dto";
 
 @Controller("reservations")
 export class ReservationsController {
-  constructor(private readonly reservations: ReservationsService) {}
+  constructor(
+    private readonly reservations: ReservationsService,
+    private readonly config: ConfigService,
+  ) {}
 
   @Roles(UserRole.ANNONCEUR)
   @Post()
   create(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateReservationDto) {
     return this.reservations.create(user.id, dto);
+  }
+
+  /** Démarre le paiement : renvoie l'URL d'une session Stripe Checkout hébergée. */
+  @Roles(UserRole.ANNONCEUR)
+  @Post(":id/checkout")
+  createCheckout(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
+    const webAppUrl = this.config.get<string>("WEB_APP_URL") ?? "http://localhost:3000";
+    return this.reservations.createCheckoutSession(user.id, id, webAppUrl);
   }
 
   @Roles(UserRole.ANNONCEUR)

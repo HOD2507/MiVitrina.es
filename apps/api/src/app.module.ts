@@ -9,6 +9,7 @@ import { CommercantsModule } from "./commercants/commercants.module";
 import { VitrineSpacesModule } from "./vitrine-spaces/vitrine-spaces.module";
 import { DiscoveryModule } from "./discovery/discovery.module";
 import { ReservationsModule } from "./reservations/reservations.module";
+import { WebhooksModule } from "./webhooks/webhooks.module";
 import { envValidationSchema } from "./config/env.validation";
 
 @Module({
@@ -26,6 +27,7 @@ import { envValidationSchema } from "./config/env.validation";
     VitrineSpacesModule,
     DiscoveryModule,
     ReservationsModule,
+    WebhooksModule,
     HealthModule,
     // Modules à venir : UsersModule (admin), AnnonceursModule,
     // PaymentsModule, ChatModule, NotificationsModule, AdminModule...

@@ -185,12 +185,9 @@ réservation → transaction avec calcul de commission depuis `PlatformSettings`
   d'appartenance que les autres photos), annulation par l'annonceur
   (uniquement tant que `PENDING_VALIDATION`), réponse du commerçant
   (`approve`/`reject` — approuver exige qu'une affiche ait été envoyée).
-- **Paiement non encore branché** (arrive à l'étape suivante) : chaque
-  réservation crée quand même une `Transaction` (montant, commission
-  figée depuis `PlatformSettings`) pour que l'intégration Stripe n'ait
-  plus qu'à brancher le vrai encaissement dessus. Un refus commerçant
-  passe la transaction en `FAILED` (rien n'a été réellement débité),
-  pas en `REFUNDED` (qui impliquerait un remboursement d'argent perçu).
+- Chaque réservation crée une `Transaction` (montant, commission figée
+  depuis `PlatformSettings`) — voir l'étape suivante pour le paiement
+  réel désormais branché dessus (encaissement, transfert, remboursement).
 - Bug réel trouvé en testant un vrai scénario "réservation d'un mois" à
   cheval sur le changement d'heure d'octobre : `setMonth()`/`setDate()`
   opèrent en heure LOCALE alors qu'une date ISO ("2026-10-01") est parsée
@@ -201,3 +198,58 @@ réservation → transaction avec calcul de commission depuis `PlatformSettings`
   composant `ReservationCard` (badges de statut, actions selon le rôle et
   l'état, `router.refresh()` après chaque action pour resynchroniser avec
   le Server Component parent).
+
+### Paiement Stripe Connect (étape 9)
+
+- `apps/api/src/stripe/stripe.service.ts` : fine couche autour du SDK
+  `stripe` — comptes Express (`createExpressAccount`), lien d'onboarding
+  hébergé (`createAccountLink`), statut live du compte
+  (`getAccountStatus`), session Stripe Checkout hébergée
+  (`createCheckoutSession`), virement vers le commerçant
+  (`createTransfer`), remboursement (`refund`) et vérification de
+  signature webhook (`constructWebhookEvent`).
+- **Modèle « separate charge and transfer »** : l'annonceur paie via une
+  Checkout Session qui encaisse sur le solde de la PLATEFORME (pas de
+  `on_behalf_of` ni de compte connecté à l'étape du paiement). L'argent
+  n'est viré au commerçant (`Transfer`, pour `commercantPayoutAmount`
+  uniquement — la commission ne quitte jamais le solde plateforme) qu'à
+  l'approbation de la demande. Ça permet un remboursement intégral et
+  immédiat si le commerçant refuse, sans jamais avoir à réclamer de
+  l'argent déjà transféré.
+- `CommercantsController` expose `POST /commercants/me/stripe/onboarding`
+  (crée le compte Express au premier appel, sinon régénère juste un lien
+  frais) et `GET /commercants/me/stripe/status` (relit l'état réel
+  auprès de Stripe et resynchronise `stripeOnboardingComplete` en base —
+  utile juste après le retour d'onboarding, sans attendre le webhook).
+- `ReservationsService` : `createCheckoutSession` (vérifie propriété +
+  `PENDING_VALIDATION` + pas déjà payée) ; `respond()` en `approve` exige
+  désormais `transaction.status === PAID` ET un onboarding Stripe
+  commerçant complet avant de créer le `Transfer` ; `respond()` en
+  `reject` et `cancel()` déclenchent un vrai `refund()` Stripe (statut
+  `REFUNDED`, `refundedAmount` renseigné) **seulement si** de l'argent a
+  réellement été encaissé (`transaction.status === PAID`) — sinon on
+  reste sur `FAILED` (rien à rembourser).
+- `apps/api/src/webhooks/webhooks.controller.ts` (`POST /api/webhooks/stripe`,
+  `@Public()`) : `checkout.session.completed` marque la transaction
+  `PAID` (`markPaid` sur `ReservationsService`) ; `account.updated`
+  resynchronise `stripeOnboardingComplete`. Nécessite
+  `NestFactory.create(AppModule, { rawBody: true })` dans `main.ts` pour
+  que `req.rawBody` (Buffer non parsé) soit disponible : la vérification
+  de signature Stripe échoue sur un body déjà repassé en JSON.
+- Montants : la base stocke des `Decimal` en euros, Stripe attend des
+  centimes entiers — conversion via un helper `toCents()` à chaque appel
+  Stripe (`Math.round(Number(amount) * 100)`).
+- Testé de bout en bout en local avec le vrai CLI Stripe
+  (`stripe listen --forward-to localhost:4000/api/webhooks/stripe`, avec
+  `--api-key` pour éviter le flow de login navigateur) et un vrai
+  paiement carte de test (4242 4242 4242 4242) via Playwright sur la
+  page Checkout hébergée réelle : session créée → paiement → webhook
+  reçu et vérifié → `Transaction.status = PAID` avec le vrai
+  `stripePaymentIntentId` ; puis refus commerçant → vrai `Refund` Stripe
+  confirmé côté API Stripe → `Transaction.status = REFUNDED`. Le
+  virement (`Transfer`) vers le commerçant n'a pas encore pu être testé
+  en conditions réelles : le compte Stripe de test utilisé n'a pas
+  Connect activé (erreur Stripe "You can only create new accounts if
+  you've signed up for Connect") — à activer sur
+  https://dashboard.stripe.com/connect avant de pouvoir onboarder un
+  compte Express et tester un virement réel.
