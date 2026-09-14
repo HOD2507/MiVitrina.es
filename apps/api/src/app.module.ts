@@ -11,6 +11,7 @@ import { DiscoveryModule } from "./discovery/discovery.module";
 import { ReservationsModule } from "./reservations/reservations.module";
 import { WebhooksModule } from "./webhooks/webhooks.module";
 import { ChatModule } from "./chat/chat.module";
+import { AdminModule } from "./admin/admin.module";
 import { envValidationSchema } from "./config/env.validation";
 
 @Module({
@@ -30,6 +31,7 @@ import { envValidationSchema } from "./config/env.validation";
     ReservationsModule,
     WebhooksModule,
     ChatModule,
+    AdminModule,
     HealthModule,
     // Modules à venir : UsersModule (admin), AnnonceursModule,
     // PaymentsModule, ChatModule, NotificationsModule, AdminModule...

@@ -9,6 +9,7 @@ import type {
   ReservationStatus,
   ModerationStatus,
   TransactionStatus,
+  DisputeStatus,
 } from "@mivitrina/shared";
 
 /** Reflète la sortie de AuthService.toSafeUser côté API (sans passwordHash/tokenVersion). */
@@ -178,4 +179,54 @@ export interface ChatMessage {
   flagReason: string | null;
   readAt: string | null;
   createdAt: string;
+}
+
+/** Résultat de GET /admin/stats. */
+export interface AdminStats {
+  totalCommercants: number;
+  totalAnnonceurs: number;
+  pendingVerifications: number;
+  openDisputes: number;
+  activeReservations: number;
+  totalCommissionRevenue: number;
+}
+
+/** Résultat de GET /admin/commercants/pending-verification. */
+export interface PendingVerification {
+  id: string;
+  businessName: string;
+  country: Country;
+  businessIdType: BusinessIdType;
+  businessIdNumber: string;
+  city: string;
+  email: string;
+  createdAt: string;
+  documentUrl: string | null;
+}
+
+/** Résultat de GET/PATCH /admin/settings. */
+export interface PlatformSettings {
+  id: string;
+  commissionRate: string;
+  freeCancellationHours: number;
+  updatedAt: string;
+}
+
+/** Résultat de GET /admin/disputes. */
+export interface AdminDispute {
+  id: string;
+  reservationId: string;
+  reason: string;
+  status: DisputeStatus;
+  resolution: string | null;
+  refundAmount: string | null;
+  createdAt: string;
+  raisedBy: { email: string; role: UserRole };
+  reservation: {
+    id: string;
+    status: ReservationStatus;
+    space: { name: string; commercantProfile: { businessName: string } };
+    annonceurProfile: { user: { email: string } };
+    transaction: { amount: string; status: TransactionStatus; stripePaymentIntentId: string | null };
+  };
 }

@@ -39,6 +39,12 @@ export default async function DashboardPage({
   }
 
   const authedUser = user as AuthUser;
+
+  if (authedUser.role === UserRole.ADMIN) {
+    const locale = await getLocale();
+    redirect({ href: "/admin", locale });
+  }
+
   const commercantProfile = authedUser.commercantProfile;
 
   let stripeStatus: StripeStatus | null = null;

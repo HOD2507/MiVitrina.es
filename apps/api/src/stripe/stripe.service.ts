@@ -92,8 +92,12 @@ export class StripeService {
     });
   }
 
-  async refund(paymentIntentId: string) {
-    return this.client.refunds.create({ payment_intent: paymentIntentId });
+  /** `amountCents` omis = remboursement intégral ; sinon remboursement partiel (ex: résolution de litige). */
+  async refund(paymentIntentId: string, amountCents?: number) {
+    return this.client.refunds.create({
+      payment_intent: paymentIntentId,
+      ...(amountCents !== undefined ? { amount: amountCents } : {}),
+    });
   }
 
   constructWebhookEvent(rawBody: Buffer, signature: string) {

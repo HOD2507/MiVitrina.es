@@ -306,3 +306,44 @@ réservation → transaction avec calcul de commission depuis `PlatformSettings`
 - Testé de bout en bout (curl + Playwright, upload d'une vraie image) :
   upload avec mauvaise clé rejeté (403), cycle pose→ACTIVE, retrait,
   contestation créant bien un `Dispute` en base avec statut OPEN.
+
+### Tableau de bord admin (étape 11)
+
+- `apps/api/src/admin/` (`@Roles(UserRole.ADMIN)` sur tout le contrôleur) :
+  - `GET /admin/stats` : compteurs (commerçants, annonceurs, vérifications
+    en attente, litiges ouverts, réservations en cours) + somme des
+    commissions perçues (`Transaction.commissionAmount` sur PAID/
+    PARTIALLY_REFUNDED).
+  - `GET/PATCH /admin/commercants/pending-verification|:id/verification` :
+    seul moyen de faire passer un commerçant en VERIFIED (jusqu'ici fait
+    à la main via `psql` pendant les tests) — vérification manuelle
+    confirmée par l'utilisateur en amont du projet, cf. décision produit
+    "on peut faire ça d'abord manuellement". Renvoie une URL de lecture
+    signée vers le justificatif (bucket privé).
+  - `GET/PATCH /admin/settings` : taux de commission + délai d'annulation
+    gratuite — confirme la décision produit "c'est l'admin qui gère la
+    commission" (déjà implémentée dès la conception de `PlatformSettings`,
+    ici enfin exposée à un vrai admin plutôt que la valeur par défaut).
+  - `GET/PATCH /admin/disputes|:id/resolve` : arbitrage des litiges ouverts
+    par `confirmInstall`/`confirmRemoval`. La résolution prend une
+    décision (`RESOLVED`/`REJECTED`), une explication, un remboursement
+    optionnel (déclenche un vrai `Refund` Stripe **partiel ou total**,
+    `StripeService.refund` accepte maintenant un montant en centimes) et
+    un statut de réservation cible. **Limite connue assumée** : si le
+    commerçant avait déjà reçu son virement à l'approbation (modèle
+    "separate charge and transfer"), rembourser l'annonceur après coup
+    ne récupère pas automatiquement cet argent sur le compte connecté —
+    ça reste un ajustement manuel entre plateforme et commerçant, comme
+    dans beaucoup d'intégrations Stripe Connect réelles.
+- Frontend : `/admin` (layout protégé + onglets), vue d'ensemble (cartes
+  de stats), vérifications (liste + approuver/refuser avec motif),
+  litiges (liste + dialogue de résolution : décision, explication,
+  montant à rembourser si payé, suite de la réservation), réglages
+  (formulaire commission en % + délai d'annulation). `/dashboard` redirige
+  un ADMIN vers `/admin` (le dashboard générique ne lui sert à rien).
+- Testé de bout en bout (curl + Playwright) : accès bloqué à un
+  non-admin (403), approbation faisant baisser le compteur de
+  vérifications en attente, remboursement partiel réel via un vrai
+  paiement Stripe test (checkout complet par Playwright) confirmé côté
+  API Stripe, résolution de litige mettant à jour transaction +
+  réservation + dispute en une seule transaction logique.
