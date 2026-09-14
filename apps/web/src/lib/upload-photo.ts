@@ -10,12 +10,12 @@ const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 /**
  * Upload direct navigateur -> stockage (le fichier ne passe pas par notre
- * API) pour une photo (vitrine ou espace). Retourne la clé S3 à confirmer
- * ensuite auprès du bon endpoint (POST .../photos).
+ * API) pour une photo (vitrine, espace ou affiche). Retourne la clé S3 à
+ * confirmer ensuite auprès du bon endpoint (POST .../photos ou .../poster).
  */
 export async function uploadPhoto(
   file: File,
-  purpose: "showcase-photo" | "space-photo",
+  purpose: "showcase-photo" | "space-photo" | "poster",
 ): Promise<{ key: string }> {
   if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
     throw new Error("Format non supporté (JPG, PNG ou WEBP uniquement).");

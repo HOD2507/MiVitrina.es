@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Store } from "lucide-react";
+import { Store, CalendarCheck, Search } from "lucide-react";
 import { LogoutButton } from "./logout-button";
 import { VerificationUpload } from "./verification-upload";
 
@@ -79,6 +79,11 @@ export default async function DashboardPage() {
               </Button>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
+              <Button size="sm" variant="outline" className="self-start" render={<Link href="/dashboard/reservations" />}>
+                <CalendarCheck className="size-4" />
+                Demandes de réservation
+              </Button>
+
               {commercantProfile.verificationStatus === VerificationStatus.REJECTED && (
                 <Alert variant="destructive">
                   <AlertDescription>
@@ -99,6 +104,25 @@ export default async function DashboardPage() {
               )}
 
               {commercantProfile.verificationStatus !== VerificationStatus.VERIFIED && <VerificationUpload />}
+            </CardContent>
+          </Card>
+        )}
+
+        {authedUser.role === UserRole.ANNONCEUR && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Vos annonces</CardTitle>
+              <CardDescription>Trouvez un commerce ou suivez vos demandes de réservation.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-2">
+              <Button size="sm" render={<Link href="/recherche" />}>
+                <Search className="size-4" />
+                Rechercher un commerce
+              </Button>
+              <Button size="sm" variant="outline" render={<Link href="/mes-reservations" />}>
+                <CalendarCheck className="size-4" />
+                Mes réservations
+              </Button>
             </CardContent>
           </Card>
         )}

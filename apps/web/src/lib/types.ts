@@ -6,6 +6,9 @@ import type {
   BusinessIdType,
   PosterSizePreset,
   RentalDurationType,
+  ReservationStatus,
+  ModerationStatus,
+  TransactionStatus,
 } from "@mivitrina/shared";
 
 /** Reflète la sortie de AuthService.toSafeUser côté API (sans passwordHash/tokenVersion). */
@@ -111,4 +114,35 @@ export interface PublicCommerceProfile {
   longitude: number;
   showcasePhotos: Photo[];
   spaces: VitrineSpace[];
+}
+
+export interface ReservationTransaction {
+  amount: string;
+  commissionRate: string;
+  commissionAmount: string;
+  commercantPayoutAmount: string;
+  status: TransactionStatus;
+}
+
+/** Reflète la sortie des endpoints /reservations/* (avec relations incluses). */
+export interface Reservation {
+  id: string;
+  startDate: string;
+  endDate: string;
+  status: ReservationStatus;
+  posterUrl: string | null;
+  moderationStatus: ModerationStatus;
+  moderationNote: string | null;
+  cancellationReason: string | null;
+  createdAt: string;
+  space: {
+    id: string;
+    name: string;
+    sizePreset: PosterSizePreset;
+    customSizeLabel: string | null;
+    commercantProfile?: { id: string; businessName: string; city: string };
+  };
+  pricingOption: PricingOption;
+  transaction: ReservationTransaction;
+  annonceurProfile?: { companyName: string | null; user: { email: string } };
 }

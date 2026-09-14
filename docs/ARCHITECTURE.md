@@ -113,7 +113,7 @@ réservation → transaction avec calcul de commission depuis `PlatformSettings`
 5. ✅ Système de design (Tailwind v4 + shadcn/ui) + refonte visuelle landing/auth/dashboard
 6. ✅ Page commerçant "Ma vitrine" (espaces, tarifs, photos)
 7. ✅ Recherche géolocalisée annonceur + fiche commerce
-8. Réservation + upload affiche + modération basique
+8. ✅ Réservation + upload affiche + modération basique
 9. Paiement Stripe Connect (split commission)
 10. Chat + confirmations photo pose/retrait
 11. Dashboard admin
@@ -174,3 +174,30 @@ réservation → transaction avec calcul de commission depuis `PlatformSettings`
   typecheck TypeScript.
 - **Carte** : Leaflet + react-leaflet, chargés uniquement côté client
   (`next/dynamic`, `ssr:false`) car Leaflet touche `window` à l'import.
+
+### Réservation + upload affiche + modération (étape 8)
+
+- `apps/api/src/reservations/` : cycle complet côté API — création
+  (vérifie que le tarif/l'espace existe, que le commerce est `VERIFIED`,
+  calcule la date de fin selon le type de durée, détecte les
+  chevauchements avec les réservations déjà actives/en attente sur le
+  même espace), upload/confirmation d'affiche (mêmes garde-fous
+  d'appartenance que les autres photos), annulation par l'annonceur
+  (uniquement tant que `PENDING_VALIDATION`), réponse du commerçant
+  (`approve`/`reject` — approuver exige qu'une affiche ait été envoyée).
+- **Paiement non encore branché** (arrive à l'étape suivante) : chaque
+  réservation crée quand même une `Transaction` (montant, commission
+  figée depuis `PlatformSettings`) pour que l'intégration Stripe n'ait
+  plus qu'à brancher le vrai encaissement dessus. Un refus commerçant
+  passe la transaction en `FAILED` (rien n'a été réellement débité),
+  pas en `REFUNDED` (qui impliquerait un remboursement d'argent perçu).
+- Bug réel trouvé en testant un vrai scénario "réservation d'un mois" à
+  cheval sur le changement d'heure d'octobre : `setMonth()`/`setDate()`
+  opèrent en heure LOCALE alors qu'une date ISO ("2026-10-01") est parsée
+  en UTC minuit — la date de fin dérivait d'une heure. Corrigé en
+  utilisant systématiquement `setUTCMonth()`/`setUTCDate()`.
+- Frontend : `/reserver` (formulaire, protégé ANNONCEUR), `/mes-reservations`
+  (annonceur) et `/dashboard/reservations` (commerçant) partagent un même
+  composant `ReservationCard` (badges de statut, actions selon le rôle et
+  l'état, `router.refresh()` après chaque action pour resynchroniser avec
+  le Server Component parent).

@@ -104,20 +104,42 @@ export default async function CommerceDetailPage({ params }: { params: Promise<{
                   {space.pricingOptions.map((option) => (
                     <div
                       key={option.id}
-                      className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm"
+                      className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm"
                     >
                       <span>
                         {DURATION_LABELS[option.durationType]}
                         {option.minDurationDays ? ` (min. ${option.minDurationDays}j)` : ""}
                       </span>
-                      <span className="font-semibold">{Number(option.price).toFixed(2)} €</span>
+                      <div className="flex items-center gap-3">
+                        <span className="font-semibold">{Number(option.price).toFixed(2)} €</span>
+                        <Button
+                          size="sm"
+                          render={
+                            <Link
+                              href={{
+                                pathname: "/reserver",
+                                query: {
+                                  spaceId: space.id,
+                                  pricingOptionId: option.id,
+                                  businessName: profile.businessName,
+                                  spaceName: space.name,
+                                  durationType: option.durationType,
+                                  price: option.price,
+                                  minDurationDays: option.minDurationDays ?? undefined,
+                                },
+                              }}
+                            />
+                          }
+                        >
+                          Réserver
+                        </Button>
+                      </div>
                     </div>
                   ))}
+                  {space.pricingOptions.length === 0 && (
+                    <p className="text-sm text-muted-foreground">Aucun tarif publié pour cet espace.</p>
+                  )}
                 </div>
-
-                <Button className="self-start" render={<Link href="/register" />}>
-                  Réserver cet espace
-                </Button>
               </CardContent>
             </Card>
           ))}

@@ -8,6 +8,7 @@ import { StorageModule } from "./storage/storage.module";
 import { CommercantsModule } from "./commercants/commercants.module";
 import { VitrineSpacesModule } from "./vitrine-spaces/vitrine-spaces.module";
 import { DiscoveryModule } from "./discovery/discovery.module";
+import { ReservationsModule } from "./reservations/reservations.module";
 import { envValidationSchema } from "./config/env.validation";
 
 @Module({
@@ -24,10 +25,10 @@ import { envValidationSchema } from "./config/env.validation";
     CommercantsModule,
     VitrineSpacesModule,
     DiscoveryModule,
+    ReservationsModule,
     HealthModule,
     // Modules à venir : UsersModule (admin), AnnonceursModule,
-    // ReservationsModule, PaymentsModule, ChatModule,
-    // NotificationsModule, AdminModule...
+    // PaymentsModule, ChatModule, NotificationsModule, AdminModule...
   ],
 })
 export class AppModule {}
