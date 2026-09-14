@@ -37,9 +37,9 @@ function RoleCard({
     <button
       type="button"
       onClick={onClick}
-      className="flex items-start gap-4 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:border-primary hover:bg-accent"
+      className="hover-lift flex items-start gap-4 rounded-xl border border-border bg-card p-5 text-left transition-colors hover:border-primary/50"
     >
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+      <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
         <Icon className="size-5" />
       </span>
       <span>
@@ -107,9 +107,9 @@ function RegisterForm() {
 
   if (!role) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">{t("chooseRole")}</CardTitle>
+      <Card className="border-border/70 shadow-xl shadow-foreground/[0.04]">
+        <CardHeader className="pb-2 text-center sm:text-left">
+          <CardTitle className="font-heading text-3xl font-medium">{t("chooseRole")}</CardTitle>
           <CardDescription>
             {t("hasAccount")}{" "}
             <Link href="/login" className="font-medium text-primary underline-offset-4 hover:underline">
@@ -117,7 +117,7 @@ function RegisterForm() {
             </Link>
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3">
+        <CardContent className="flex flex-col gap-3 pt-4">
           <RoleCard
             icon={Store}
             title={t("roleCommercant")}
@@ -136,7 +136,7 @@ function RegisterForm() {
   }
 
   return (
-    <Card>
+    <Card className="border-border/70 shadow-xl shadow-foreground/[0.04]">
       <CardHeader>
         <button
           type="button"
@@ -146,7 +146,7 @@ function RegisterForm() {
           <ArrowLeft className="size-3.5" />
           {t("chooseRole")}
         </button>
-        <CardTitle className="text-2xl">
+        <CardTitle className="font-heading text-3xl font-medium">
           {role === UserRole.COMMERCANT ? t("roleCommercant") : t("roleAnnonceur")}
         </CardTitle>
       </CardHeader>
@@ -262,7 +262,7 @@ function RegisterForm() {
             </Alert>
           )}
 
-          <Button type="submit" disabled={submitting} className="mt-1 w-full" size="lg">
+          <Button type="submit" disabled={submitting} className="mt-1 h-11 w-full rounded-full text-base" size="lg">
             {t("submit")}
           </Button>
         </form>

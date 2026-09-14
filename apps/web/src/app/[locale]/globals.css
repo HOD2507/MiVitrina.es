@@ -37,12 +37,14 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-ink: var(--ink);
+  --color-ink-foreground: var(--ink-foreground);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --font-sans: var(--font-sans);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-heading);
 }
 
 :root {
@@ -64,12 +66,17 @@
   --border: oklch(0.912 0.008 70);
   --input: oklch(0.912 0.008 70);
   --ring: oklch(0.666 0.179 58.318);
+  /* Neutre profond complémentaire à l'orange — utilisé pour des sections
+     à fort contraste (CTA final, bandeaux) sans retomber sur "orange
+     partout" ni sur un noir pur trop dur. */
+  --ink: oklch(0.205 0.015 55);
+  --ink-foreground: oklch(0.97 0.006 85);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
+  --radius: 0.75rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -99,6 +106,8 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.769 0.188 70.08);
+  --ink: oklch(0.1 0.01 55);
+  --ink-foreground: oklch(0.97 0.006 85);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -122,6 +131,39 @@
     @apply bg-background text-foreground;
   }
   html {
-    @apply font-sans;
+    @apply font-sans scroll-smooth;
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--font-heading);
+  }
+  ::selection {
+    background-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+  }
+}
+
+@layer utilities {
+  /* Halo dégradé discret pour les sections héro/CTA — jamais de couleur
+     franche en aplat, toujours une transition douce vers le fond. */
+  .bg-mesh {
+    background-image:
+      radial-gradient(ellipse 60% 50% at 15% 0%, color-mix(in oklch, var(--primary), transparent 82%), transparent),
+      radial-gradient(ellipse 50% 40% at 100% 20%, color-mix(in oklch, var(--primary), transparent 88%), transparent);
+  }
+  /* Léger relief pour casser la platitude des aplats sombres (section CTA "ink") — un dégradé plutôt qu'une texture, plus simple et tout aussi efficace. */
+  .bg-grain {
+    background-image:
+      radial-gradient(ellipse 80% 60% at 50% 0%, color-mix(in oklch, white, transparent 92%), transparent),
+      radial-gradient(ellipse 60% 50% at 100% 100%, color-mix(in oklch, var(--primary), transparent 75%), transparent);
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .hover-lift {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .hover-lift:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 32px -16px color-mix(in oklch, var(--foreground), transparent 82%);
   }
 }

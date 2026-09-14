@@ -37,9 +37,9 @@ export default function LoginPage() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-2xl">{t("title")}</CardTitle>
+    <Card className="border-border/70 shadow-xl shadow-foreground/[0.04]">
+      <CardHeader className="pb-2 text-center sm:text-left">
+        <CardTitle className="font-heading text-3xl font-medium">{t("title")}</CardTitle>
         <CardDescription>
           {t("noAccount")}{" "}
           <Link href="/register" className="font-medium text-primary underline-offset-4 hover:underline">
@@ -47,11 +47,18 @@ export default function LoginPage() {
           </Link>
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-4">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="email">{t("email")}</Label>
-            <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input
+              id="email"
+              type="email"
+              required
+              className="h-11"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="password">{t("password")}</Label>
@@ -59,6 +66,7 @@ export default function LoginPage() {
               id="password"
               type="password"
               required
+              className="h-11"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -70,7 +78,7 @@ export default function LoginPage() {
             </Alert>
           )}
 
-          <Button type="submit" disabled={submitting} className="mt-1 w-full" size="lg">
+          <Button type="submit" disabled={submitting} className="mt-2 h-11 w-full rounded-full text-base" size="lg">
             {t("submit")}
           </Button>
         </form>
