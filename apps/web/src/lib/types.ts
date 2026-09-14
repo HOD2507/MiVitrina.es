@@ -140,6 +140,12 @@ export interface Reservation {
   moderationStatus: ModerationStatus;
   moderationNote: string | null;
   cancellationReason: string | null;
+  /** URL de lecture signée — présente une fois que le commerçant a envoyé sa preuve de pose. */
+  installPhotoUrl: string | null;
+  installConfirmedAt: string | null;
+  /** URL de lecture signée — présente une fois que le commerçant a envoyé sa preuve de retrait. */
+  removalPhotoUrl: string | null;
+  removalConfirmedAt: string | null;
   createdAt: string;
   space: {
     id: string;
@@ -151,4 +157,25 @@ export interface Reservation {
   pricingOption: PricingOption;
   transaction: ReservationTransaction;
   annonceurProfile?: { companyName: string | null; user: { email: string } };
+}
+
+/** Résultat de GET /chat/threads. */
+export interface ChatThreadSummary {
+  id: string;
+  otherPartyName: string;
+  lastMessage: { content: string; createdAt: string } | null;
+  unreadCount: number;
+  updatedAt: string;
+}
+
+/** Résultat de GET /chat/threads/:id/messages et POST .../messages. */
+export interface ChatMessage {
+  id: string;
+  threadId: string;
+  senderId: string;
+  content: string;
+  flagged: boolean;
+  flagReason: string | null;
+  readAt: string | null;
+  createdAt: string;
 }

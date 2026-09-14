@@ -11,6 +11,7 @@ import { StorageService } from "../storage/storage.service";
 import { StripeService } from "../stripe/stripe.service";
 import { CreateReservationDto } from "./dto/create-reservation.dto";
 import { RespondReservationDto } from "./dto/respond-reservation.dto";
+import { ConfirmPhotoStepDto } from "./dto/confirm-photo-step.dto";
 
 /** Statuts qui bloquent réellement le créneau d'un espace (occupent le calendrier). */
 const BLOCKING_STATUSES: ReservationStatus[] = [
@@ -140,6 +141,18 @@ export class ReservationsService {
       include: { annonceurProfile: { include: { user: true } }, transaction: true },
     });
     if (!reservation || reservation.annonceurProfile.userId !== userId) {
+      throw new NotFoundException("Réservation introuvable.");
+    }
+    return reservation;
+  }
+
+  /** Ownership : la réservation doit porter sur un espace du commerçant courant. */
+  private async getReceivedReservationOrThrow(userId: string, reservationId: string) {
+    const reservation = await this.prisma.reservation.findUnique({
+      where: { id: reservationId },
+      include: { space: { include: { commercantProfile: true } } },
+    });
+    if (!reservation || reservation.space.commercantProfile.userId !== userId) {
       throw new NotFoundException("Réservation introuvable.");
     }
     return reservation;
@@ -336,9 +349,119 @@ export class ReservationsService {
     });
   }
 
-  private async withPresignedPoster<T extends { posterFileUrl: string | null }>(reservation: T) {
-    if (!reservation.posterFileUrl) return { ...reservation, posterUrl: null };
-    const key = this.storage.getKeyFromFileUrl(reservation.posterFileUrl);
-    return { ...reservation, posterUrl: await this.storage.getPresignedReadUrl(key, 3600) };
+  /**
+   * Le commerçant a physiquement posé l'affiche en vitrine et envoie une
+   * photo comme preuve. Ne change pas encore le statut : c'est la
+   * confirmation de l'annonceur (`confirmInstall`) qui fait passer la
+   * réservation en ACTIVE — la simple photo du commerçant ne suffit pas
+   * (double confirmation, voir docs/ARCHITECTURE.md).
+   */
+  async uploadInstallPhoto(userId: string, reservationId: string, key: string) {
+    const reservation = await this.getReceivedReservationOrThrow(userId, reservationId);
+    if (reservation.status !== ReservationStatus.CONFIRMED) {
+      throw new BadRequestException("La pose ne peut être déclarée que pour une réservation confirmée.");
+    }
+    if (!key.startsWith(`install-photo/${userId}/`)) {
+      throw new ForbiddenException("Ce fichier ne vous appartient pas.");
+    }
+
+    return this.prisma.reservation.update({
+      where: { id: reservationId },
+      data: { installPhotoUrl: this.storage.getFileUrl(key), installConfirmedAt: null },
+    });
+  }
+
+  /**
+   * L'annonceur confirme (ou conteste) la photo de pose envoyée par le
+   * commerçant. `dispute` ouvre un vrai litige (`Dispute`, status OPEN) —
+   * la réservation passe en statut DISPUTE, en attente d'arbitrage admin
+   * (tableau de bord admin à venir), plutôt qu'une simple boucle de
+   * refus/réenvoi : une contestation sur une preuve de pose est un
+   * désaccord de fait entre les deux parties, pas un détail à corriger.
+   */
+  async confirmInstall(userId: string, reservationId: string, dto: ConfirmPhotoStepDto) {
+    const reservation = await this.getOwnReservationOrThrow(userId, reservationId);
+    if (reservation.status !== ReservationStatus.CONFIRMED) {
+      throw new BadRequestException("Cette réservation n'est pas en attente de confirmation de pose.");
+    }
+    if (!reservation.installPhotoUrl) {
+      throw new BadRequestException("Le commerçant n'a pas encore envoyé de photo de pose.");
+    }
+
+    if (dto.action === "dispute") {
+      await this.prisma.dispute.create({
+        data: { reservationId, raisedById: userId, reason: dto.reason! },
+      });
+      return this.prisma.reservation.update({
+        where: { id: reservationId },
+        data: { status: ReservationStatus.DISPUTE },
+      });
+    }
+
+    return this.prisma.reservation.update({
+      where: { id: reservationId },
+      data: { status: ReservationStatus.ACTIVE, installConfirmedAt: new Date() },
+    });
+  }
+
+  /**
+   * Le commerçant a retiré l'affiche en fin de location et envoie une
+   * photo comme preuve — même logique à double confirmation que la pose.
+   */
+  async uploadRemovalPhoto(userId: string, reservationId: string, key: string) {
+    const reservation = await this.getReceivedReservationOrThrow(userId, reservationId);
+    if (reservation.status !== ReservationStatus.ACTIVE) {
+      throw new BadRequestException("Le retrait ne peut être déclaré que pour une réservation en cours.");
+    }
+    if (!key.startsWith(`removal-photo/${userId}/`)) {
+      throw new ForbiddenException("Ce fichier ne vous appartient pas.");
+    }
+
+    return this.prisma.reservation.update({
+      where: { id: reservationId },
+      data: { removalPhotoUrl: this.storage.getFileUrl(key), removalConfirmedAt: null },
+    });
+  }
+
+  /** L'annonceur confirme (ou conteste) la photo de retrait — clôture la réservation si tout est en ordre. */
+  async confirmRemoval(userId: string, reservationId: string, dto: ConfirmPhotoStepDto) {
+    const reservation = await this.getOwnReservationOrThrow(userId, reservationId);
+    if (reservation.status !== ReservationStatus.ACTIVE) {
+      throw new BadRequestException("Cette réservation n'est pas en attente de confirmation de retrait.");
+    }
+    if (!reservation.removalPhotoUrl) {
+      throw new BadRequestException("Le commerçant n'a pas encore envoyé de photo de retrait.");
+    }
+
+    if (dto.action === "dispute") {
+      await this.prisma.dispute.create({
+        data: { reservationId, raisedById: userId, reason: dto.reason! },
+      });
+      return this.prisma.reservation.update({
+        where: { id: reservationId },
+        data: { status: ReservationStatus.DISPUTE },
+      });
+    }
+
+    return this.prisma.reservation.update({
+      where: { id: reservationId },
+      data: { status: ReservationStatus.COMPLETED, removalConfirmedAt: new Date() },
+    });
+  }
+
+  private async withPresignedPoster<T extends { posterFileUrl: string | null; installPhotoUrl?: string | null; removalPhotoUrl?: string | null }>(
+    reservation: T,
+  ) {
+    const [posterUrl, installPhotoUrl, removalPhotoUrl] = await Promise.all([
+      this.presignIfPresent(reservation.posterFileUrl),
+      this.presignIfPresent(reservation.installPhotoUrl),
+      this.presignIfPresent(reservation.removalPhotoUrl),
+    ]);
+    return { ...reservation, posterUrl, installPhotoUrl, removalPhotoUrl };
+  }
+
+  private async presignIfPresent(fileUrl: string | null | undefined): Promise<string | null> {
+    if (!fileUrl) return null;
+    return this.storage.getPresignedReadUrl(this.storage.getKeyFromFileUrl(fileUrl), 3600);
   }
 }

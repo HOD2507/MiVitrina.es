@@ -1,6 +1,8 @@
+import { MessageCircle } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
 
 /** En-tête minimal pour les pages authentifiées (pas de liens connexion/inscription). */
 export function AppHeader() {
@@ -14,6 +16,10 @@ export function AppHeader() {
           <span className="text-lg">MiVitrina</span>
         </Link>
         <div className="flex items-center gap-2">
+          <Button size="sm" variant="ghost" render={<Link href="/messages" />}>
+            <MessageCircle className="size-4" />
+            Messages
+          </Button>
           <ThemeToggle />
           <LocaleSwitcher />
         </div>

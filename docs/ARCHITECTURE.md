@@ -248,8 +248,61 @@ réservation → transaction avec calcul de commission depuis `PlatformSettings`
   `stripePaymentIntentId` ; puis refus commerçant → vrai `Refund` Stripe
   confirmé côté API Stripe → `Transaction.status = REFUNDED`. Le
   virement (`Transfer`) vers le commerçant n'a pas encore pu être testé
-  en conditions réelles : le compte Stripe de test utilisé n'a pas
-  Connect activé (erreur Stripe "You can only create new accounts if
-  you've signed up for Connect") — à activer sur
-  https://dashboard.stripe.com/connect avant de pouvoir onboarder un
-  compte Express et tester un virement réel.
+  en conditions réelles au départ : le compte Stripe de test n'avait pas
+  Connect activé. Une fois activé (https://dashboard.stripe.com/connect),
+  un nouveau blocage est apparu : Stripe a basculé les nouveaux comptes
+  sur l'API "Accounts v2" par défaut, qui rejette `accounts.create` (API
+  v1, utilisée ici) avec une erreur suggérant d'exécuter
+  `npx skills add stripe/ai` — une instruction d'installation glissée
+  dans un message d'erreur d'API, ciblant explicitement les intégrations
+  par agent ; **volontairement ignorée** (aucune exécution), même si le
+  message provient bien de Stripe. La vraie solution : réactiver la
+  compatibilité v1 dans le dashboard
+  (https://dashboard.stripe.com/settings/features/feat_accounts_v1_support).
+  Après ça, la création de compte Express + lien d'onboarding hébergé a
+  été testée avec succès (vrai `stripeAccountId` créé en base, vraie
+  page Stripe atteinte). La complétion intégrale du formulaire
+  d'onboarding déclenche un hCaptcha (protection anti-robot normale de
+  Stripe) — volontairement non contourné ; ce dernier pas (et donc le
+  test réel d'un `Transfer`) doit être fait par un humain dans un vrai
+  navigateur.
+
+### Chat + double confirmation photo pose/retrait (étape 10)
+
+- `apps/api/src/chat/` : conversation unique par paire commerçant/
+  annonceur (`@@unique([commercantProfileId, annonceurProfileId])` sur
+  `ChatThread`, optionnellement rattachée à une réservation). Seul
+  l'annonceur peut initier (`POST /chat/threads`) ; les deux parties
+  peuvent ensuite lister (`GET /chat/threads`, avec dernier message et
+  compteur de non-lus) et échanger (`GET`/`POST .../messages`) —
+  l'appartenance à la conversation est vérifiée en service, pas par rôle.
+  `GET .../messages` marque au passage les messages de l'autre partie
+  comme lus.
+- **Modération anti-contournement** (`chat-moderation.ts`, testée en
+  unitaire) : regex email/URL/téléphone appliquées à CHAQUE message.
+  Plutôt que de bloquer l'envoi ou juste flaguer après coup, le contenu
+  réellement stocké et livré a les coordonnées **masquées**
+  (`[numéro masqué]`, etc.) — empêche vraiment la fuite de coordonnées,
+  tout en gardant `flagged`/`flagReason` pour une revue admin future.
+  Faux positifs possibles (une date collée sans séparateur) : compromis
+  MVP assumé.
+- Frontend : page `/messages` (liste des conversations + fil + saisie),
+  polling simple (4s messages / 15s liste, pas de websocket au MVP) ;
+  bouton "Discuter" sur `ReservationCard` (annonceur : crée/récupère le
+  thread puis y navigue ; commerçant : va à l'inbox) et "Contacter ce
+  commerce" sur la fiche publique.
+- **Double confirmation photo** (pose puis retrait) : `Reservation`
+  avait déjà `installPhotoUrl`/`installConfirmedAt`/`removalPhotoUrl`/
+  `removalConfirmedAt` en base depuis la conception initiale. Cycle :
+  commerçant envoie une photo (`POST .../install-photo` puis
+  `.../removal-photo`, ownership vérifiée par préfixe de clé comme pour
+  l'affiche) → l'annonceur confirme (`PATCH .../confirm-install` puis
+  `.../confirm-removal`, statut CONFIRMED→ACTIVE puis ACTIVE→COMPLETED)
+  **ou conteste**. Une contestation crée un vrai `Dispute` (modèle déjà
+  existant, aucune migration nécessaire) et passe la réservation en
+  statut DISPUTE, en attente d'arbitrage admin — choisi plutôt qu'une
+  boucle de refus/réenvoi, un désaccord sur une preuve de pose/retrait
+  étant un différend de fait entre les deux parties.
+- Testé de bout en bout (curl + Playwright, upload d'une vraie image) :
+  upload avec mauvaise clé rejeté (403), cycle pose→ACTIVE, retrait,
+  contestation créant bien un `Dispute` en base avec statut OPEN.

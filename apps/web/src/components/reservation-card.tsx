@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { CalendarDays, CreditCard, Loader2, MapPin, Store } from "lucide-react";
+import { CalendarDays, CreditCard, Loader2, MapPin, MessageCircle, Store } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
 import { api, ApiError } from "@/lib/api-client";
 import type { Reservation } from "@/lib/types";
@@ -20,6 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { PhotoStepSection } from "@/components/photo-step-section";
 
 const STATUS_LABELS: Record<ReservationStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   PENDING_VALIDATION: { label: "En attente de réponse", variant: "outline" },
@@ -58,6 +59,7 @@ export function ReservationCard({ reservation, viewer, onUpdated }: ReservationC
   const [submitting, setSubmitting] = useState(false);
 
   const [paying, setPaying] = useState(false);
+  const [openingChat, setOpeningChat] = useState(false);
 
   const statusInfo = STATUS_LABELS[reservation.status];
   const paymentBadge = PAYMENT_BADGE[reservation.transaction.status];
@@ -94,6 +96,27 @@ export function ReservationCard({ reservation, viewer, onUpdated }: ReservationC
       toast.error(err instanceof ApiError ? err.message : "Une erreur est survenue.");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleOpenChat() {
+    if (viewer === "commercant") {
+      router.push("/messages");
+      return;
+    }
+    const commercantProfileId = reservation.space.commercantProfile?.id;
+    if (!commercantProfileId) return;
+
+    setOpeningChat(true);
+    try {
+      const thread = await api.post<{ id: string }>("/chat/threads", {
+        commercantProfileId,
+        reservationId: reservation.id,
+      });
+      router.push(`/messages?thread=${thread.id}`);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Impossible d'ouvrir la conversation.");
+      setOpeningChat(false);
     }
   }
 
@@ -160,6 +183,21 @@ export function ReservationCard({ reservation, viewer, onUpdated }: ReservationC
             <AlertDescription>{reservation.moderationNote}</AlertDescription>
           </Alert>
         )}
+
+        {reservation.status === ReservationStatus.DISPUTE && (
+          <Alert variant="destructive">
+            <AlertDescription>
+              Un litige est ouvert sur cette réservation — notre équipe va l'examiner et revenir vers vous.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <PhotoStepSection reservation={reservation} viewer={viewer} onUpdated={() => router.refresh()} />
+
+        <Button size="sm" variant="ghost" disabled={openingChat} onClick={handleOpenChat} className="self-start">
+          {openingChat ? <Loader2 className="size-3.5 animate-spin" /> : <MessageCircle className="size-3.5" />}
+          Discuter
+        </Button>
 
         {canPay && (
           <Button size="sm" disabled={paying} onClick={handlePay} className="self-start">

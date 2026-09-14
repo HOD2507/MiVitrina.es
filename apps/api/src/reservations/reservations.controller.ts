@@ -6,6 +6,7 @@ import { CurrentUser, AuthenticatedUser } from "../auth/decorators/current-user.
 import { ReservationsService } from "./reservations.service";
 import { CreateReservationDto } from "./dto/create-reservation.dto";
 import { RespondReservationDto } from "./dto/respond-reservation.dto";
+import { ConfirmPhotoStepDto } from "./dto/confirm-photo-step.dto";
 import { ConfirmPhotoDto } from "../commercants/dto/confirm-photo.dto";
 
 @Controller("reservations")
@@ -57,5 +58,33 @@ export class ReservationsController {
   @Patch(":id/respond")
   respond(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string, @Body() dto: RespondReservationDto) {
     return this.reservations.respond(user.id, id, dto);
+  }
+
+  /** Le commerçant déclare avoir posé l'affiche, preuve à l'appui. */
+  @Roles(UserRole.COMMERCANT)
+  @Post(":id/install-photo")
+  uploadInstallPhoto(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string, @Body() dto: ConfirmPhotoDto) {
+    return this.reservations.uploadInstallPhoto(user.id, id, dto.key);
+  }
+
+  /** L'annonceur confirme (ou conteste) la pose. */
+  @Roles(UserRole.ANNONCEUR)
+  @Patch(":id/confirm-install")
+  confirmInstall(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string, @Body() dto: ConfirmPhotoStepDto) {
+    return this.reservations.confirmInstall(user.id, id, dto);
+  }
+
+  /** Le commerçant déclare avoir retiré l'affiche, preuve à l'appui. */
+  @Roles(UserRole.COMMERCANT)
+  @Post(":id/removal-photo")
+  uploadRemovalPhoto(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string, @Body() dto: ConfirmPhotoDto) {
+    return this.reservations.uploadRemovalPhoto(user.id, id, dto.key);
+  }
+
+  /** L'annonceur confirme (ou conteste) le retrait — clôture la réservation. */
+  @Roles(UserRole.ANNONCEUR)
+  @Patch(":id/confirm-removal")
+  confirmRemoval(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string, @Body() dto: ConfirmPhotoStepDto) {
+    return this.reservations.confirmRemoval(user.id, id, dto);
   }
 }

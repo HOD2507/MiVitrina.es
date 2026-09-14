@@ -7,6 +7,7 @@ import type { PublicCommerceProfile } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
+import { ContactCommerceButton } from "@/components/contact-commerce-button";
 
 const DURATION_LABELS: Record<string, string> = {
   SEMAINE: "Par semaine",
@@ -40,12 +41,15 @@ export default async function CommerceDetailPage({ params }: { params: Promise<{
       <SiteHeader />
 
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold">{profile.businessName}</h1>
-          <p className="flex items-center gap-1 text-muted-foreground">
-            <MapPin className="size-4" />
-            {profile.addressLine1}, {profile.postalCode} {profile.city}
-          </p>
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold">{profile.businessName}</h1>
+            <p className="flex items-center gap-1 text-muted-foreground">
+              <MapPin className="size-4" />
+              {profile.addressLine1}, {profile.postalCode} {profile.city}
+            </p>
+          </div>
+          <ContactCommerceButton commercantProfileId={profile.id} />
         </div>
 
         {allPhotos.length > 0 && (
