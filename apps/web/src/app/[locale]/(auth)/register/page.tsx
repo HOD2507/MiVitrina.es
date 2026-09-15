@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { UserRole, Country } from "@mivitrina/shared";
 import { api, ApiError } from "@/lib/api-client";
+import { useAuthProviders } from "@/lib/use-auth-providers";
 import type { AuthUser } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { GoogleAuthButton } from "@/components/google-auth-button";
-import { Store, Megaphone, ArrowLeft } from "lucide-react";
+import { Store, Megaphone, ArrowLeft, Mail } from "lucide-react";
 
 /** Rôles ouverts à l'inscription publique — reflète apps/api/.../register.dto.ts. */
 type RegisterableRole = typeof UserRole.COMMERCANT | typeof UserRole.ANNONCEUR;
@@ -57,10 +58,15 @@ function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedRole = searchParams.get("role");
+  const providers = useAuthProviders();
 
   const [role, setRole] = useState<RegisterableRole | null>(
     isRegisterableRole(preselectedRole) ? preselectedRole : null,
   );
+  // Google n'est proposé qu'à l'inscription ANNONCEUR (voir AuthService) :
+  // le formulaire démarre replié pour ce rôle tant que l'email n'a pas
+  // été explicitement choisi.
+  const [showEmailForm, setShowEmailForm] = useState(false);
   const [country, setCountry] = useState<Country>(Country.FR);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -152,11 +158,27 @@ function RegisterForm() {
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        {role === UserRole.ANNONCEUR && (
-          <GoogleAuthButton role={UserRole.ANNONCEUR} label="S'inscrire avec Google" dividerLabel="ou par email" />
+        {role === UserRole.ANNONCEUR && providers?.googleEnabled && !showEmailForm && (
+          <>
+            <GoogleAuthButton role={UserRole.ANNONCEUR} label="S'inscrire avec Google" />
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="h-px flex-1 bg-border" />
+              ou
+              <span className="h-px flex-1 bg-border" />
+            </div>
+            <Button
+              variant="outline"
+              className="h-11 w-full gap-2.5 rounded-full text-base"
+              onClick={() => setShowEmailForm(true)}
+            >
+              <Mail className="size-4.5" />
+              Continuer avec email
+            </Button>
+          </>
         )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {(role === UserRole.COMMERCANT || !providers?.googleEnabled || showEmailForm) && (
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="country">{t("country")}</Label>
             <Select value={country} onValueChange={(v) => setCountry(v as Country)}>
@@ -270,7 +292,18 @@ function RegisterForm() {
           <Button type="submit" disabled={submitting} className="mt-1 h-11 w-full rounded-full text-base" size="lg">
             {t("submit")}
           </Button>
+
+          {role === UserRole.ANNONCEUR && providers?.googleEnabled && (
+            <button
+              type="button"
+              onClick={() => setShowEmailForm(false)}
+              className="text-center text-sm text-muted-foreground hover:text-foreground"
+            >
+              ← Retour
+            </button>
+          )}
         </form>
+        )}
       </CardContent>
     </Card>
   );

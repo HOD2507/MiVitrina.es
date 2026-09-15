@@ -1,7 +1,4 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { api, API_BASE_URL } from "@/lib/api-client";
+import { API_BASE_URL } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 
 function GoogleLogo() {
@@ -32,51 +29,22 @@ interface GoogleAuthButtonProps {
   /** Rôle transmis via ?role= — utile uniquement pour une inscription (une connexion l'ignore). */
   role?: "ANNONCEUR" | "COMMERCANT";
   label: string;
-  /** Texte du séparateur affiché sous le bouton (ex: "ou par email"). Omis = pas de séparateur. */
-  dividerLabel?: string;
+  className?: string;
 }
 
 /**
- * Redirection OAuth classique (pas un appel fetch) — masqué tant que
- * GET /auth/config n'indique pas que Google est configuré côté API,
- * pour éviter d'afficher un bouton mort (et un séparateur orphelin)
- * avant que les clés ne soient fournies (voir docs/ARCHITECTURE.md).
+ * Redirection OAuth classique (pas un appel fetch). Purement
+ * présentationnel — c'est à l'appelant de vérifier `useAuthProviders()`
+ * avant de le monter, pour ne jamais afficher de bouton mort tant que
+ * Google n'est pas configuré côté API (voir docs/ARCHITECTURE.md).
  */
-export function GoogleAuthButton({ role, label, dividerLabel }: GoogleAuthButtonProps) {
-  const [enabled, setEnabled] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    api
-      .get<{ googleEnabled: boolean }>("/auth/config")
-      .then((res) => {
-        if (!cancelled) setEnabled(res.googleEnabled);
-      })
-      .catch(() => {
-        // Silencieux : le bouton reste simplement masqué si l'appel échoue.
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  if (!enabled) return null;
-
+export function GoogleAuthButton({ role, label, className }: GoogleAuthButtonProps) {
   const href = role ? `${API_BASE_URL}/auth/google?role=${role}` : `${API_BASE_URL}/auth/google`;
 
   return (
-    <>
-      <Button variant="outline" className="h-11 w-full gap-2.5 rounded-full text-base" render={<a href={href} />}>
-        <GoogleLogo />
-        {label}
-      </Button>
-      {dividerLabel && (
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="h-px flex-1 bg-border" />
-          {dividerLabel}
-          <span className="h-px flex-1 bg-border" />
-        </div>
-      )}
-    </>
+    <Button variant="outline" className={className ?? "h-11 w-full gap-2.5 rounded-full text-base"} render={<a href={href} />}>
+      <GoogleLogo />
+      {label}
+    </Button>
   );
 }
