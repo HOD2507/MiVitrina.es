@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { cn } from "cn";
+import { useTranslations } from "next-intl";
 import {
   LayoutDashboard,
   Store,
@@ -24,25 +25,6 @@ interface NavItem {
   icon: typeof LayoutDashboard;
 }
 
-const COMMERCANT_NAV: NavItem[] = [
-  { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-  { href: "/dashboard/vitrine", label: "Ma vitrine", icon: Store },
-  { href: "/dashboard/reservations", label: "Réservations", icon: CalendarCheck },
-  { href: "/messages", label: "Messages", icon: MessageCircle },
-];
-
-const ANNONCEUR_NAV: NavItem[] = [
-  { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-  { href: "/recherche", label: "Rechercher", icon: Search },
-  { href: "/mes-reservations", label: "Mes réservations", icon: CalendarCheck },
-  { href: "/messages", label: "Messages", icon: MessageCircle },
-];
-
-const ROLE_LABELS: Record<string, string> = {
-  [UserRole.COMMERCANT]: "Commerçant",
-  [UserRole.ANNONCEUR]: "Annonceur",
-};
-
 /**
  * Coquille d'application pour les espaces authentifiés (commerçant/
  * annonceur) : navigation latérale persistante sur desktop, panneau
@@ -50,8 +32,29 @@ const ROLE_LABELS: Record<string, string> = {
  * <main>" répété sur chaque page — une seule fois dans (app)/layout.tsx.
  */
 export function AppShell({ user, children }: { user: AuthUser; children: ReactNode }) {
+  const t = useTranslations("AppShell");
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const COMMERCANT_NAV: NavItem[] = [
+    { href: "/dashboard", label: t("dashboard"), icon: LayoutDashboard },
+    { href: "/dashboard/vitrine", label: t("myVitrine"), icon: Store },
+    { href: "/dashboard/reservations", label: t("reservations"), icon: CalendarCheck },
+    { href: "/messages", label: t("messages"), icon: MessageCircle },
+  ];
+
+  const ANNONCEUR_NAV: NavItem[] = [
+    { href: "/dashboard", label: t("dashboard"), icon: LayoutDashboard },
+    { href: "/recherche", label: t("searchShops"), icon: Search },
+    { href: "/mes-reservations", label: t("myReservations"), icon: CalendarCheck },
+    { href: "/messages", label: t("messages"), icon: MessageCircle },
+  ];
+
+  const ROLE_LABELS: Record<string, string> = {
+    [UserRole.COMMERCANT]: t("roleCommercant"),
+    [UserRole.ANNONCEUR]: t("roleAnnonceur"),
+  };
+
   const nav = user.role === UserRole.COMMERCANT ? COMMERCANT_NAV : ANNONCEUR_NAV;
   const displayName =
     user.commercantProfile?.businessName || user.annonceurProfile?.companyName || user.email;
@@ -120,7 +123,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: ReactNo
           </Link>
           <button
             type="button"
-            aria-label="Ouvrir le menu"
+            aria-label={t("openMenuAria")}
             onClick={() => setMobileOpen(true)}
             className="flex size-9 items-center justify-center rounded-lg text-foreground hover:bg-muted"
           >
@@ -137,7 +140,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: ReactNo
                 <span className="font-heading text-lg font-semibold">MiVitrina</span>
                 <button
                   type="button"
-                  aria-label="Fermer le menu"
+                  aria-label={t("closeMenuAria")}
                   onClick={() => setMobileOpen(false)}
                   className="flex size-8 items-center justify-center rounded-lg hover:bg-muted"
                 >

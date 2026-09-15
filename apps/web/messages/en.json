@@ -77,7 +77,11 @@
       "submit": "Log in",
       "noAccount": "Don't have an account yet?",
       "registerLink": "Sign up",
-      "forgotPassword": "Forgot your password?"
+      "forgotPassword": "Forgot your password?",
+      "continueWithGoogle": "Continue with Google",
+      "continueWithEmail": "Continue with email",
+      "or": "or",
+      "back": "← Back"
     },
     "register": {
       "title": "Create an account",
@@ -99,7 +103,11 @@
       "submit": "Create my account",
       "hasAccount": "Already have an account?",
       "loginLink": "Log in",
-      "verificationNote": "Manual verification: your proof of identity will be uploaded from your shop owner dashboard."
+      "verificationNote": "Manual verification: your proof of identity will be uploaded from your shop owner dashboard.",
+      "signupWithGoogle": "Sign up with Google",
+      "continueWithEmail": "Continue with email",
+      "or": "or",
+      "back": "← Back"
     },
     "errors": {
       "generic": "Something went wrong. Please try again.",
@@ -168,6 +176,7 @@
     "noReservationsYet": "You don't have any bookings yet.",
     "searchCommerce": "Find a shop",
     "allMyReservations": "All my bookings",
+    "seeAll": "See all",
     "stripeConnectedToast": "Your Stripe account is connected!",
     "stripeNotCompleteToast": "Stripe setup wasn't completed — you can pick it back up anytime.",
     "stripeStartError": "Couldn't start connecting to Stripe.",
@@ -247,6 +256,7 @@
   },
   "Reservations": {
     "pageTitle": "Booking requests",
+    "myBookingsPageTitle": "My bookings",
     "noneYet": "No booking requests yet.",
     "statusPendingResponse": "Awaiting response",
     "statusConfirmed": "Confirmed",
@@ -290,6 +300,8 @@
     "bookingSentSuccess": "Booking request sent!",
     "alreadyBooked": "Already booked",
     "alreadyBookedLegend": "Already booked, unavailable",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
     "installConfirmTitle": "Poster installation confirmation",
     "removalConfirmTitle": "Poster removal confirmation",
     "photoUploadedToastInstall": "Installation photo sent — awaiting the advertiser's confirmation.",
@@ -313,6 +325,18 @@
     "openDispute": "Open the dispute",
     "disputeOpenedToast": "Dispute opened — our team will review it."
   },
+  "AppShell": {
+    "dashboard": "Dashboard",
+    "myVitrine": "My shop window",
+    "reservations": "Bookings",
+    "myReservations": "My bookings",
+    "searchShops": "Find shops",
+    "messages": "Messages",
+    "roleCommercant": "Shop owner",
+    "roleAnnonceur": "Advertiser",
+    "openMenuAria": "Open menu",
+    "closeMenuAria": "Close menu"
+  },
   "Messages": {
     "loadError": "Couldn't load messages.",
     "contactsHiddenNotice": "Your contact details have been hidden — conversations must stay on the platform.",
@@ -334,6 +358,8 @@
     "noResults": "No shops found in this radius. Try widening the search area.",
     "spacesAvailable": "{count, plural, one {# space available} other {# spaces available}}",
     "fromPrice": "· from €{price}",
-    "resultsFound": "{count, plural, one {# shop found} other {# shops found}} — swipe to see the list"
+    "resultsFound": "{count, plural, one {# shop found} other {# shops found}} — swipe to see the list",
+    "collapseListAria": "Collapse the list",
+    "expandListAria": "View the list of shops"
   }
 }

@@ -22,9 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { PhotoStepSection } from "@/components/photo-step-section";
-
-/** Locale de formatage des dates — DD/MM comme en Espagne, y compris en anglais (en-GB, pas en-US). */
-const DATE_LOCALE: Record<string, string> = { es: "es-ES", en: "en-GB" };
+import { getDateLocale } from "@/lib/date-locale";
 
 interface ReservationCardProps {
   reservation: Reservation;
@@ -173,8 +171,8 @@ export function ReservationCard({ reservation, viewer, onUpdated }: ReservationC
         <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <CalendarDays className="size-3.5" />
           {t("periodLabel", {
-            start: new Date(reservation.startDate).toLocaleDateString(DATE_LOCALE[locale] ?? "es-ES"),
-            end: new Date(reservation.endDate).toLocaleDateString(DATE_LOCALE[locale] ?? "es-ES"),
+            start: new Date(reservation.startDate).toLocaleDateString(getDateLocale(locale)),
+            end: new Date(reservation.endDate).toLocaleDateString(getDateLocale(locale)),
           })}{" "}
           · {DURATION_LABELS[reservation.pricingOption.durationType]} · {Number(reservation.transaction.amount).toFixed(2)} €
         </p>

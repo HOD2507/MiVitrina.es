@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 
 interface BottomSheetProps {
   /** Toujours visible, même quand la feuille est repliée (ex: titre + compteur de résultats). */
@@ -18,6 +19,7 @@ interface BottomSheetProps {
  * la liste complète, vers le bas pour revenir à la carte.
  */
 export function BottomSheet({ peek, children, collapsedHeight = 96 }: BottomSheetProps) {
+  const t = useTranslations("Recherche");
   const [expanded, setExpanded] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
   const dragStartY = useRef<number | null>(null);
@@ -60,7 +62,7 @@ export function BottomSheet({ peek, children, collapsedHeight = 96 }: BottomShee
     >
       <button
         type="button"
-        aria-label={expanded ? "Réduire la liste" : "Voir la liste des commerces"}
+        aria-label={expanded ? t("collapseListAria") : t("expandListAria")}
         onClick={() => setExpanded((v) => !v)}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}

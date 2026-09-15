@@ -5,9 +5,7 @@ import { createPortal } from "react-dom";
 import { useLocale, useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { cn } from "cn";
-
-/** Tag BCP-47 utilisé pour le formatage — DD/MM comme en Espagne, y compris en anglais (en-GB, pas en-US). */
-const INTL_LOCALE: Record<string, string> = { es: "es-ES", en: "en-GB" };
+import { getDateLocale } from "@/lib/date-locale";
 
 /** 1er janvier 2024 était un lundi : sert de base pour générer les
  * initiales des jours de la semaine dans le bon ordre et la bonne langue. */
@@ -74,7 +72,7 @@ interface DatePickerProps {
 export function DatePicker({ value, onChange, minDate, id, blockedRanges = [], computeRangeEnd }: DatePickerProps) {
   const t = useTranslations("Reservations");
   const locale = useLocale();
-  const localeTag = INTL_LOCALE[locale] ?? "es-ES";
+  const localeTag = getDateLocale(locale);
   const WEEKDAYS = useMemo(() => buildWeekdays(localeTag), [localeTag]);
   const MONTH_FORMATTER = useMemo(
     () => new Intl.DateTimeFormat(localeTag, { month: "long", year: "numeric" }),
@@ -181,7 +179,7 @@ export function DatePicker({ value, onChange, minDate, id, blockedRanges = [], c
                 type="button"
                 onClick={() => changeMonth(-1)}
                 className="flex size-7 items-center justify-center rounded-md hover:bg-muted"
-                aria-label="Mois précédent"
+                aria-label={t("previousMonth")}
               >
                 <ChevronLeft className="size-4" />
               </button>
@@ -192,7 +190,7 @@ export function DatePicker({ value, onChange, minDate, id, blockedRanges = [], c
                 type="button"
                 onClick={() => changeMonth(1)}
                 className="flex size-7 items-center justify-center rounded-md hover:bg-muted"
-                aria-label="Mois suivant"
+                aria-label={t("nextMonth")}
               >
                 <ChevronRight className="size-4" />
               </button>

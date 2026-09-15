@@ -67,10 +67,10 @@ export default function LoginPage() {
       <CardContent className="flex flex-col gap-4 pt-4">
         {hasExternalProvider && !showEmailForm && (
           <>
-            <GoogleAuthButton label="Continuer avec Google" />
+            <GoogleAuthButton label={t("continueWithGoogle")} />
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span className="h-px flex-1 bg-border" />
-              ou
+              {t("or")}
               <span className="h-px flex-1 bg-border" />
             </div>
             <Button
@@ -79,7 +79,7 @@ export default function LoginPage() {
               onClick={() => setShowEmailForm(true)}
             >
               <Mail className="size-4.5" />
-              Continuer avec email
+              {t("continueWithEmail")}
             </Button>
           </>
         )}
@@ -133,7 +133,7 @@ export default function LoginPage() {
                 onClick={() => setShowEmailForm(false)}
                 className="text-center text-sm text-muted-foreground hover:text-foreground"
               >
-                ← Retour
+                {t("back")}
               </button>
             )}
           </form>

@@ -164,10 +164,10 @@ function RegisterForm() {
       <CardContent className="flex flex-col gap-4">
         {role === UserRole.ANNONCEUR && providers?.googleEnabled && !showEmailForm && (
           <>
-            <GoogleAuthButton role={UserRole.ANNONCEUR} label="S'inscrire avec Google" />
+            <GoogleAuthButton role={UserRole.ANNONCEUR} label={t("signupWithGoogle")} />
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span className="h-px flex-1 bg-border" />
-              ou
+              {t("or")}
               <span className="h-px flex-1 bg-border" />
             </div>
             <Button
@@ -176,7 +176,7 @@ function RegisterForm() {
               onClick={() => setShowEmailForm(true)}
             >
               <Mail className="size-4.5" />
-              Continuer avec email
+              {t("continueWithEmail")}
             </Button>
           </>
         )}
@@ -288,7 +288,7 @@ function RegisterForm() {
               onClick={() => setShowEmailForm(false)}
               className="text-center text-sm text-muted-foreground hover:text-foreground"
             >
-              ← Retour
+              {t("back")}
             </button>
           )}
         </form>

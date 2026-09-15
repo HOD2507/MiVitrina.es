@@ -77,7 +77,11 @@
       "submit": "Iniciar sesión",
       "noAccount": "¿Aún no tienes cuenta?",
       "registerLink": "Regístrate",
-      "forgotPassword": "¿Olvidaste tu contraseña?"
+      "forgotPassword": "¿Olvidaste tu contraseña?",
+      "continueWithGoogle": "Continuar con Google",
+      "continueWithEmail": "Continuar con email",
+      "or": "o",
+      "back": "← Volver"
     },
     "register": {
       "title": "Crear una cuenta",
@@ -99,7 +103,11 @@
       "submit": "Crear mi cuenta",
       "hasAccount": "¿Ya tienes cuenta?",
       "loginLink": "Iniciar sesión",
-      "verificationNote": "Verificación manual: tu justificante de identidad se subirá desde tu panel de comerciante."
+      "verificationNote": "Verificación manual: tu justificante de identidad se subirá desde tu panel de comerciante.",
+      "signupWithGoogle": "Regístrate con Google",
+      "continueWithEmail": "Continuar con email",
+      "or": "o",
+      "back": "← Volver"
     },
     "errors": {
       "generic": "Ha ocurrido un error. Inténtalo de nuevo.",
@@ -168,6 +176,7 @@
     "noReservationsYet": "Aún no tienes ninguna reserva.",
     "searchCommerce": "Buscar un comercio",
     "allMyReservations": "Todas mis reservas",
+    "seeAll": "Ver todo",
     "stripeConnectedToast": "¡Tu cuenta de Stripe está conectada!",
     "stripeNotCompleteToast": "La configuración de Stripe no se completó — puedes retomarla cuando quieras.",
     "stripeStartError": "No se pudo iniciar la conexión con Stripe.",
@@ -247,6 +256,7 @@
   },
   "Reservations": {
     "pageTitle": "Solicitudes de reserva",
+    "myBookingsPageTitle": "Mis reservas",
     "noneYet": "Aún no hay solicitudes de reserva.",
     "statusPendingResponse": "Pendiente de respuesta",
     "statusConfirmed": "Confirmada",
@@ -290,6 +300,8 @@
     "bookingSentSuccess": "¡Solicitud de reserva enviada!",
     "alreadyBooked": "Ya reservado",
     "alreadyBookedLegend": "Ya reservado, no disponible",
+    "previousMonth": "Mes anterior",
+    "nextMonth": "Mes siguiente",
     "installConfirmTitle": "Confirmación de la colocación del cartel",
     "removalConfirmTitle": "Confirmación de la retirada del cartel",
     "photoUploadedToastInstall": "Foto de colocación enviada — a la espera de confirmación del anunciante.",
@@ -313,6 +325,18 @@
     "openDispute": "Abrir la disputa",
     "disputeOpenedToast": "Disputa abierta — nuestro equipo la revisará."
   },
+  "AppShell": {
+    "dashboard": "Panel",
+    "myVitrine": "Mi escaparate",
+    "reservations": "Reservas",
+    "myReservations": "Mis reservas",
+    "searchShops": "Buscar comercios",
+    "messages": "Mensajes",
+    "roleCommercant": "Comerciante",
+    "roleAnnonceur": "Anunciante",
+    "openMenuAria": "Abrir el menú",
+    "closeMenuAria": "Cerrar el menú"
+  },
   "Messages": {
     "loadError": "No se pudieron cargar los mensajes.",
     "contactsHiddenNotice": "Tus datos de contacto se han ocultado — los mensajes deben quedarse en la plataforma.",
@@ -334,6 +358,8 @@
     "noResults": "No se encontró ningún comercio en este radio. Prueba a ampliar la zona de búsqueda.",
     "spacesAvailable": "{count, plural, one {# espacio disponible} other {# espacios disponibles}}",
     "fromPrice": "· desde {price} €",
-    "resultsFound": "{count, plural, one {# comercio encontrado} other {# comercios encontrados}} — desliza para ver la lista"
+    "resultsFound": "{count, plural, one {# comercio encontrado} other {# comercios encontrados}} — desliza para ver la lista",
+    "collapseListAria": "Reducir la lista",
+    "expandListAria": "Ver la lista de comercios"
   }
 }

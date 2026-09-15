@@ -2,6 +2,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { redirect, Link } from "@/i18n/navigation";
 import { UserRole, VerificationStatus } from "@mivitrina/shared";
 import { serverApiGet } from "@/lib/api-server";
+import { getDateLocale } from "@/lib/date-locale";
 import type { AuthUser, StripeStatus, CommercantStats, AnnonceurStats, Reservation } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,24 +15,37 @@ import { VerificationUpload } from "./verification-upload";
 import { StripeConnectCard } from "./stripe-connect-card";
 import { ResendVerificationButton } from "@/components/resend-verification-button";
 
+/** Même mapping statut->libellé/variante que ReservationCard, construit ici pour l'aperçu compact du tableau de bord (composant serveur, pas de useTranslations). */
+function buildStatusLabels(t: Awaited<ReturnType<typeof getTranslations>>) {
+  return {
+    PENDING_VALIDATION: { label: t("statusPendingResponse"), variant: "outline" as const },
+    CONFIRMED: { label: t("statusConfirmed"), variant: "default" as const },
+    ACTIVE: { label: t("statusActive"), variant: "default" as const },
+    COMPLETED: { label: t("statusCompleted"), variant: "secondary" as const },
+    CANCELLED_BY_ANNONCEUR: { label: t("statusCancelledByAnnonceur"), variant: "destructive" as const },
+    CANCELLED_BY_COMMERCANT: { label: t("statusCancelledByCommercant"), variant: "destructive" as const },
+    NO_SHOW: { label: t("statusNoShow"), variant: "destructive" as const },
+    DISPUTE: { label: t("statusDispute"), variant: "destructive" as const },
+  };
+}
+
 export default async function DashboardPage({
   searchParams,
 }: {
   searchParams: Promise<{ stripe?: string }>;
 }) {
+  const locale = await getLocale();
   const t = await getTranslations("Dashboard");
   const tReservations = await getTranslations("Reservations");
   const params = await searchParams;
   const { data: user, status } = await serverApiGet<AuthUser>("/auth/me");
 
   if (status === 401 || !user) {
-    const locale = await getLocale();
     redirect({ href: "/login", locale });
   }
   const authedUser = user as AuthUser;
 
   if (authedUser.role === UserRole.ADMIN) {
-    const locale = await getLocale();
     redirect({ href: "/admin", locale });
   }
 
@@ -42,10 +56,11 @@ export default async function DashboardPage({
         stripeReturn={params.stripe === "return"}
         t={t}
         tReservations={tReservations}
+        dateLocale={getDateLocale(locale)}
       />
     );
   }
-  return <AnnonceurDashboard user={authedUser} t={t} />;
+  return <AnnonceurDashboard user={authedUser} t={t} tReservations={tReservations} dateLocale={getDateLocale(locale)} />;
 }
 
 async function CommercantDashboard({
@@ -53,11 +68,13 @@ async function CommercantDashboard({
   stripeReturn,
   t,
   tReservations,
+  dateLocale,
 }: {
   user: AuthUser;
   stripeReturn: boolean;
   t: Awaited<ReturnType<typeof getTranslations>>;
   tReservations: Awaited<ReturnType<typeof getTranslations>>;
+  dateLocale: string;
 }) {
   const profile = user.commercantProfile;
   const [{ data: stats }, { data: stripeStatus }, { data: reservations }] = await Promise.all([
@@ -134,7 +151,10 @@ async function CommercantDashboard({
           reservations={reservations ?? []}
           viewer="commercant"
           seeAllHref="/dashboard/reservations"
+          seeAllLabel={t("seeAll")}
           emptyMessage={tReservations("noneYet")}
+          statusLabels={buildStatusLabels(tReservations)}
+          dateLocale={dateLocale}
         />
         <Card>
           <CardHeader>
@@ -159,9 +179,13 @@ async function CommercantDashboard({
 async function AnnonceurDashboard({
   user,
   t,
+  tReservations,
+  dateLocale,
 }: {
   user: AuthUser;
   t: Awaited<ReturnType<typeof getTranslations>>;
+  tReservations: Awaited<ReturnType<typeof getTranslations>>;
+  dateLocale: string;
 }) {
   const [{ data: stats }, { data: reservations }] = await Promise.all([
     serverApiGet<AnnonceurStats>("/annonceurs/me/stats"),
@@ -202,7 +226,10 @@ async function AnnonceurDashboard({
           reservations={reservations ?? []}
           viewer="annonceur"
           seeAllHref="/mes-reservations"
+          seeAllLabel={t("seeAll")}
           emptyMessage={t("noReservationsYet")}
+          statusLabels={buildStatusLabels(tReservations)}
+          dateLocale={dateLocale}
         />
         <Card>
           <CardHeader>

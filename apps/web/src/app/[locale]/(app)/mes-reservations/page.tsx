@@ -1,4 +1,4 @@
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { UserRole } from "@mivitrina/shared";
 import { serverApiGet } from "@/lib/api-server";
@@ -12,6 +12,7 @@ export default async function MesReservationsPage({
   searchParams: Promise<{ payment?: string }>;
 }) {
   const locale = await getLocale();
+  const t = await getTranslations("Reservations");
   const params = await searchParams;
 
   const { data: user, status } = await serverApiGet<AuthUser>("/auth/me");
@@ -28,10 +29,10 @@ export default async function MesReservationsPage({
     <>
       <PaymentStatusToast payment={params.payment} />
       <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
-        <h1 className="mb-6 text-2xl font-medium">Mes réservations</h1>
+        <h1 className="mb-6 text-2xl font-medium">{t("myBookingsPageTitle")}</h1>
 
         {(!reservations || reservations.length === 0) && (
-          <p className="text-muted-foreground">Vous n'avez pas encore de réservation.</p>
+          <p className="text-muted-foreground">{t("noneYet")}</p>
         )}
 
         <div className="flex flex-col gap-4">
