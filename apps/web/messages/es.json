@@ -1,4 +1,8 @@
 {
+  "Metadata": {
+    "title": "MiVitrina — Alquila tu escaparate",
+    "description": "Plataforma que conecta comercios con escaparate y anunciantes que buscan un espacio publicitario físico."
+  },
   "Nav": {
     "search": "Buscar",
     "login": "Iniciar sesión",

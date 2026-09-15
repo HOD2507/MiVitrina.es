@@ -37,6 +37,9 @@
   --color-sidebar-ring: var(--sidebar-ring);
   --color-ink: var(--ink);
   --color-ink-foreground: var(--ink-foreground);
+  --color-glow-amber: var(--glow-amber);
+  --color-glow-plum: var(--glow-plum);
+  --color-glow-cream: var(--glow-cream);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -69,6 +72,14 @@
      partout" ni sur un noir pur trop dur. */
   --ink: oklch(0.205 0.015 55);
   --ink-foreground: oklch(0.97 0.006 85);
+  /* Palette "spotlight de vitrine" — pensée pour MiVitrina précisément (un
+     poster éclairé dans une vitrine à la tombée du jour), pas des pastels
+     "voyage" génériques : un ambre chaud (lumière de vitrine) et un prune
+     profond (le ciel qui s'assombrit derrière), utilisés en petites touches
+     dans les dégradés/badges — jamais en aplat plein, toujours dilués. */
+  --glow-amber: oklch(0.84 0.1 78);
+  --glow-plum: oklch(0.42 0.09 340);
+  --glow-cream: oklch(0.97 0.025 80);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -105,12 +116,23 @@
 }
 
 @layer utilities {
-  /* Halo dégradé discret pour les sections héro/CTA — jamais de couleur
-     franche en aplat, toujours une transition douce vers le fond. */
+  /* Halo "spotlight de vitrine" pour les sections héro/CTA — plusieurs
+     lueurs (ambre + prune + primaire) à des positions asymétriques,
+     jamais de couleur franche en aplat, toujours diluées vers le fond.
+     Remplace l'ancien dégradé mono-orange, trop discret. */
   .bg-mesh {
     background-image:
-      radial-gradient(ellipse 60% 50% at 15% 0%, color-mix(in oklch, var(--primary), transparent 82%), transparent),
-      radial-gradient(ellipse 50% 40% at 100% 20%, color-mix(in oklch, var(--primary), transparent 88%), transparent);
+      radial-gradient(ellipse 55% 45% at 12% -5%, color-mix(in oklch, var(--glow-amber), transparent 55%), transparent),
+      radial-gradient(ellipse 45% 55% at 105% 15%, color-mix(in oklch, var(--primary), transparent 78%), transparent),
+      radial-gradient(ellipse 60% 40% at 50% 115%, color-mix(in oklch, var(--glow-plum), transparent 88%), transparent);
+  }
+  /* Version très atténuée de bg-mesh pour les panneaux internes (tableaux
+     de bord) : juste assez de couleur pour ne plus être "tout blanc", sans
+     rivaliser avec le contenu au premier plan. */
+  .bg-mesh-panel {
+    background-image:
+      radial-gradient(ellipse 70% 50% at 100% 0%, color-mix(in oklch, var(--glow-amber), transparent 88%), transparent),
+      radial-gradient(ellipse 50% 40% at 0% 100%, color-mix(in oklch, var(--primary), transparent 93%), transparent);
   }
   /* Léger relief pour casser la platitude des aplats sombres (section CTA "ink") — un dégradé plutôt qu'une texture, plus simple et tout aussi efficace. */
   .bg-grain {
@@ -127,5 +149,85 @@
   .hover-lift:hover {
     transform: translateY(-3px);
     box-shadow: 0 16px 32px -16px color-mix(in oklch, var(--foreground), transparent 82%);
+  }
+
+  /* Wordmark géant et très pâle, purement décoratif (footer) — signature
+     visuelle vue chez de nombreuses marques premium, absente du site
+     jusqu'ici. `overflow-hidden` doit être posé sur le conteneur parent. */
+  .ghost-wordmark {
+    font-family: var(--font-heading);
+    font-weight: 800;
+    line-height: 0.8;
+    letter-spacing: -0.04em;
+    color: color-mix(in oklch, var(--foreground), transparent 95%);
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  /* Signature MiVitrina (pas repris de la référence) : un halo qui tourne
+     lentement en anneau conique autour d'un élément au survol — l'idée du
+     "coup de projecteur qui balaie la vitrine". Posé sur ::before pour ne
+     jamais affecter le contenu ; `mask` conserve seulement le contour. */
+  .spotlight-hover {
+    position: relative;
+    isolation: isolate;
+  }
+  .spotlight-hover::before {
+    content: "";
+    position: absolute;
+    inset: -1.5px;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0%,
+      color-mix(in oklch, var(--glow-amber), transparent 15%) 12%,
+      transparent 28%
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    animation: spotlight-spin 3.5s linear infinite paused;
+    z-index: 1;
+    pointer-events: none;
+  }
+  .spotlight-hover:hover::before {
+    opacity: 1;
+    animation-play-state: running;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .spotlight-hover::before {
+      animation: none;
+    }
+  }
+  @keyframes spotlight-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* Cinta horizontale qui défile en boucle (données réelles dupliquées 2x
+     par le composant appelant pour boucler sans coupure) — en pause au
+     survol pour rester lisible, désactivée si mouvement réduit demandé. */
+  .marquee-track {
+    animation: marquee-scroll 32s linear infinite;
+  }
+  .marquee-track:hover {
+    animation-play-state: paused;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .marquee-track {
+      animation: none;
+    }
+  }
+  @keyframes marquee-scroll {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
   }
 }

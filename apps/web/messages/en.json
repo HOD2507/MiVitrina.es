@@ -1,4 +1,8 @@
 {
+  "Metadata": {
+    "title": "MiVitrina — Rent your shop window",
+    "description": "The platform connecting shops with a window to advertisers looking for physical ad space."
+  },
   "Nav": {
     "search": "Search",
     "login": "Log in",
