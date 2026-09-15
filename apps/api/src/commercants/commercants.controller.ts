@@ -10,7 +10,7 @@ import {
   Patch,
   Post,
 } from "@nestjs/common";
-import { UserRole, VerificationStatus } from "@mivitrina/shared";
+import { ReservationStatus, UserRole, VerificationStatus } from "@mivitrina/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { StorageService, UploadPurpose } from "../storage/storage.service";
 import { StripeService } from "../stripe/stripe.service";
@@ -87,6 +87,48 @@ export class CommercantsController {
       },
       showcasePhotos,
       spaces,
+    };
+  }
+
+  /**
+   * Indicateurs réels du tableau de bord commerçant — pas de données
+   * inventées : tout est calculé depuis les réservations/transactions
+   * effectives. `totalPayout` ne compte que les virements Stripe
+   * réellement effectués (stripeTransferId non nul), pas les montants
+   * simplement "dus".
+   */
+  @Get("me/stats")
+  async getStats(@CurrentUser() user: AuthenticatedUser) {
+    const profile = await this.prisma.commercantProfile.findUnique({ where: { userId: user.id } });
+    if (!profile) {
+      throw new NotFoundException("Profil commerçant introuvable.");
+    }
+
+    const [spacesCount, pendingCount, activeCount, payoutAgg] = await Promise.all([
+      this.prisma.vitrineSpace.count({ where: { commercantProfileId: profile.id } }),
+      this.prisma.reservation.count({
+        where: { space: { commercantProfileId: profile.id }, status: ReservationStatus.PENDING_VALIDATION },
+      }),
+      this.prisma.reservation.count({
+        where: {
+          space: { commercantProfileId: profile.id },
+          status: { in: [ReservationStatus.CONFIRMED, ReservationStatus.ACTIVE] },
+        },
+      }),
+      this.prisma.transaction.aggregate({
+        where: {
+          reservation: { space: { commercantProfileId: profile.id } },
+          stripeTransferId: { not: null },
+        },
+        _sum: { commercantPayoutAmount: true },
+      }),
+    ]);
+
+    return {
+      spacesCount,
+      pendingRequestsCount: pendingCount,
+      activeReservationsCount: activeCount,
+      totalPayout: Number(payoutAgg._sum.commercantPayoutAmount ?? 0),
     };
   }
 

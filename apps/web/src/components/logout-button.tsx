@@ -6,7 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import { api } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 
-export function LogoutButton() {
+export function LogoutButton({ className, variant = "outline" }: { className?: string; variant?: "outline" | "ghost" }) {
   const t = useTranslations("Dashboard");
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -22,7 +22,7 @@ export function LogoutButton() {
   }
 
   return (
-    <Button variant="outline" size="sm" onClick={handleLogout} disabled={loading} className="shrink-0">
+    <Button variant={variant} size="sm" onClick={handleLogout} disabled={loading} className={className}>
       {t("logout")}
     </Button>
   );

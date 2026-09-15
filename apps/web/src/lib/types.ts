@@ -230,3 +230,19 @@ export interface AdminDispute {
     transaction: { amount: string; status: TransactionStatus; stripePaymentIntentId: string | null };
   };
 }
+
+/** Résultat de GET /commercants/me/stats. */
+export interface CommercantStats {
+  spacesCount: number;
+  pendingRequestsCount: number;
+  activeReservationsCount: number;
+  totalPayout: number;
+}
+
+/** Résultat de GET /annonceurs/me/stats. */
+export interface AnnonceurStats {
+  activeReservationsCount: number;
+  pendingRequestsCount: number;
+  completedReservationsCount: number;
+  totalSpent: number;
+}

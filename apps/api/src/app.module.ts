@@ -6,6 +6,7 @@ import { MailModule } from "./mail/mail.module";
 import { AuthModule } from "./auth/auth.module";
 import { StorageModule } from "./storage/storage.module";
 import { CommercantsModule } from "./commercants/commercants.module";
+import { AnnonceursModule } from "./annonceurs/annonceurs.module";
 import { VitrineSpacesModule } from "./vitrine-spaces/vitrine-spaces.module";
 import { DiscoveryModule } from "./discovery/discovery.module";
 import { ReservationsModule } from "./reservations/reservations.module";
@@ -26,6 +27,7 @@ import { envValidationSchema } from "./config/env.validation";
     AuthModule,
     StorageModule,
     CommercantsModule,
+    AnnonceursModule,
     VitrineSpacesModule,
     DiscoveryModule,
     ReservationsModule,
@@ -33,8 +35,6 @@ import { envValidationSchema } from "./config/env.validation";
     ChatModule,
     AdminModule,
     HealthModule,
-    // Modules à venir : UsersModule (admin), AnnonceursModule,
-    // PaymentsModule, ChatModule, NotificationsModule, AdminModule...
   ],
 })
 export class AppModule {}
