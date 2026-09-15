@@ -15,9 +15,14 @@ import type { AccessTokenPayload, EmailActionTokenPayload, RefreshTokenPayload }
 
 const BCRYPT_SALT_ROUNDS = 12;
 
-/** Langue par défaut déduite du pays si l'utilisateur n'en précise pas. */
+/**
+ * Langue par défaut déduite du pays si l'utilisateur n'en précise pas
+ * (le frontend envoie en pratique toujours `locale` explicitement, déduit
+ * de la langue de navigation — voir register/page.tsx). Le français a été
+ * retiré : même un compte `Country.FR` dormant retombe sur l'espagnol.
+ */
 const DEFAULT_LOCALE_BY_COUNTRY: Record<Country, Locale> = {
-  [Country.FR]: Locale.FR,
+  [Country.FR]: Locale.ES,
   [Country.ES]: Locale.ES,
 };
 
@@ -25,6 +30,29 @@ const DEFAULT_LOCALE_BY_COUNTRY: Record<Country, Locale> = {
 const COUNTRY_NAME_FOR_GEOCODING: Record<Country, string> = {
   [Country.FR]: "France",
   [Country.ES]: "España",
+};
+
+/**
+ * Contenu des emails transactionnels, localisé (ES/EN) — le français a
+ * été retiré du produit, il ne doit plus non plus apparaître ici.
+ */
+const EMAIL_CONTENT: Record<Locale, { verifySubject: string; verifyBody: (url: string) => string; resetSubject: string; resetBody: (url: string) => string }> = {
+  [Locale.ES]: {
+    verifySubject: "Confirma tu email — MiVitrina",
+    verifyBody: (url) =>
+      `<p>¡Bienvenido a MiVitrina! Confirma tu email haciendo clic aquí:</p><p><a href="${url}">${url}</a></p>`,
+    resetSubject: "Restablece tu contraseña de MiVitrina",
+    resetBody: (url) =>
+      `<p>Haz clic en este enlace para elegir una nueva contraseña (válido 1 hora):</p><p><a href="${url}">${url}</a></p>`,
+  },
+  [Locale.EN]: {
+    verifySubject: "Confirm your email — MiVitrina",
+    verifyBody: (url) =>
+      `<p>Welcome to MiVitrina! Confirm your email by clicking here:</p><p><a href="${url}">${url}</a></p>`,
+    resetSubject: "Reset your MiVitrina password",
+    resetBody: (url) =>
+      `<p>Click this link to choose a new password (valid for 1 hour):</p><p><a href="${url}">${url}</a></p>`,
+  },
 };
 
 export interface AuthTokens {
@@ -179,7 +207,7 @@ export class AuthService {
             email: profile.email,
             passwordHash,
             role: UserRole.ANNONCEUR,
-            locale: Locale.FR,
+            locale: Locale.ES,
             // L'email est déjà vérifié par Google — pas besoin de notre propre lien de confirmation.
             emailVerified: true,
           },
@@ -247,11 +275,12 @@ export class AuthService {
     );
 
     const resetUrl = `${this.config.get<string>("WEB_APP_URL")}/${user.locale.toLowerCase()}/reset-password?token=${token}`;
+    const content = EMAIL_CONTENT[user.locale];
     try {
       await this.mail.send({
         to: user.email,
-        subject: "Réinitialisation de votre mot de passe MiVitrina",
-        html: `<p>Cliquez sur ce lien pour choisir un nouveau mot de passe (valable 1h) :</p><p><a href="${resetUrl}">${resetUrl}</a></p>`,
+        subject: content.resetSubject,
+        html: content.resetBody(resetUrl),
       });
     } catch (err) {
       // Ne jamais laisser un échec d'envoi se traduire par une réponse
@@ -300,10 +329,11 @@ export class AuthService {
     );
 
     const verifyUrl = `${this.config.get<string>("WEB_APP_URL")}/${locale.toLowerCase()}/verify-email?token=${token}`;
+    const content = EMAIL_CONTENT[locale];
     await this.mail.send({
       to: email,
-      subject: "Confirmez votre adresse email — MiVitrina",
-      html: `<p>Bienvenue sur MiVitrina ! Confirmez votre email en cliquant ici :</p><p><a href="${verifyUrl}">${verifyUrl}</a></p>`,
+      subject: content.verifySubject,
+      html: content.verifyBody(verifyUrl),
     });
   }
 

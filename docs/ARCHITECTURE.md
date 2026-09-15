@@ -549,3 +549,72 @@ d'application" ci-dessus (sidebar, tableaux de bord chiffrés).
 - Reste à faire pour un envoi à n'importe quel destinataire réel :
   acheter le domaine `mivitrina.es`, le vérifier dans Resend (DNS), puis
   repasser `RESEND_FROM_EMAIL` sur `no-reply@mivitrina.es`.
+
+### Recentrage Espagne : langues ES/EN, français retiré (étape 17)
+
+- Décision produit : lancement centré uniquement sur l'Espagne pour
+  commencer (au lieu de France + Espagne). Le français est retiré des
+  langues du site, remplacé par l'anglais — nouvelles langues : **ES /
+  EN**.
+- `SUPPORTED_LOCALES`/`DEFAULT_LOCALE` (`packages/shared`) passent de
+  `["fr","es"]`/`"fr"` à `["es","en"]`/`"es"`. `messages/fr.json`
+  supprimé, `messages/en.json` créé (traduction complète, même
+  structure de clés que `es.json`, vérifiée programmatiquement —
+  aucune clé orpheline dans un sens ou l'autre).
+- **Migration base de données** (`Locale` Prisma, stockée par
+  utilisateur pour la langue des emails) : `{FR, ES}` → `{ES, EN}`.
+  Postgres ne permettant pas de retirer une valeur d'enum utilisée par
+  des lignes existantes, la migration recrée le type et migre les
+  données au passage (`FR` → `ES`) avant de le faire — 39 comptes de
+  test `locale=FR` basculés sans perte, vérifié par requête directe
+  avant/après.
+- `Country` (marché commerçant, FR/ES) reste inchangé dans le schéma —
+  **volontairement dormant plutôt que supprimé** : la France pourra être
+  rouverte plus tard sans nouvelle migration. Seule l'UI change : le
+  sélecteur de pays est retiré du formulaire d'inscription, le pays est
+  désormais toujours envoyé comme `ES`.
+- Carte de recherche (`recherche-client.tsx`) : centre par défaut
+  (utilisé si la géolocalisation est refusée) passé de Paris
+  (48.8566, 2.3522) à Madrid (40.4168, -3.7038).
+- **Inscription** : la langue de navigation courante (es/en) est
+  désormais envoyée explicitement comme `locale` à l'inscription
+  (`register/page.tsx` via `useLocale()`) plutôt que déduite du pays —
+  un visiteur qui navigue en anglais reçoit ses emails en anglais dès
+  le départ, indépendamment du pays.
+- **Emails transactionnels localisés** : jusqu'ici les emails de
+  vérification/reset étaient toujours en français en dur, quelle que
+  soit la langue de l'utilisateur — incohérent avec un site
+  maintenant ES/EN. Ajout d'un dictionnaire `EMAIL_CONTENT` (ES/EN)
+  dans `auth.service.ts`, sélectionné via `user.locale`. Vérifié avec
+  de vrais envois Resend : un compte de test basculé en `locale=EN`
+  reçoit bien un email au sujet "Reset your MiVitrina password" (au
+  lieu du texte français figé précédent).
+- **Audit et correction du texte français codé en dur** (bug plus
+  large que prévu, découvert en vérifiant le changement de langue) :
+  une bonne partie du tableau de bord, de la messagerie, de la
+  recherche, du calendrier et de la double confirmation photo
+  affichait du texte français en dur dans le JSX, sans passer par
+  next-intl — donc invisible au changement de fichier de langue, et
+  déjà incohérent avant même ce recentrage pour un visiteur naviguant
+  en espagnol. Fichiers corrigés (nouvelles clés `Dashboard`,
+  `Vitrine`, `Pricing`, `Reservations`, `Messages`, `Recherche`) :
+  tableau de bord (commerçant/annonceur), gestion de vitrine (espaces,
+  tarifs, photos), liste et carte de réservation, page de réservation,
+  double confirmation photo (pose/retrait), messagerie, recherche
+  géolocalisée, carte Stripe Connect, toast de statut de paiement,
+  fiche commerce publique, bouton de renvoi de vérification.
+- **Bug additionnel trouvé en creusant `date-picker.tsx`** : les noms
+  de mois et les initiales des jours de la semaine étaient formatés en
+  `fr-FR` en dur (`Intl.DateTimeFormat`), donc le calendrier de
+  réservation restait entièrement en français quelle que soit la
+  langue du site. Corrigé en dérivant dynamiquement le tag de langue
+  (`es-ES`/`en-GB`) depuis `useLocale()`, avec les initiales des jours
+  générées via `Intl.DateTimeFormat(locale, { weekday: "narrow" })`
+  plutôt que codées en dur (important : les initiales françaises et
+  espagnoles diffèrent, ex. mercredi = "M" en français mais "X" en
+  espagnol).
+- Portée assumée : les pages d'administration (`admin/disputes`,
+  `admin/settings`) n'ont pas été auditées dans cette passe — outil
+  interne réservé à l'exploitant de la plateforme, pas aux
+  commerçants/annonceurs, jugé non prioritaire pour ce recentrage.
+  Signalé à l'utilisateur comme reste à faire si souhaité.

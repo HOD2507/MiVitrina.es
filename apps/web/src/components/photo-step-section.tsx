@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { CheckCircle2, Loader2, ShieldAlert, Upload } from "lucide-react";
 import { api, ApiError } from "@/lib/api-client";
 import { uploadPhoto } from "@/lib/upload-photo";
@@ -32,6 +33,8 @@ interface PhotoStepSectionProps {
  * Ne rend rien pour les autres statuts.
  */
 export function PhotoStepSection({ reservation, viewer, onUpdated }: PhotoStepSectionProps) {
+  const t = useTranslations("Reservations");
+  const tErrors = useTranslations("Auth.errors");
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [disputeOpen, setDisputeOpen] = useState(false);
@@ -48,9 +51,6 @@ export function PhotoStepSection({ reservation, viewer, onUpdated }: PhotoStepSe
 
   const isInstall = step === "install";
   const photoUrl = isInstall ? reservation.installPhotoUrl : reservation.removalPhotoUrl;
-  const label = isInstall ? "pose" : "retrait";
-  /** "pose" est féminin, "retrait" est masculin — accord de l'article selon l'étape. */
-  const stepWithArticle = isInstall ? "la pose" : "le retrait";
   const uploadPath = `/reservations/${reservation.id}/${isInstall ? "install-photo" : "removal-photo"}`;
   const confirmPath = `/reservations/${reservation.id}/${isInstall ? "confirm-install" : "confirm-removal"}`;
   const uploadPurpose = isInstall ? "install-photo" : "removal-photo";
@@ -63,10 +63,10 @@ export function PhotoStepSection({ reservation, viewer, onUpdated }: PhotoStepSe
     try {
       const { key } = await uploadPhoto(file, uploadPurpose);
       await api.post<Reservation>(uploadPath, { key });
-      toast.success(`Photo de ${label} envoyée — en attente de confirmation de l'annonceur.`);
+      toast.success(isInstall ? t("photoUploadedToastInstall") : t("photoUploadedToastRemoval"));
       onUpdated();
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "L'envoi a échoué.");
+      toast.error(err instanceof ApiError ? err.message : tErrors("generic"));
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -80,11 +80,17 @@ export function PhotoStepSection({ reservation, viewer, onUpdated }: PhotoStepSe
         action,
         reason: action === "dispute" ? disputeReason : undefined,
       });
-      toast.success(action === "confirm" ? `${isInstall ? "Pose" : "Retrait"} confirmé(e).` : "Litige ouvert — notre équipe va l'examiner.");
+      toast.success(
+        action === "confirm"
+          ? isInstall
+            ? t("installConfirmedToast")
+            : t("removalConfirmedToast")
+          : t("disputeOpenedToast"),
+      );
       onUpdated();
       setDisputeOpen(false);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Une erreur est survenue.");
+      toast.error(err instanceof ApiError ? err.message : tErrors("generic"));
     } finally {
       setSubmitting(false);
     }
@@ -93,14 +99,14 @@ export function PhotoStepSection({ reservation, viewer, onUpdated }: PhotoStepSe
   return (
     <div className="rounded-lg border border-border bg-muted/30 p-3">
       <p className="mb-2 text-sm font-medium">
-        {isInstall ? "Confirmation de la pose de l'affiche" : "Confirmation du retrait de l'affiche"}
+        {isInstall ? t("installConfirmTitle") : t("removalConfirmTitle")}
       </p>
 
       {photoUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={photoUrl}
-          alt={`Preuve de ${label}`}
+          alt={isInstall ? t("installProofAlt") : t("removalProofAlt")}
           className="mb-2 h-40 w-32 rounded-md border border-border object-cover"
         />
       )}
@@ -108,7 +114,7 @@ export function PhotoStepSection({ reservation, viewer, onUpdated }: PhotoStepSe
       {viewer === "commercant" && !photoUrl && (
         <div className="flex flex-col gap-2">
           <p className="text-sm text-muted-foreground">
-            Envoyez une photo prouvant que l'affiche a bien été {isInstall ? "posée" : "retirée"}.
+            {isInstall ? t("uploadPromptInstall") : t("uploadPromptRemoval")}
           </p>
           <input
             ref={inputRef}
@@ -119,18 +125,18 @@ export function PhotoStepSection({ reservation, viewer, onUpdated }: PhotoStepSe
           />
           <Button size="sm" disabled={uploading} onClick={() => inputRef.current?.click()} className="self-start">
             {uploading ? <Loader2 className="size-3.5 animate-spin" /> : <Upload className="size-3.5" />}
-            Déclarer {stepWithArticle}
+            {isInstall ? t("declareInstall") : t("declareRemoval")}
           </Button>
         </div>
       )}
 
       {viewer === "commercant" && photoUrl && (
-        <p className="text-sm text-muted-foreground">En attente de confirmation de l'annonceur.</p>
+        <p className="text-sm text-muted-foreground">{t("awaitingAdvertiserConfirmation")}</p>
       )}
 
       {viewer === "annonceur" && !photoUrl && (
         <p className="text-sm text-muted-foreground">
-          En attente que le commerçant déclare {stepWithArticle} de l'affiche.
+          {isInstall ? t("awaitingShopInstall") : t("awaitingShopRemoval")}
         </p>
       )}
 
@@ -138,11 +144,11 @@ export function PhotoStepSection({ reservation, viewer, onUpdated }: PhotoStepSe
         <div className="flex gap-2">
           <Button size="sm" disabled={submitting} onClick={() => respondToPhoto("confirm")}>
             {submitting ? <Loader2 className="size-3.5 animate-spin" /> : <CheckCircle2 className="size-3.5" />}
-            Confirmer {stepWithArticle}
+            {isInstall ? t("confirmInstall") : t("confirmRemoval")}
           </Button>
           <Button size="sm" variant="outline" disabled={submitting} onClick={() => setDisputeOpen(true)}>
             <ShieldAlert className="size-3.5" />
-            Signaler un problème
+            {t("reportProblem")}
           </Button>
         </div>
       )}
@@ -150,16 +156,14 @@ export function PhotoStepSection({ reservation, viewer, onUpdated }: PhotoStepSe
       <Dialog open={disputeOpen} onOpenChange={setDisputeOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Signaler un problème</DialogTitle>
-            <DialogDescription>
-              Expliquez ce qui ne va pas avec cette photo — un litige sera ouvert et examiné par l'équipe MiVitrina.
-            </DialogDescription>
+            <DialogTitle>{t("reportProblem")}</DialogTitle>
+            <DialogDescription>{t("reportProblemDialogDesc")}</DialogDescription>
           </DialogHeader>
           <Textarea
             rows={3}
             value={disputeReason}
             onChange={(e) => setDisputeReason(e.target.value)}
-            placeholder="Ex : l'affiche n'est pas visible sur la photo, ce n'est pas la bonne vitrine..."
+            placeholder={t("reportProblemPlaceholder")}
           />
           <DialogFooter>
             <Button
@@ -167,7 +171,7 @@ export function PhotoStepSection({ reservation, viewer, onUpdated }: PhotoStepSe
               disabled={!disputeReason.trim() || submitting}
               onClick={() => respondToPhoto("dispute")}
             >
-              Ouvrir le litige
+              {t("openDispute")}
             </Button>
           </DialogFooter>
         </DialogContent>

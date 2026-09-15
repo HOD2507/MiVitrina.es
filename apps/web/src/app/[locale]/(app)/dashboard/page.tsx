@@ -20,6 +20,7 @@ export default async function DashboardPage({
   searchParams: Promise<{ stripe?: string }>;
 }) {
   const t = await getTranslations("Dashboard");
+  const tReservations = await getTranslations("Reservations");
   const params = await searchParams;
   const { data: user, status } = await serverApiGet<AuthUser>("/auth/me");
 
@@ -35,7 +36,14 @@ export default async function DashboardPage({
   }
 
   if (authedUser.role === UserRole.COMMERCANT) {
-    return <CommercantDashboard user={authedUser} stripeReturn={params.stripe === "return"} t={t} />;
+    return (
+      <CommercantDashboard
+        user={authedUser}
+        stripeReturn={params.stripe === "return"}
+        t={t}
+        tReservations={tReservations}
+      />
+    );
   }
   return <AnnonceurDashboard user={authedUser} t={t} />;
 }
@@ -44,10 +52,12 @@ async function CommercantDashboard({
   user,
   stripeReturn,
   t,
+  tReservations,
 }: {
   user: AuthUser;
   stripeReturn: boolean;
   t: Awaited<ReturnType<typeof getTranslations>>;
+  tReservations: Awaited<ReturnType<typeof getTranslations>>;
 }) {
   const profile = user.commercantProfile;
   const [{ data: stats }, { data: stripeStatus }, { data: reservations }] = await Promise.all([
@@ -59,7 +69,7 @@ async function CommercantDashboard({
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:py-10">
       <div>
-        <h1 className="text-2xl font-medium">Bonjour, {profile?.businessName ?? user.email}</h1>
+        <h1 className="text-2xl font-medium">{t("greeting", { name: profile?.businessName ?? user.email })}</h1>
         <div className="mt-1.5 flex items-center gap-2">
           {profile?.verificationStatus === VerificationStatus.VERIFIED && (
             <Badge className="bg-green-600 text-white">✓ {t("verified")}</Badge>
@@ -96,7 +106,7 @@ async function CommercantDashboard({
       {profile && profile.verificationStatus !== VerificationStatus.VERIFIED && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Vérification de votre commerce</CardTitle>
+            <CardTitle className="text-lg">{t("verificationCardTitle")}</CardTitle>
             <CardDescription>
               {profile.verificationDocumentUrl ? t("verificationPending") : t("verificationMissingDocument")}
             </CardDescription>
@@ -111,33 +121,33 @@ async function CommercantDashboard({
 
       {stats && (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard icon={Wallet} label="Reçu au total" value={`${stats.totalPayout.toFixed(0)} €`} tone="accent" />
-          <StatCard icon={CalendarCheck} label="Réservations en cours" value={stats.activeReservationsCount} />
-          <StatCard icon={Clock} label="Demandes en attente" value={stats.pendingRequestsCount} />
-          <StatCard icon={Store} label="Espaces publiés" value={stats.spacesCount} />
+          <StatCard icon={Wallet} label={t("statTotalReceived")} value={`${stats.totalPayout.toFixed(0)} €`} tone="accent" />
+          <StatCard icon={CalendarCheck} label={t("statActiveReservations")} value={stats.activeReservationsCount} />
+          <StatCard icon={Clock} label={t("statPendingRequests")} value={stats.pendingRequestsCount} />
+          <StatCard icon={Store} label={t("statPublishedSpaces")} value={stats.spacesCount} />
         </div>
       )}
 
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <RecentReservationsList
-          title="Demandes récentes"
+          title={t("recentRequests")}
           reservations={reservations ?? []}
           viewer="commercant"
           seeAllHref="/dashboard/reservations"
-          emptyMessage="Aucune demande de réservation pour le moment."
+          emptyMessage={tReservations("noneYet")}
         />
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Actions rapides</CardTitle>
+            <CardTitle className="text-lg">{t("quickActions")}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
             <Button variant="outline" className="justify-start" render={<Link href="/dashboard/vitrine" />}>
               <Store className="size-4" />
-              Gérer ma vitrine
+              {t("manageVitrine")}
             </Button>
             <Button variant="outline" className="justify-start" render={<Link href="/dashboard/reservations" />}>
               <CalendarCheck className="size-4" />
-              Voir les demandes
+              {t("viewRequests")}
             </Button>
           </CardContent>
         </Card>
@@ -162,7 +172,7 @@ async function AnnonceurDashboard({
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:py-10">
       <div>
         <h1 className="text-2xl font-medium">
-          Bonjour, {user.annonceurProfile?.companyName ?? user.email}
+          {t("greeting", { name: user.annonceurProfile?.companyName ?? user.email })}
         </h1>
       </div>
 
@@ -179,33 +189,33 @@ async function AnnonceurDashboard({
 
       {stats && (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard icon={TrendingUp} label="Dépensé au total" value={`${stats.totalSpent.toFixed(0)} €`} tone="accent" />
-          <StatCard icon={CalendarCheck} label="Réservations en cours" value={stats.activeReservationsCount} />
-          <StatCard icon={Clock} label="En attente" value={stats.pendingRequestsCount} />
-          <StatCard icon={CheckCircle2} label="Terminées" value={stats.completedReservationsCount} />
+          <StatCard icon={TrendingUp} label={t("statTotalSpent")} value={`${stats.totalSpent.toFixed(0)} €`} tone="accent" />
+          <StatCard icon={CalendarCheck} label={t("statActiveReservations")} value={stats.activeReservationsCount} />
+          <StatCard icon={Clock} label={t("statPending")} value={stats.pendingRequestsCount} />
+          <StatCard icon={CheckCircle2} label={t("statCompleted")} value={stats.completedReservationsCount} />
         </div>
       )}
 
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <RecentReservationsList
-          title="Mes réservations récentes"
+          title={t("myRecentReservations")}
           reservations={reservations ?? []}
           viewer="annonceur"
           seeAllHref="/mes-reservations"
-          emptyMessage="Vous n'avez pas encore de réservation."
+          emptyMessage={t("noReservationsYet")}
         />
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Actions rapides</CardTitle>
+            <CardTitle className="text-lg">{t("quickActions")}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
             <Button className="justify-start" render={<Link href="/recherche" />}>
               <Search className="size-4" />
-              Rechercher un commerce
+              {t("searchCommerce")}
             </Button>
             <Button variant="outline" className="justify-start" render={<Link href="/mes-reservations" />}>
               <CalendarCheck className="size-4" />
-              Toutes mes réservations
+              {t("allMyReservations")}
             </Button>
           </CardContent>
         </Card>

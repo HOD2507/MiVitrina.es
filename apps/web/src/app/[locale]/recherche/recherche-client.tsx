@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { MapPin, Search, Loader2, Store } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
@@ -14,17 +15,25 @@ import { Card, CardContent } from "@/components/ui/card";
 import { BottomSheet } from "@/components/bottom-sheet";
 import type { MapMarker } from "@/components/commerce-map";
 
+/** Composant nommé (pas une arrow function anonyme) : `next/dynamic` le rend
+ * comme un composant React normal, donc `useTranslations` y fonctionne. */
+function MapLoadingFallback() {
+  const t = useTranslations("Recherche");
+  return <div className="flex h-full items-center justify-center text-muted-foreground">{t("loadingMap")}</div>;
+}
+
 // Leaflet touche `window` dès l'import : composant chargé uniquement
 // côté client, jamais lors du rendu serveur.
 const CommerceMap = dynamic(() => import("@/components/commerce-map").then((m) => m.CommerceMap), {
   ssr: false,
-  loading: () => <div className="flex h-full items-center justify-center text-muted-foreground">Chargement de la carte...</div>,
+  loading: MapLoadingFallback,
 });
 
-const DEFAULT_CENTER = { lat: 48.8566, lng: 2.3522 }; // Paris, par défaut si géolocalisation refusée/indisponible
+const DEFAULT_CENTER = { lat: 40.4168, lng: -3.7038 }; // Madrid, par défaut si géolocalisation refusée/indisponible
 const RADIUS_OPTIONS = [1, 5, 10, 25, 50, 100];
 
 export function RechercheClient() {
+  const t = useTranslations("Recherche");
   const [center, setCenter] = useState(DEFAULT_CENTER);
   const [radiusKm, setRadiusKm] = useState(10);
   const [results, setResults] = useState<NearbyCommerce[]>([]);
@@ -39,14 +48,15 @@ export function RechercheClient() {
       const data = await api.get<NearbyCommerce[]>(`/discovery/search?lat=${point.lat}&lng=${point.lng}&radiusKm=${radius}`);
       setResults(data);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Recherche impossible pour le moment.");
+      toast.error(err instanceof ApiError ? err.message : t("searchError"));
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Géolocalisation navigateur au chargement — si refusée, on garde le
-  // centre par défaut (Paris) et l'utilisateur peut chercher une ville.
+  // centre par défaut (Madrid) et l'utilisateur peut chercher une ville.
   useEffect(() => {
     if (!navigator.geolocation) {
       setLocating(false);
@@ -88,7 +98,7 @@ export function RechercheClient() {
       setCenter(newCenter);
       runSearch(newCenter, radiusKm);
     } catch {
-      toast.error("Lieu introuvable. Essayez une ville ou une adresse plus précise.");
+      toast.error(t("placeNotFound"));
     } finally {
       setSearchingCity(false);
     }
@@ -105,7 +115,7 @@ export function RechercheClient() {
     <div className="flex flex-col gap-3 sm:flex-row">
       <form onSubmit={handleCitySearch} className="flex flex-1 gap-2">
         <Input
-          placeholder="Ville ou adresse (ex: Lyon, Madrid...)"
+          placeholder={t("placeholderCity")}
           value={cityQuery}
           onChange={(e) => setCityQuery(e.target.value)}
         />
@@ -116,7 +126,7 @@ export function RechercheClient() {
 
       <Select value={String(radiusKm)} onValueChange={handleRadiusChange}>
         <SelectTrigger className="w-full sm:w-[140px]">
-          <SelectValue>{(v: string) => `Rayon : ${v} km`}</SelectValue>
+          <SelectValue>{(v: string) => t("radiusLabel", { km: v })}</SelectValue>
         </SelectTrigger>
         <SelectContent>
           {RADIUS_OPTIONS.map((r) => (
@@ -132,7 +142,7 @@ export function RechercheClient() {
   const statusLine = (loading || locating) && (
     <p className="flex items-center gap-2 text-sm text-muted-foreground">
       <Loader2 className="size-4 animate-spin" />
-      {locating ? "Localisation en cours..." : "Recherche en cours..."}
+      {locating ? t("locating") : t("searching")}
     </p>
   );
 
@@ -140,9 +150,7 @@ export function RechercheClient() {
     <div className="flex flex-col gap-3">
       {!loading && !locating && results.length === 0 && (
         <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            Aucun commerce trouvé dans ce rayon. Essayez d'élargir la zone de recherche.
-          </CardContent>
+          <CardContent className="py-8 text-center text-muted-foreground">{t("noResults")}</CardContent>
         </Card>
       )}
 
@@ -165,10 +173,9 @@ export function RechercheClient() {
                   {commerce.city} · {commerce.distanceKm} km
                 </p>
                 <p className="mt-1 text-sm">
-                  {commerce.spaceCount} espace{commerce.spaceCount > 1 ? "s" : ""} disponible
-                  {commerce.spaceCount > 1 ? "s" : ""}
+                  {t("spacesAvailable", { count: commerce.spaceCount })}
                   {commerce.minPrice !== null && (
-                    <span className="font-semibold"> · dès {commerce.minPrice.toFixed(0)} €</span>
+                    <span className="font-semibold"> {t("fromPrice", { price: commerce.minPrice.toFixed(0) })}</span>
                   )}
                 </p>
               </div>
@@ -184,7 +191,7 @@ export function RechercheClient() {
       {/* Desktop / tablette : carte et liste côte à côte, comme avant. */}
       <div className="mx-auto hidden max-w-6xl px-4 py-8 lg:block">
         <div className="mb-6 flex flex-col gap-4">
-          <h1 className="text-2xl font-medium">Trouver un commerce près de chez vous</h1>
+          <h1 className="text-2xl font-medium">{t("title")}</h1>
           {searchBar}
         </div>
 
@@ -209,9 +216,7 @@ export function RechercheClient() {
         <BottomSheet
           peek={
             <p className="text-sm font-medium text-muted-foreground">
-              {loading || locating
-                ? "Recherche en cours..."
-                : `${results.length} commerce${results.length > 1 ? "s" : ""} trouvé${results.length > 1 ? "s" : ""} — glisser pour voir la liste`}
+              {loading || locating ? t("searching") : t("resultsFound", { count: results.length })}
             </p>
           }
         >

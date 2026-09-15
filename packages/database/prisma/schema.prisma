@@ -27,16 +27,20 @@ datasource db {
 // Enums
 // ---------------------------------------------------------------------------
 
-/// Pays de marché supportés au MVP (France, Espagne).
+/// Pays de marché. Lancement recentré sur l'Espagne (2026-09) : FR reste
+/// dans le schéma pour une réouverture ultérieure mais n'est plus proposé
+/// côté UI (voir docs/ARCHITECTURE.md, étape "recentrage Espagne").
 enum Country {
   FR
   ES
 }
 
-/// Langue préférée d'un utilisateur (emails, notifications).
+/// Langue préférée d'un utilisateur (emails, notifications). Le français a
+/// été retiré (lancement Espagne uniquement, ES/EN) — voir migration
+/// associée qui bascule les comptes FR existants vers ES.
 enum Locale {
-  FR
   ES
+  EN
 }
 
 /// Rôle applicatif d'un utilisateur.
@@ -138,7 +142,7 @@ model User {
   email         String    @unique
   passwordHash  String
   role          UserRole
-  locale        Locale    @default(FR)
+  locale        Locale    @default(ES)
   phone         String?
   avatarUrl     String?
   emailVerified Boolean   @default(false)

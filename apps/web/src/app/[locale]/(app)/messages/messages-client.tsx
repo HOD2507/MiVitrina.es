@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Loader2, Send, ShieldAlert } from "lucide-react";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { api, ApiError } from "@/lib/api-client";
@@ -27,6 +28,7 @@ interface MessagesClientProps {
  * temps réel" sans complexité d'infrastructure supplémentaire.
  */
 export function MessagesClient({ initialThreads, initialThreadId, currentUserId }: MessagesClientProps) {
+  const t = useTranslations("Messages");
   const router = useRouter();
   const pathname = usePathname();
 
@@ -51,7 +53,7 @@ export function MessagesClient({ initialThreads, initialThreadId, currentUserId 
     try {
       setMessages(await api.get<ChatMessage[]>(`/chat/threads/${threadId}/messages`));
     } catch (err) {
-      if (!silent) toast.error(err instanceof ApiError ? err.message : "Impossible de charger les messages.");
+      if (!silent) toast.error(err instanceof ApiError ? err.message : t("loadError"));
     } finally {
       if (!silent) setLoadingMessages(false);
     }
@@ -95,11 +97,11 @@ export function MessagesClient({ initialThreads, initialThreadId, currentUserId 
       setMessages((prev) => [...prev, message]);
       setInput("");
       if (message.flagged) {
-        toast.info("Vos coordonnées ont été masquées — les échanges doivent rester sur la plateforme.");
+        toast.info(t("contactsHiddenNotice"));
       }
       loadThreads();
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "L'envoi a échoué.");
+      toast.error(err instanceof ApiError ? err.message : t("sendError"));
     } finally {
       setSending(false);
     }
@@ -111,7 +113,7 @@ export function MessagesClient({ initialThreads, initialThreadId, currentUserId 
     <div className="grid gap-4 md:grid-cols-[280px_1fr]">
       <Card className="h-[32rem] gap-0 overflow-y-auto p-0">
         {threads.length === 0 && (
-          <p className="p-4 text-sm text-muted-foreground">Aucune conversation pour le moment.</p>
+          <p className="p-4 text-sm text-muted-foreground">{t("noConversationsYet")}</p>
         )}
         <div className="flex flex-col divide-y divide-border">
           {threads.map((thread) => (
@@ -138,7 +140,7 @@ export function MessagesClient({ initialThreads, initialThreadId, currentUserId 
       <Card className="h-[32rem] gap-0 p-0">
         {!selectedThread ? (
           <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-            Sélectionnez une conversation.
+            {t("selectConversation")}
           </div>
         ) : (
           <>
@@ -163,7 +165,7 @@ export function MessagesClient({ initialThreads, initialThreadId, currentUserId 
                     </div>
                     {msg.flagged && (
                       <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-                        <ShieldAlert className="size-3" /> coordonnées masquées
+                        <ShieldAlert className="size-3" /> {t("contactsHiddenBadge")}
                       </span>
                     )}
                   </div>
@@ -176,7 +178,7 @@ export function MessagesClient({ initialThreads, initialThreadId, currentUserId 
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Écrivez votre message..."
+                placeholder={t("placeholder")}
                 disabled={sending}
               />
               <Button type="submit" size="icon" disabled={sending || !input.trim()}>

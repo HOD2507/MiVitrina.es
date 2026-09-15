@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { Plus, Trash2, ImagePlus, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { VerificationStatus } from "@mivitrina/shared";
 import { api, ApiError } from "@/lib/api-client";
 import { uploadPhoto } from "@/lib/upload-photo";
@@ -16,6 +17,8 @@ import { SpaceFormDialog } from "./space-form-dialog";
 import { PricingOptionDialog } from "./pricing-option-dialog";
 
 export function VitrineClient({ initialVitrine }: { initialVitrine: MyVitrine | null }) {
+  const t = useTranslations("Vitrine");
+  const tErrors = useTranslations("Auth.errors");
   const [profile] = useState(initialVitrine?.profile ?? null);
   const [description, setDescription] = useState(initialVitrine?.profile.description ?? "");
   const [savingDescription, setSavingDescription] = useState(false);
@@ -30,16 +33,16 @@ export function VitrineClient({ initialVitrine }: { initialVitrine: MyVitrine | 
   const [pricingDialogSpaceId, setPricingDialogSpaceId] = useState<string | null>(null);
 
   if (!profile) {
-    return <p className="text-muted-foreground">Impossible de charger votre vitrine pour le moment.</p>;
+    return <p className="text-muted-foreground">{t("loadError")}</p>;
   }
 
   async function handleSaveDescription() {
     setSavingDescription(true);
     try {
       await api.patch("/commercants/me", { description });
-      toast.success("Description enregistrée.");
+      toast.success(t("saveDescriptionSuccess"));
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Une erreur est survenue.");
+      toast.error(err instanceof ApiError ? err.message : tErrors("generic"));
     } finally {
       setSavingDescription(false);
     }
@@ -53,9 +56,9 @@ export function VitrineClient({ initialVitrine }: { initialVitrine: MyVitrine | 
       const { key } = await uploadPhoto(file, "showcase-photo");
       const photo = await api.post<Photo>("/commercants/me/showcase-photos", { key });
       setShowcasePhotos((prev) => [...prev, photo]);
-      toast.success("Photo ajoutée.");
+      toast.success(t("photoAdded"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Envoi impossible.");
+      toast.error(err instanceof Error ? err.message : t("uploadImpossible"));
     } finally {
       setUploadingShowcase(false);
       if (showcaseInputRef.current) showcaseInputRef.current.value = "";
@@ -67,7 +70,7 @@ export function VitrineClient({ initialVitrine }: { initialVitrine: MyVitrine | 
       await api.delete(`/commercants/me/showcase-photos/${id}`);
       setShowcasePhotos((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Suppression impossible.");
+      toast.error(err instanceof ApiError ? err.message : t("deleteImpossible"));
     }
   }
 
@@ -108,7 +111,7 @@ export function VitrineClient({ initialVitrine }: { initialVitrine: MyVitrine | 
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold">Ma vitrine</h1>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
         <p className="text-muted-foreground">{profile.businessName}</p>
       </div>
 
@@ -116,10 +119,7 @@ export function VitrineClient({ initialVitrine }: { initialVitrine: MyVitrine | 
         <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/30">
           <CardContent className="flex items-center gap-3 py-4">
             <ShieldCheck className="size-5 shrink-0 text-amber-700 dark:text-amber-400" />
-            <p className="text-sm text-amber-800 dark:text-amber-300">
-              Votre commerce n'est pas encore vérifié — les annonceurs ne verront votre vitrine qu'une fois la
-              vérification terminée. Complétez votre justificatif depuis le tableau de bord.
-            </p>
+            <p className="text-sm text-amber-800 dark:text-amber-300">{t("notVerifiedWarning")}</p>
           </CardContent>
         </Card>
       )}
@@ -127,18 +127,18 @@ export function VitrineClient({ initialVitrine }: { initialVitrine: MyVitrine | 
       {/* Description */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Description</CardTitle>
-          <CardDescription>Présentez votre commerce aux annonceurs.</CardDescription>
+          <CardTitle className="text-lg">{t("descriptionTitle")}</CardTitle>
+          <CardDescription>{t("descriptionDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <Textarea
             rows={4}
-            placeholder="Ex: Laverie automatique ouverte 7j/7, grande vitrine visible depuis la rue principale..."
+            placeholder={t("descriptionPlaceholder")}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
           <Button size="sm" className="self-start" onClick={handleSaveDescription} disabled={savingDescription}>
-            Enregistrer
+            {t("save")}
           </Button>
         </CardContent>
       </Card>
@@ -146,8 +146,8 @@ export function VitrineClient({ initialVitrine }: { initialVitrine: MyVitrine | 
       {/* Photos générales */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Photos de la vitrine</CardTitle>
-          <CardDescription>Des photos générales de votre devanture, visibles par les annonceurs.</CardDescription>
+          <CardTitle className="text-lg">{t("photosTitle")}</CardTitle>
+          <CardDescription>{t("photosDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
@@ -158,7 +158,7 @@ export function VitrineClient({ initialVitrine }: { initialVitrine: MyVitrine | 
                 <button
                   type="button"
                   onClick={() => handleDeleteShowcasePhoto(photo.id)}
-                  aria-label="Supprimer la photo"
+                  aria-label={t("deletePhotoAria")}
                   className="absolute inset-0 flex items-center justify-center bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100"
                 >
                   <Trash2 className="size-4" />
@@ -169,11 +169,11 @@ export function VitrineClient({ initialVitrine }: { initialVitrine: MyVitrine | 
               type="button"
               onClick={() => showcaseInputRef.current?.click()}
               disabled={uploadingShowcase}
-              aria-label="Ajouter une photo de la vitrine"
+              aria-label={t("addPhotoAria")}
               className="flex size-24 flex-col items-center justify-center gap-1 rounded-md border border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary disabled:opacity-50"
             >
               <ImagePlus className="size-5" />
-              <span className="text-xs">Ajouter</span>
+              <span className="text-xs">{t("add")}</span>
             </button>
             <input
               ref={showcaseInputRef}
@@ -190,19 +190,17 @@ export function VitrineClient({ initialVitrine }: { initialVitrine: MyVitrine | 
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">
-            Espaces disponibles <Badge variant="secondary">{spaces.length}</Badge>
+            {t("spacesTitle")} <Badge variant="secondary">{spaces.length}</Badge>
           </h2>
           <Button size="sm" onClick={openCreateSpaceDialog}>
             <Plus className="size-4" />
-            Ajouter un espace
+            {t("addSpace")}
           </Button>
         </div>
 
         {spaces.length === 0 && (
           <Card>
-            <CardContent className="py-8 text-center text-muted-foreground">
-              Aucun espace pour le moment. Ajoutez votre premier espace pour commencer à recevoir des réservations.
-            </CardContent>
+            <CardContent className="py-8 text-center text-muted-foreground">{t("noSpacesYet")}</CardContent>
           </Card>
         )}
 

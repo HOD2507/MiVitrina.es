@@ -100,7 +100,7 @@ export default function LandingPage() {
               <div className="relative w-full max-w-sm overflow-hidden rounded-2xl border border-border shadow-[0_24px_60px_-24px_rgba(0,0,0,0.3)]">
                 <Image
                   src="/images/hero-storefront.jpg"
-                  alt="Vitrine de commerce vue depuis la rue, avec une affiche publicitaire"
+                  alt={t("heroImageAlt")}
                   width={1000}
                   height={1000}
                   priority
@@ -147,10 +147,10 @@ export default function LandingPage() {
 
           <div className="mx-auto grid max-w-6xl grid-cols-2 gap-4 px-4 sm:gap-5 lg:grid-cols-4">
             {[
-              { src: "/images/poster-concert.jpg", label: t("galleryPoster1Label"), alt: "Foule à un concert de musique" },
-              { src: "/images/poster-theatre.jpg", label: t("galleryPoster2Label"), alt: "Silhouette d'une comédienne sur scène derrière un rideau rouge" },
-              { src: "/images/poster-mode.jpg", label: t("galleryPoster3Label"), alt: "Défilé de mode" },
-              { src: "/images/poster-affiches.jpg", label: t("galleryPoster4Label"), alt: "Affiches publicitaires superposées et déchirées" },
+              { src: "/images/poster-concert.jpg", label: t("galleryPoster1Label"), alt: t("galleryPoster1Alt") },
+              { src: "/images/poster-theatre.jpg", label: t("galleryPoster2Label"), alt: t("galleryPoster2Alt") },
+              { src: "/images/poster-mode.jpg", label: t("galleryPoster3Label"), alt: t("galleryPoster3Alt") },
+              { src: "/images/poster-affiches.jpg", label: t("galleryPoster4Label"), alt: t("galleryPoster4Alt") },
             ].map((item, i) => (
               <Reveal key={item.src} delay={i * 90}>
                 <div className="hover-lift group overflow-hidden rounded-xl border border-border shadow-sm">

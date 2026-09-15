@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 
 /**
@@ -11,18 +12,20 @@ import { usePathname, useRouter } from "@/i18n/navigation";
  * l'URL pour ne pas re-déclencher le toast à chaque refresh.
  */
 export function PaymentStatusToast({ payment }: { payment?: string }) {
+  const t = useTranslations("Dashboard");
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
     if (payment === "success") {
-      toast.success("Paiement reçu ! Le commerçant va examiner votre demande.");
+      toast.success(t("paymentReceivedToast"));
     } else if (payment === "cancelled") {
-      toast.info("Paiement annulé — vous pouvez réessayer quand vous voulez.");
+      toast.info(t("paymentCancelledToast"));
     } else {
       return;
     }
     router.replace(pathname);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [payment, router, pathname]);
 
   return null;

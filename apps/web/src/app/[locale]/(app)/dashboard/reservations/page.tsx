@@ -1,4 +1,4 @@
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { UserRole } from "@mivitrina/shared";
 import { serverApiGet } from "@/lib/api-server";
@@ -7,6 +7,7 @@ import { ReservationCard } from "@/components/reservation-card";
 
 export default async function DashboardReservationsPage() {
   const locale = await getLocale();
+  const t = await getTranslations("Reservations");
 
   const { data: user, status } = await serverApiGet<AuthUser>("/auth/me");
   if (status === 401 || !user) {
@@ -20,10 +21,10 @@ export default async function DashboardReservationsPage() {
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
-      <h1 className="mb-6 text-2xl font-medium">Demandes de réservation</h1>
+      <h1 className="mb-6 text-2xl font-medium">{t("pageTitle")}</h1>
 
       {(!reservations || reservations.length === 0) && (
-        <p className="text-muted-foreground">Aucune demande de réservation pour le moment.</p>
+        <p className="text-muted-foreground">{t("noneYet")}</p>
       )}
 
       <div className="flex flex-col gap-4">

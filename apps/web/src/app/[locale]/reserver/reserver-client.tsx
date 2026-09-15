@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { RentalDurationType } from "@mivitrina/shared";
 import { api, ApiError } from "@/lib/api-client";
@@ -13,12 +14,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { DatePicker, type BlockedRange } from "@/components/date-picker";
 import { Loader2 } from "lucide-react";
-
-const DURATION_LABELS: Record<string, string> = {
-  SEMAINE: "par semaine",
-  MOIS: "par mois",
-  LIBRE: "durée libre",
-};
 
 interface ReserverClientProps {
   spaceId: string;
@@ -54,6 +49,14 @@ export function ReserverClient({
   minDurationDays,
 }: ReserverClientProps) {
   const router = useRouter();
+  const t = useTranslations("Reservations");
+  const tPricing = useTranslations("Pricing");
+  const tErrors = useTranslations("Auth.errors");
+  const DURATION_LABELS: Record<string, string> = {
+    SEMAINE: tPricing("weekly"),
+    MOIS: tPricing("monthly"),
+    LIBRE: tPricing("free"),
+  };
   const today = new Date().toISOString().slice(0, 10);
 
   const [startDate, setStartDate] = useState(today);
@@ -83,11 +86,11 @@ export function ReserverClient({
     setError(null);
 
     if (!posterFile) {
-      setError("Merci de joindre votre affiche avant de réserver.");
+      setError(t("posterRequiredError"));
       return;
     }
     if (durationType === RentalDurationType.LIBRE && minDurationDays && customDurationDays < minDurationDays) {
-      setError(`Durée minimale pour ce tarif : ${minDurationDays} jour(s).`);
+      setError(t("minDurationError", { days: minDurationDays }));
       return;
     }
 
@@ -104,17 +107,15 @@ export function ReserverClient({
         const { key } = await uploadPhoto(posterFile, "poster");
         await api.post(`/reservations/${reservation.id}/poster`, { key });
       } catch {
-        toast.error(
-          "Votre demande a été créée mais l'envoi de l'affiche a échoué. Réessayez depuis \"Mes réservations\".",
-        );
+        toast.error(t("posterUploadFailedError"));
         router.push("/mes-reservations");
         return;
       }
 
-      toast.success("Demande de réservation envoyée !");
+      toast.success(t("bookingSentSuccess"));
       router.push("/mes-reservations");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Une erreur est survenue.");
+      setError(err instanceof ApiError ? err.message : tErrors("generic"));
     } finally {
       setSubmitting(false);
     }
@@ -123,7 +124,7 @@ export function ReserverClient({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-2xl">Réserver un espace</CardTitle>
+        <CardTitle className="text-2xl">{t("bookTitle")}</CardTitle>
         <CardDescription>
           {businessName} — {spaceName} · {Number(price).toFixed(2)} € {DURATION_LABELS[durationType]}
         </CardDescription>
@@ -131,7 +132,7 @@ export function ReserverClient({
       <CardContent>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="startDate">Date de début</Label>
+            <Label htmlFor="startDate">{t("startDateLabel")}</Label>
             <DatePicker
               id="startDate"
               value={startDate}
@@ -144,7 +145,7 @@ export function ReserverClient({
 
           {durationType === RentalDurationType.LIBRE && (
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="customDurationDays">Durée (jours)</Label>
+              <Label htmlFor="customDurationDays">{t("customDurationLabel")}</Label>
               <Input
                 id="customDurationDays"
                 type="number"
@@ -158,12 +159,12 @@ export function ReserverClient({
 
           {endDate && (
             <p className="text-sm text-muted-foreground">
-              Période : du {startDate} au {endDate}
+              {t("periodLabel", { start: startDate, end: endDate })}
             </p>
           )}
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="poster">Votre affiche</Label>
+            <Label htmlFor="poster">{t("posterLabel")}</Label>
             <Input
               id="poster"
               type="file"
@@ -171,9 +172,7 @@ export function ReserverClient({
               required
               onChange={(e) => setPosterFile(e.target.files?.[0] ?? null)}
             />
-            <p className="text-xs text-muted-foreground">
-              JPG, PNG ou WEBP. Elle sera soumise à la validation du commerçant avant confirmation.
-            </p>
+            <p className="text-xs text-muted-foreground">{t("posterHint")}</p>
           </div>
 
           {error && (
@@ -184,7 +183,7 @@ export function ReserverClient({
 
           <Button type="submit" disabled={submitting} size="lg">
             {submitting && <Loader2 className="size-4 animate-spin" />}
-            Envoyer la demande de réservation
+            {t("submitBooking")}
           </Button>
         </form>
       </CardContent>

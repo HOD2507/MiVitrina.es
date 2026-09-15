@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { useTranslations } from "next-intl";
 import { PosterSizePreset } from "@mivitrina/shared";
 import { api, ApiError } from "@/lib/api-client";
 import type { VitrineSpace } from "@/lib/types";
@@ -19,15 +20,18 @@ import {
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const SIZE_LABELS: Record<PosterSizePreset, string> = {
-  A5: "A5",
-  A4: "A4",
-  A3: "A3",
-  A2: "A2",
-  A1: "A1",
-  VITRINE_ENTIERE: "Vitrine entière",
-  CUSTOM: "Dimensions personnalisées",
-};
+/** Fonction (pas une const module-level) car dépend de `t`, calculé dans le composant. */
+function buildSizeLabels(t: ReturnType<typeof useTranslations<"Vitrine">>): Record<PosterSizePreset, string> {
+  return {
+    A5: "A5",
+    A4: "A4",
+    A3: "A3",
+    A2: "A2",
+    A1: "A1",
+    VITRINE_ENTIERE: t("sizeVitrineEntiere"),
+    CUSTOM: t("sizeCustom"),
+  };
+}
 
 interface SpaceFormDialogProps {
   open: boolean;
@@ -38,6 +42,9 @@ interface SpaceFormDialogProps {
 }
 
 export function SpaceFormDialog({ open, onOpenChange, space, onSaved }: SpaceFormDialogProps) {
+  const t = useTranslations("Vitrine");
+  const tErrors = useTranslations("Auth.errors");
+  const SIZE_LABELS = buildSizeLabels(t);
   const [name, setName] = useState("");
   const [sizePreset, setSizePreset] = useState<PosterSizePreset>(PosterSizePreset.A4);
   const [customSizeLabel, setCustomSizeLabel] = useState("");
@@ -78,10 +85,10 @@ export function SpaceFormDialog({ open, onOpenChange, space, onSaved }: SpaceFor
         : await api.post<Omit<VitrineSpace, "photos" | "pricingOptions">>("/vitrine-spaces", payload);
 
       onSaved({ photos: [], pricingOptions: [], ...saved });
-      toast.success(space ? "Espace mis à jour." : "Espace créé.");
+      toast.success(space ? t("spaceUpdated") : t("spaceCreated"));
       onOpenChange(false);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Une erreur est survenue.");
+      toast.error(err instanceof ApiError ? err.message : tErrors("generic"));
     } finally {
       setSubmitting(false);
     }
@@ -92,26 +99,24 @@ export function SpaceFormDialog({ open, onOpenChange, space, onSaved }: SpaceFor
       <DialogContent>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>{space ? "Modifier l'espace" : "Ajouter un espace"}</DialogTitle>
-            <DialogDescription>
-              Un espace correspond à un emplacement précis de votre vitrine (une taille d'affiche donnée).
-            </DialogDescription>
+            <DialogTitle>{space ? t("editSpace") : t("addSpace")}</DialogTitle>
+            <DialogDescription>{t("spaceDialogDesc")}</DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col gap-4 py-4">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="space-name">Nom de l'espace</Label>
+              <Label htmlFor="space-name">{t("spaceNameLabel")}</Label>
               <Input
                 id="space-name"
                 required
-                placeholder="Ex: Vitrine gauche"
+                placeholder={t("spaceNamePlaceholder")}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="space-size">Taille</Label>
+              <Label htmlFor="space-size">{t("sizeLabel")}</Label>
               <Select value={sizePreset} onValueChange={(v) => setSizePreset(v as PosterSizePreset)}>
                 <SelectTrigger id="space-size" className="w-full">
                   <SelectValue>{(value: PosterSizePreset) => SIZE_LABELS[value]}</SelectValue>
@@ -128,11 +133,11 @@ export function SpaceFormDialog({ open, onOpenChange, space, onSaved }: SpaceFor
 
             {sizePreset === PosterSizePreset.CUSTOM && (
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="space-custom-size">Description de la taille</Label>
+                <Label htmlFor="space-custom-size">{t("customSizeLabel")}</Label>
                 <Input
                   id="space-custom-size"
                   required
-                  placeholder='Ex: 1,20m x 0,80m'
+                  placeholder={t("customSizePlaceholder")}
                   value={customSizeLabel}
                   onChange={(e) => setCustomSizeLabel(e.target.value)}
                 />
@@ -141,7 +146,7 @@ export function SpaceFormDialog({ open, onOpenChange, space, onSaved }: SpaceFor
 
             <div className="flex gap-4">
               <div className="flex flex-1 flex-col gap-1.5">
-                <Label htmlFor="space-width">Largeur (cm, optionnel)</Label>
+                <Label htmlFor="space-width">{t("widthLabel")}</Label>
                 <Input
                   id="space-width"
                   type="number"
@@ -151,7 +156,7 @@ export function SpaceFormDialog({ open, onOpenChange, space, onSaved }: SpaceFor
                 />
               </div>
               <div className="flex flex-1 flex-col gap-1.5">
-                <Label htmlFor="space-height">Hauteur (cm, optionnel)</Label>
+                <Label htmlFor="space-height">{t("heightLabel")}</Label>
                 <Input
                   id="space-height"
                   type="number"
@@ -163,11 +168,11 @@ export function SpaceFormDialog({ open, onOpenChange, space, onSaved }: SpaceFor
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="space-description">Description (optionnel)</Label>
+              <Label htmlFor="space-description">{t("spaceDescriptionLabel")}</Label>
               <Textarea
                 id="space-description"
                 rows={3}
-                placeholder="Ex: emplacement bien visible depuis la rue principale"
+                placeholder={t("spaceDescriptionPlaceholder")}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
@@ -176,7 +181,7 @@ export function SpaceFormDialog({ open, onOpenChange, space, onSaved }: SpaceFor
 
           <DialogFooter>
             <Button type="submit" disabled={submitting}>
-              {space ? "Enregistrer les modifications" : "Créer l'espace"}
+              {space ? t("saveChanges") : t("createSpace")}
             </Button>
           </DialogFooter>
         </form>
@@ -185,4 +190,4 @@ export function SpaceFormDialog({ open, onOpenChange, space, onSaved }: SpaceFor
   );
 }
 
-export { SIZE_LABELS };
+export { buildSizeLabels };

@@ -2,9 +2,9 @@
 
 import { Suspense, useState, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
-import { UserRole, Country } from "@mivitrina/shared";
+import { UserRole, Country, Locale, type SupportedLocale } from "@mivitrina/shared";
 import { api, ApiError } from "@/lib/api-client";
 import { useAuthProviders } from "@/lib/use-auth-providers";
 import type { AuthUser } from "@/lib/types";
@@ -13,7 +13,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { GoogleAuthButton } from "@/components/google-auth-button";
 import { Store, Megaphone, ArrowLeft, Mail } from "lucide-react";
 
@@ -59,6 +58,11 @@ function RegisterForm() {
   const searchParams = useSearchParams();
   const preselectedRole = searchParams.get("role");
   const providers = useAuthProviders();
+  // Langue de navigation courante -> langue préférée du compte (emails).
+  // Séparé de SupportedLocale (préfixe d'URL, minuscules) : Locale est le
+  // format stocké en base (majuscules, voir packages/shared).
+  const uiLocale = useLocale() as SupportedLocale;
+  const preferredLocale: Locale = uiLocale === "en" ? Locale.EN : Locale.ES;
 
   const [role, setRole] = useState<RegisterableRole | null>(
     isRegisterableRole(preselectedRole) ? preselectedRole : null,
@@ -67,7 +71,6 @@ function RegisterForm() {
   // le formulaire démarre replié pour ce rôle tant que l'email n'a pas
   // été explicitement choisi.
   const [showEmailForm, setShowEmailForm] = useState(false);
-  const [country, setCountry] = useState<Country>(Country.FR);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -98,7 +101,8 @@ function RegisterForm() {
         email,
         password,
         role,
-        country,
+        country: Country.ES,
+        locale: preferredLocale,
         ...(role === UserRole.COMMERCANT
           ? { businessName, businessIdNumber, addressLine1, addressLine2: addressLine2 || undefined, city, postalCode }
           : { companyName: companyName || undefined }),
@@ -180,19 +184,6 @@ function RegisterForm() {
         {(role === UserRole.COMMERCANT || !providers?.googleEnabled || showEmailForm) && (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="country">{t("country")}</Label>
-            <Select value={country} onValueChange={(v) => setCountry(v as Country)}>
-              <SelectTrigger id="country" className="w-full">
-                <SelectValue>{(value: Country) => (value === Country.FR ? t("countryFR") : t("countryES"))}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={Country.FR}>{t("countryFR")}</SelectItem>
-                <SelectItem value={Country.ES}>{t("countryES")}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
             <Label htmlFor="email">{t("email")}</Label>
             <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
@@ -234,9 +225,7 @@ function RegisterForm() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="businessIdNumber">
-                  {country === Country.FR ? t("businessIdNumber") : t("businessIdNumberES")}
-                </Label>
+                <Label htmlFor="businessIdNumber">{t("businessIdNumber")}</Label>
                 <Input
                   id="businessIdNumber"
                   required

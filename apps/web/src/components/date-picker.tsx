@@ -1,13 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useLocale, useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { cn } from "cn";
 
-const WEEKDAYS = ["L", "M", "M", "J", "V", "S", "D"];
-const MONTH_FORMATTER = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" });
-const DATE_FORMATTER = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+/** Tag BCP-47 utilisé pour le formatage — DD/MM comme en Espagne, y compris en anglais (en-GB, pas en-US). */
+const INTL_LOCALE: Record<string, string> = { es: "es-ES", en: "en-GB" };
+
+/** 1er janvier 2024 était un lundi : sert de base pour générer les
+ * initiales des jours de la semaine dans le bon ordre et la bonne langue. */
+function buildWeekdays(localeTag: string): string[] {
+  const formatter = new Intl.DateTimeFormat(localeTag, { weekday: "narrow" });
+  return Array.from({ length: 7 }, (_, i) => formatter.format(new Date(Date.UTC(2024, 0, 1 + i))));
+}
 
 function toIso(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -65,6 +72,18 @@ interface DatePickerProps {
  * arrondis) — bug réel constaté sur la page de réservation.
  */
 export function DatePicker({ value, onChange, minDate, id, blockedRanges = [], computeRangeEnd }: DatePickerProps) {
+  const t = useTranslations("Reservations");
+  const locale = useLocale();
+  const localeTag = INTL_LOCALE[locale] ?? "es-ES";
+  const WEEKDAYS = useMemo(() => buildWeekdays(localeTag), [localeTag]);
+  const MONTH_FORMATTER = useMemo(
+    () => new Intl.DateTimeFormat(localeTag, { month: "long", year: "numeric" }),
+    [localeTag],
+  );
+  const DATE_FORMATTER = useMemo(
+    () => new Intl.DateTimeFormat(localeTag, { day: "numeric", month: "long", year: "numeric" }),
+    [localeTag],
+  );
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0, width: 0 });
   const selected = fromIso(value);
@@ -200,7 +219,7 @@ export function DatePicker({ value, onChange, minDate, id, blockedRanges = [], c
                     key={day.toISOString()}
                     type="button"
                     disabled={isDisabled}
-                    title={blocked ? "Déjà réservé" : undefined}
+                    title={blocked ? t("alreadyBooked") : undefined}
                     onClick={() => select(day)}
                     className={cn(
                       "flex size-9 items-center justify-center rounded-md text-sm transition-colors",
@@ -220,7 +239,7 @@ export function DatePicker({ value, onChange, minDate, id, blockedRanges = [], c
 
             <div className="mt-3 flex items-center gap-1.5 border-t border-border pt-2.5 text-xs text-muted-foreground">
               <span className="size-2.5 rounded-full bg-destructive/40" />
-              Déjà réservé, non disponible
+              {t("alreadyBookedLegend")}
             </div>
           </div>,
           document.body,

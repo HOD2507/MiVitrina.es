@@ -5,10 +5,10 @@ import { usePathname, useRouter } from "@/i18n/navigation";
 import { SUPPORTED_LOCALES, type SupportedLocale } from "@mivitrina/shared";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const LABELS: Record<SupportedLocale, string> = { fr: "Français", es: "Español" };
+const LABELS: Record<SupportedLocale, string> = { es: "Español", en: "English" };
 /** Code court affiché dans le déclencheur — le nom complet reste dans la liste déroulante.
  * Évite un déclencheur trop large qui fait déborder le header sur mobile. */
-const SHORT_LABELS: Record<SupportedLocale, string> = { fr: "FR", es: "ES" };
+const SHORT_LABELS: Record<SupportedLocale, string> = { es: "ES", en: "EN" };
 
 export function LocaleSwitcher() {
   const locale = useLocale();

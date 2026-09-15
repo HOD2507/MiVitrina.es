@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { api, ApiError } from "@/lib/api-client";
 import type { StripeStatus } from "@/lib/types";
@@ -24,6 +25,7 @@ interface StripeConnectCardProps {
  * affichée ici est déjà à jour sans logique supplémentaire côté client.
  */
 export function StripeConnectCard({ status, justReturned }: StripeConnectCardProps) {
+  const t = useTranslations("Dashboard");
   const router = useRouter();
   const pathname = usePathname();
   const [loading, setLoading] = useState(false);
@@ -31,12 +33,13 @@ export function StripeConnectCard({ status, justReturned }: StripeConnectCardPro
   useEffect(() => {
     if (!justReturned) return;
     if (status.onboardingComplete) {
-      toast.success("Votre compte Stripe est connecté !");
+      toast.success(t("stripeConnectedToast"));
     } else {
-      toast.info("Onboarding Stripe non terminé — vous pouvez le reprendre à tout moment.");
+      toast.info(t("stripeNotCompleteToast"));
     }
     // Nettoie ?stripe=return de l'URL pour ne pas re-déclencher le toast au refresh.
     router.replace(pathname);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [justReturned, status.onboardingComplete, router, pathname]);
 
   async function startOnboarding() {
@@ -45,7 +48,7 @@ export function StripeConnectCard({ status, justReturned }: StripeConnectCardPro
       const { url } = await api.post<{ url: string }>("/commercants/me/stripe/onboarding");
       window.location.href = url;
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Impossible de démarrer la connexion Stripe.");
+      toast.error(err instanceof ApiError ? err.message : t("stripeStartError"));
       setLoading(false);
     }
   }
@@ -57,12 +60,12 @@ export function StripeConnectCard({ status, justReturned }: StripeConnectCardPro
           <div>
             <CardTitle className="flex items-center gap-2 text-lg">
               <CreditCard className="size-4.5" />
-              Paiements
+              {t("paymentsTitle")}
             </CardTitle>
-            <CardDescription>Votre compte Stripe est connecté, vous pouvez recevoir des virements.</CardDescription>
+            <CardDescription>{t("stripeConnectedDesc")}</CardDescription>
           </div>
           <Badge className="bg-green-600 text-white">
-            <CheckCircle2 className="size-3.5" /> Connecté
+            <CheckCircle2 className="size-3.5" /> {t("connected")}
           </Badge>
         </CardHeader>
       </Card>
@@ -74,18 +77,14 @@ export function StripeConnectCard({ status, justReturned }: StripeConnectCardPro
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <CreditCard className="size-4.5" />
-          Paiements
+          {t("paymentsTitle")}
         </CardTitle>
-        <CardDescription>
-          {status.connected
-            ? "Votre configuration Stripe n'est pas terminée — vous ne pourrez pas accepter de réservation payante tant qu'elle n'est pas complète."
-            : "Connectez un compte Stripe pour recevoir les paiements de vos réservations. Sans ça, vous ne pourrez pas accepter de demande."}
-        </CardDescription>
+        <CardDescription>{status.connected ? t("stripeIncompleteDesc") : t("stripeMissingDesc")}</CardDescription>
       </CardHeader>
       <CardContent>
         <Button size="sm" disabled={loading} onClick={startOnboarding}>
           {loading && <Loader2 className="size-3.5 animate-spin" />}
-          {status.connected ? "Terminer la configuration Stripe" : "Connecter Stripe"}
+          {status.connected ? t("stripeFinishSetup") : t("stripeConnect")}
         </Button>
       </CardContent>
     </Card>

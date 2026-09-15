@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { MapPin } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
@@ -9,24 +10,24 @@ import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { ContactCommerceButton } from "@/components/contact-commerce-button";
 
-const DURATION_LABELS: Record<string, string> = {
-  SEMAINE: "Par semaine",
-  MOIS: "Par mois",
-  LIBRE: "Durée libre",
-};
-
-const SIZE_LABELS: Record<string, string> = {
-  A5: "A5",
-  A4: "A4",
-  A3: "A3",
-  A2: "A2",
-  A1: "A1",
-  VITRINE_ENTIERE: "Vitrine entière",
-  CUSTOM: "",
-};
-
 export default async function CommerceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const t = await getTranslations("Vitrine");
+  const tPricing = await getTranslations("Pricing");
+  const DURATION_LABELS: Record<string, string> = {
+    SEMAINE: tPricing("weekly"),
+    MOIS: tPricing("monthly"),
+    LIBRE: tPricing("free"),
+  };
+  const SIZE_LABELS: Record<string, string> = {
+    A5: "A5",
+    A4: "A4",
+    A3: "A3",
+    A2: "A2",
+    A1: "A1",
+    VITRINE_ENTIERE: t("sizeVitrineEntiere"),
+    CUSTOM: "",
+  };
   const { data: commerce, status } = await serverApiGet<PublicCommerceProfile>(`/discovery/commercants/${id}`);
 
   if (status === 404 || !commerce) {
@@ -68,13 +69,13 @@ export default async function CommerceDetailPage({ params }: { params: Promise<{
 
         {profile.description && <p className="mb-6 text-muted-foreground">{profile.description}</p>}
 
-        <h2 className="mb-4 text-lg font-semibold">Espaces disponibles ({profile.spaces.length})</h2>
+        <h2 className="mb-4 text-lg font-semibold">
+          {t("availableSpacesTitle", { count: profile.spaces.length })}
+        </h2>
         <div className="flex flex-col gap-4">
           {profile.spaces.length === 0 && (
             <Card>
-              <CardContent className="py-8 text-center text-muted-foreground">
-                Ce commerce n'a pas encore publié d'espace disponible.
-              </CardContent>
+              <CardContent className="py-8 text-center text-muted-foreground">{t("noSpacesPublished")}</CardContent>
             </Card>
           )}
 
@@ -112,7 +113,7 @@ export default async function CommerceDetailPage({ params }: { params: Promise<{
                     >
                       <span>
                         {DURATION_LABELS[option.durationType]}
-                        {option.minDurationDays ? ` (min. ${option.minDurationDays}j)` : ""}
+                        {option.minDurationDays ? ` ${t("minDays", { days: option.minDurationDays })}` : ""}
                       </span>
                       <div className="flex items-center gap-3">
                         <span className="font-semibold">{Number(option.price).toFixed(2)} €</span>
@@ -135,13 +136,13 @@ export default async function CommerceDetailPage({ params }: { params: Promise<{
                             />
                           }
                         >
-                          Réserver
+                          {t("bookCta")}
                         </Button>
                       </div>
                     </div>
                   ))}
                   {space.pricingOptions.length === 0 && (
-                    <p className="text-sm text-muted-foreground">Aucun tarif publié pour cet espace.</p>
+                    <p className="text-sm text-muted-foreground">{t("noPricingPublished")}</p>
                   )}
                 </div>
               </CardContent>

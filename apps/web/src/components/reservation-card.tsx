@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { useLocale, useTranslations } from "next-intl";
 import { CalendarDays, CreditCard, Loader2, MapPin, MessageCircle, Store } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
 import { api, ApiError } from "@/lib/api-client";
@@ -22,29 +23,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { PhotoStepSection } from "@/components/photo-step-section";
 
-const STATUS_LABELS: Record<ReservationStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  PENDING_VALIDATION: { label: "En attente de réponse", variant: "outline" },
-  CONFIRMED: { label: "Confirmée", variant: "default" },
-  ACTIVE: { label: "En cours", variant: "default" },
-  COMPLETED: { label: "Terminée", variant: "secondary" },
-  CANCELLED_BY_ANNONCEUR: { label: "Annulée (annonceur)", variant: "destructive" },
-  CANCELLED_BY_COMMERCANT: { label: "Refusée", variant: "destructive" },
-  NO_SHOW: { label: "Absence constatée", variant: "destructive" },
-  DISPUTE: { label: "Litige", variant: "destructive" },
-};
-
-const DURATION_LABELS: Record<string, string> = {
-  SEMAINE: "par semaine",
-  MOIS: "par mois",
-  LIBRE: "durée libre",
-};
-
-/** Badge de statut de paiement — affiché seulement pour les statuts qui apportent une info utile. */
-const PAYMENT_BADGE: Partial<Record<TransactionStatus, { label: string; className: string }>> = {
-  PAID: { label: "Payée", className: "bg-green-600 text-white" },
-  REFUNDED: { label: "Remboursée", className: "" },
-  PARTIALLY_REFUNDED: { label: "Partiellement remboursée", className: "" },
-};
+/** Locale de formatage des dates — DD/MM comme en Espagne, y compris en anglais (en-GB, pas en-US). */
+const DATE_LOCALE: Record<string, string> = { es: "es-ES", en: "en-GB" };
 
 interface ReservationCardProps {
   reservation: Reservation;
@@ -54,12 +34,40 @@ interface ReservationCardProps {
 
 export function ReservationCard({ reservation, viewer, onUpdated }: ReservationCardProps) {
   const router = useRouter();
+  const locale = useLocale();
+  const t = useTranslations("Reservations");
+  const tPricing = useTranslations("Pricing");
+  const tErrors = useTranslations("Auth.errors");
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const [paying, setPaying] = useState(false);
   const [openingChat, setOpeningChat] = useState(false);
+
+  const STATUS_LABELS: Record<ReservationStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+    PENDING_VALIDATION: { label: t("statusPendingResponse"), variant: "outline" },
+    CONFIRMED: { label: t("statusConfirmed"), variant: "default" },
+    ACTIVE: { label: t("statusActive"), variant: "default" },
+    COMPLETED: { label: t("statusCompleted"), variant: "secondary" },
+    CANCELLED_BY_ANNONCEUR: { label: t("statusCancelledByAnnonceur"), variant: "destructive" },
+    CANCELLED_BY_COMMERCANT: { label: t("statusCancelledByCommercant"), variant: "destructive" },
+    NO_SHOW: { label: t("statusNoShow"), variant: "destructive" },
+    DISPUTE: { label: t("statusDispute"), variant: "destructive" },
+  };
+
+  const DURATION_LABELS: Record<string, string> = {
+    SEMAINE: tPricing("weekly"),
+    MOIS: tPricing("monthly"),
+    LIBRE: tPricing("free"),
+  };
+
+  /** Badge de statut de paiement — affiché seulement pour les statuts qui apportent une info utile. */
+  const PAYMENT_BADGE: Partial<Record<TransactionStatus, { label: string; className: string }>> = {
+    PAID: { label: t("paymentPaid"), className: "bg-green-600 text-white" },
+    REFUNDED: { label: t("paymentRefunded"), className: "" },
+    PARTIALLY_REFUNDED: { label: t("paymentPartiallyRefunded"), className: "" },
+  };
 
   const statusInfo = STATUS_LABELS[reservation.status];
   const paymentBadge = PAYMENT_BADGE[reservation.transaction.status];
@@ -76,7 +84,7 @@ export function ReservationCard({ reservation, viewer, onUpdated }: ReservationC
       const { url } = await api.post<{ url: string }>(`/reservations/${reservation.id}/checkout`);
       window.location.href = url;
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Impossible de démarrer le paiement.");
+      toast.error(err instanceof ApiError ? err.message : t("toastPaymentError"));
       setPaying(false);
     }
   }
@@ -88,12 +96,12 @@ export function ReservationCard({ reservation, viewer, onUpdated }: ReservationC
         action,
         rejectionReason: action === "reject" ? rejectionReason : undefined,
       });
-      toast.success(action === "approve" ? "Réservation confirmée." : "Demande refusée.");
+      toast.success(action === "approve" ? t("toastApproved") : t("toastRejected"));
       onUpdated?.(updated);
       setRejectOpen(false);
       router.refresh();
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Une erreur est survenue.");
+      toast.error(err instanceof ApiError ? err.message : tErrors("generic"));
     } finally {
       setSubmitting(false);
     }
@@ -115,21 +123,21 @@ export function ReservationCard({ reservation, viewer, onUpdated }: ReservationC
       });
       router.push(`/messages?thread=${thread.id}`);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Impossible d'ouvrir la conversation.");
+      toast.error(err instanceof ApiError ? err.message : t("toastChatError"));
       setOpeningChat(false);
     }
   }
 
   async function handleCancel() {
-    if (!confirm("Annuler cette demande de réservation ?")) return;
+    if (!confirm(t("confirmCancel"))) return;
     setSubmitting(true);
     try {
       const updated = await api.post<Reservation>(`/reservations/${reservation.id}/cancel`);
-      toast.success("Réservation annulée.");
+      toast.success(t("toastCancelled"));
       onUpdated?.(updated);
       router.refresh();
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Une erreur est survenue.");
+      toast.error(err instanceof ApiError ? err.message : tErrors("generic"));
     } finally {
       setSubmitting(false);
     }
@@ -164,16 +172,18 @@ export function ReservationCard({ reservation, viewer, onUpdated }: ReservationC
       <CardContent className="flex flex-col gap-3">
         <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <CalendarDays className="size-3.5" />
-          Du {new Date(reservation.startDate).toLocaleDateString("fr-FR")} au{" "}
-          {new Date(reservation.endDate).toLocaleDateString("fr-FR")} ·{" "}
-          {DURATION_LABELS[reservation.pricingOption.durationType]} · {Number(reservation.transaction.amount).toFixed(2)} €
+          {t("periodLabel", {
+            start: new Date(reservation.startDate).toLocaleDateString(DATE_LOCALE[locale] ?? "es-ES"),
+            end: new Date(reservation.endDate).toLocaleDateString(DATE_LOCALE[locale] ?? "es-ES"),
+          })}{" "}
+          · {DURATION_LABELS[reservation.pricingOption.durationType]} · {Number(reservation.transaction.amount).toFixed(2)} €
         </p>
 
         {reservation.posterUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={reservation.posterUrl}
-            alt="Affiche proposée"
+            alt={t("posterAlt")}
             className="h-40 w-32 rounded-md border border-border object-cover"
           />
         )}
@@ -186,9 +196,7 @@ export function ReservationCard({ reservation, viewer, onUpdated }: ReservationC
 
         {reservation.status === ReservationStatus.DISPUTE && (
           <Alert variant="destructive">
-            <AlertDescription>
-              Un litige est ouvert sur cette réservation — notre équipe va l'examiner et revenir vers vous.
-            </AlertDescription>
+            <AlertDescription>{t("disputeOpenNotice")}</AlertDescription>
           </Alert>
         )}
 
@@ -196,20 +204,18 @@ export function ReservationCard({ reservation, viewer, onUpdated }: ReservationC
 
         <Button size="sm" variant="ghost" disabled={openingChat} onClick={handleOpenChat} className="self-start">
           {openingChat ? <Loader2 className="size-3.5 animate-spin" /> : <MessageCircle className="size-3.5" />}
-          Discuter
+          {t("chat")}
         </Button>
 
         {canPay && (
           <Button size="sm" disabled={paying} onClick={handlePay} className="self-start">
             {paying ? <Loader2 className="size-3.5 animate-spin" /> : <CreditCard className="size-3.5" />}
-            Payer {Number(reservation.transaction.amount).toFixed(2)} €
+            {t("pay", { amount: Number(reservation.transaction.amount).toFixed(2) })}
           </Button>
         )}
 
         {canRespond && reservation.transaction.status !== TransactionStatus.PAID && (
-          <p className="text-sm text-muted-foreground">
-            En attente du paiement de l'annonceur — vous ne pouvez pas encore accepter cette demande.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("awaitingPaymentNotice")}</p>
         )}
 
         {canRespond && (
@@ -220,17 +226,17 @@ export function ReservationCard({ reservation, viewer, onUpdated }: ReservationC
               onClick={() => respond("approve")}
             >
               {submitting && <Loader2 className="size-3.5 animate-spin" />}
-              Accepter
+              {t("accept")}
             </Button>
             <Button size="sm" variant="outline" disabled={submitting} onClick={() => setRejectOpen(true)}>
-              Refuser
+              {t("reject")}
             </Button>
           </div>
         )}
 
         {canCancel && (
           <Button size="sm" variant="outline" disabled={submitting} onClick={handleCancel} className="self-start">
-            Annuler ma demande
+            {t("cancelMyRequest")}
           </Button>
         )}
       </CardContent>
@@ -238,14 +244,14 @@ export function ReservationCard({ reservation, viewer, onUpdated }: ReservationC
       <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Refuser la demande</DialogTitle>
-            <DialogDescription>Expliquez brièvement pourquoi, l'annonceur en sera informé.</DialogDescription>
+            <DialogTitle>{t("rejectDialogTitle")}</DialogTitle>
+            <DialogDescription>{t("rejectDialogDesc")}</DialogDescription>
           </DialogHeader>
           <Textarea
             rows={3}
             value={rejectionReason}
             onChange={(e) => setRejectionReason(e.target.value)}
-            placeholder="Ex: créneau finalement indisponible, affiche non conforme..."
+            placeholder={t("rejectPlaceholder")}
           />
           <DialogFooter>
             <Button
@@ -253,7 +259,7 @@ export function ReservationCard({ reservation, viewer, onUpdated }: ReservationC
               disabled={!rejectionReason.trim() || submitting}
               onClick={() => respond("reject")}
             >
-              Confirmer le refus
+              {t("confirmReject")}
             </Button>
           </DialogFooter>
         </DialogContent>

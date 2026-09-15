@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useTranslations } from "next-intl";
 import { RentalDurationType } from "@mivitrina/shared";
 import { api, ApiError } from "@/lib/api-client";
 import type { PricingOption } from "@/lib/types";
@@ -18,11 +19,16 @@ import {
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-export const DURATION_LABELS: Record<RentalDurationType, string> = {
-  SEMAINE: "Par semaine",
-  MOIS: "Par mois",
-  LIBRE: "Durée libre",
-};
+/** Fonction (pas une const module-level) car dépend de `t`, calculé dans le composant. */
+export function buildDurationLabels(
+  t: ReturnType<typeof useTranslations<"Pricing">>,
+): Record<RentalDurationType, string> {
+  return {
+    SEMAINE: t("weekly"),
+    MOIS: t("monthly"),
+    LIBRE: t("free"),
+  };
+}
 
 interface PricingOptionDialogProps {
   open: boolean;
@@ -32,6 +38,9 @@ interface PricingOptionDialogProps {
 }
 
 export function PricingOptionDialog({ open, onOpenChange, spaceId, onSaved }: PricingOptionDialogProps) {
+  const t = useTranslations("Pricing");
+  const tErrors = useTranslations("Auth.errors");
+  const DURATION_LABELS = buildDurationLabels(t);
   const [durationType, setDurationType] = useState<RentalDurationType>(RentalDurationType.SEMAINE);
   const [price, setPrice] = useState("");
   const [minDurationDays, setMinDurationDays] = useState("");
@@ -47,12 +56,12 @@ export function PricingOptionDialog({ open, onOpenChange, spaceId, onSaved }: Pr
         minDurationDays: durationType === RentalDurationType.LIBRE ? Number(minDurationDays) : undefined,
       });
       onSaved(saved);
-      toast.success("Tarif ajouté.");
+      toast.success(t("rateAdded"));
       onOpenChange(false);
       setPrice("");
       setMinDurationDays("");
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Une erreur est survenue.");
+      toast.error(err instanceof ApiError ? err.message : tErrors("generic"));
     } finally {
       setSubmitting(false);
     }
@@ -63,13 +72,13 @@ export function PricingOptionDialog({ open, onOpenChange, spaceId, onSaved }: Pr
       <DialogContent>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Ajouter un tarif</DialogTitle>
-            <DialogDescription>Définissez un prix pour une durée de location donnée.</DialogDescription>
+            <DialogTitle>{t("addRate")}</DialogTitle>
+            <DialogDescription>{t("addRateDesc")}</DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col gap-4 py-4">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="pricing-duration">Durée</Label>
+              <Label htmlFor="pricing-duration">{t("durationLabel")}</Label>
               <Select value={durationType} onValueChange={(v) => setDurationType(v as RentalDurationType)}>
                 <SelectTrigger id="pricing-duration" className="w-full">
                   <SelectValue>{(value: RentalDurationType) => DURATION_LABELS[value]}</SelectValue>
@@ -85,7 +94,7 @@ export function PricingOptionDialog({ open, onOpenChange, spaceId, onSaved }: Pr
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="pricing-price">Prix (€)</Label>
+              <Label htmlFor="pricing-price">{t("priceLabel")}</Label>
               <Input
                 id="pricing-price"
                 type="number"
@@ -99,7 +108,7 @@ export function PricingOptionDialog({ open, onOpenChange, spaceId, onSaved }: Pr
 
             {durationType === RentalDurationType.LIBRE && (
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="pricing-min-days">Durée minimale (jours)</Label>
+                <Label htmlFor="pricing-min-days">{t("minDurationLabel")}</Label>
                 <Input
                   id="pricing-min-days"
                   type="number"
@@ -114,7 +123,7 @@ export function PricingOptionDialog({ open, onOpenChange, spaceId, onSaved }: Pr
 
           <DialogFooter>
             <Button type="submit" disabled={submitting}>
-              Ajouter le tarif
+              {t("submitAddRate")}
             </Button>
           </DialogFooter>
         </form>

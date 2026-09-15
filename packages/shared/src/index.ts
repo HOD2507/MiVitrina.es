@@ -16,7 +16,9 @@
  */
 
 // ---------------------------------------------------------------------------
-// Marchés supportés (MVP : France + Espagne)
+// Marchés supportés (recentré sur l'Espagne pour le lancement — voir
+// docs/ARCHITECTURE.md ; la France reste dans le schéma pour une
+// réouverture ultérieure mais n'est plus proposée nulle part côté UI)
 // ---------------------------------------------------------------------------
 
 export const Country = {
@@ -29,12 +31,12 @@ export const SUPPORTED_COUNTRIES = Object.values(Country);
 /** @deprecated utiliser `Country` directement — conservé pour compatibilité. */
 export type SupportedCountry = Country;
 
-export const SUPPORTED_LOCALES = ["fr", "es"] as const;
+export const SUPPORTED_LOCALES = ["es", "en"] as const;
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 
-export const DEFAULT_LOCALE: SupportedLocale = "fr";
+export const DEFAULT_LOCALE: SupportedLocale = "es";
 
-/** Devise unique pour le MVP (FR + ES sont toutes deux en zone euro). */
+/** Devise unique pour le MVP (Espagne est en zone euro). */
 export const DEFAULT_CURRENCY = "EUR" as const;
 
 /**
@@ -43,8 +45,8 @@ export const DEFAULT_CURRENCY = "EUR" as const;
  * `SupportedLocale` ci-dessus, qui code le préfixe d'URL (minuscules).
  */
 export const Locale = {
-  FR: "FR",
   ES: "ES",
+  EN: "EN",
 } as const;
 export type Locale = (typeof Locale)[keyof typeof Locale];
 
