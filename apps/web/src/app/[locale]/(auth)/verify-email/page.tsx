@@ -4,13 +4,14 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { api, ApiError } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 function VerifyEmailContent() {
   const t = useTranslations("Auth.verifyEmail");
+  const router = useRouter();
   const token = useSearchParams().get("token");
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
 
@@ -39,7 +40,18 @@ function VerifyEmailContent() {
       </CardHeader>
       {status === "success" && (
         <CardContent>
-          <Button className="h-11 w-full rounded-full text-base" render={<Link href="/dashboard" />}>
+          {/* Pas un simple <Link> : le tableau de bord a probablement déjà été
+              visité juste avant (l'alerte "email non vérifié" n'apparaît que
+              dessus) — le cache de navigation client de Next.js pourrait
+              resservir cette version obsolète. router.refresh() force le
+              rechargement des données serveur (auth/me) après la navigation. */}
+          <Button
+            className="h-11 w-full rounded-full text-base"
+            onClick={() => {
+              router.push("/dashboard");
+              router.refresh();
+            }}
+          >
             {t("goToDashboard")}
           </Button>
         </CardContent>
@@ -47,7 +59,7 @@ function VerifyEmailContent() {
       {status === "error" && (
         <CardContent>
           <Button variant="outline" className="h-11 w-full rounded-full text-base" render={<Link href="/login" />}>
-            Se connecter
+            {t("loginCta")}
           </Button>
         </CardContent>
       )}

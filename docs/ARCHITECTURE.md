@@ -663,3 +663,39 @@ d'application" ci-dessus (sidebar, tableaux de bord chiffrés).
   - Vérifié : le payload final envoyé à `POST /auth/register` est
     resté strictement identique (même test API direct que
     précédemment, 201), seule la présentation a changé.
+
+### L'alerte "email non vérifié" ne disparaissait pas après vérification (étape 19)
+
+- Signalé par l'utilisateur avec capture (tableau de bord commerçant
+  "Café des Arts") : l'alerte persistait après avoir cliqué le lien de
+  vérification. Deux causes distinctes trouvées :
+  1. Les deux comptes démo (`demo.commercant@mivitrina.es`,
+     `demo.annonceur@mivitrina.es`) avaient réellement `emailVerified
+     = false` en base — créés par appel API direct au tout début de
+     cette conversation, avant même l'existence de la fonctionnalité
+     de vérification. Corrigé directement en base pour ces deux
+     comptes (mot de passe du compte annonceur aussi réinitialisé au
+     passage, faute de connaître l'original).
+  2. **Bug réel** dans `verify-email/page.tsx` : le bouton "Ir a mi
+     panel" utilisait un simple `<Link href="/dashboard" />`
+     (navigation client). Le tableau de bord ayant presque
+     certainement déjà été visité juste avant (l'alerte n'apparaît que
+     dessus), le cache de navigation client de Next.js pouvait
+     resservir la version obsolète (email non vérifié) au lieu de
+     refaire l'appel serveur `GET /auth/me`. Corrigé en remplaçant par
+     `router.push("/dashboard")` + `router.refresh()` — même schéma
+     déjà utilisé avec succès après connexion (`login/page.tsx`).
+     Vérifié côté serveur (curl direct sur `/auth/me` avant/après
+     l'appel à `GET /auth/verify-email`, avec un compte de test créé
+     pour l'occasion et un token signé manuellement avec
+     `EMAIL_TOKEN_SECRET` — Resend ne pouvant pas livrer à une adresse
+     de test arbitraire) : la donnée bascule bien côté serveur ; le
+     rechargement client lui-même n'est pas testable par curl (pur
+     comportement navigateur), la correction reprend un schéma déjà
+     éprouvé ailleurs dans le code.
+  - Au passage : encore un texte français oublié malgré les
+    précédents balayages, cette fois sans accent donc invisible à ma
+    méthode de recherche ("Se connecter" → "Iniciar sesión"/"Log in").
+    Confirme que le sweep par accents ne peut pas être exhaustif —
+    reste un risque résiduel pour tout mot français sans caractère
+    accentué.

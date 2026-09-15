@@ -144,7 +144,8 @@
       "goToDashboard": "Ir a mi panel",
       "resend": "Reenviar un email de verificación",
       "resendSuccess": "Se acaba de enviar un nuevo email de verificación.",
-      "sentLabel": "Email enviado"
+      "sentLabel": "Email enviado",
+      "loginCta": "Iniciar sesión"
     }
   },
   "Dashboard": {

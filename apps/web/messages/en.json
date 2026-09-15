@@ -144,7 +144,8 @@
       "goToDashboard": "Go to my dashboard",
       "resend": "Resend a verification email",
       "resendSuccess": "A new verification email has just been sent.",
-      "sentLabel": "Email sent"
+      "sentLabel": "Email sent",
+      "loginCta": "Log in"
     }
   },
   "Dashboard": {
