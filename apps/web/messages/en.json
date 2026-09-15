@@ -113,6 +113,14 @@
       "generic": "Something went wrong. Please try again.",
       "passwordMismatch": "Passwords don't match."
     },
+    "step": {
+      "indicator": "Step {current} of {total}",
+      "credentialsTitle": "Your account",
+      "businessTitle": "Your shop",
+      "addressTitle": "Shop address",
+      "next": "Next",
+      "previous": "Previous"
+    },
     "forgotPassword": {
       "title": "Forgot password",
       "description": "Enter your email and we'll send you a link to choose a new password.",

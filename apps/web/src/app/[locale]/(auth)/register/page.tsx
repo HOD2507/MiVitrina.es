@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, type FormEvent } from "react";
+import { Suspense, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
@@ -14,7 +14,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { GoogleAuthButton } from "@/components/google-auth-button";
+import { StepWizard } from "@/components/step-wizard";
 import { Store, Megaphone, ArrowLeft, Mail } from "lucide-react";
+
+/** Inscription commerçant en 3 étapes (compte / commerce / adresse) — voir StepWizard. */
+const COMMERCANT_STEPS = 3;
 
 /** Rôles ouverts à l'inscription publique — reflète apps/api/.../register.dto.ts. */
 type RegisterableRole = typeof UserRole.COMMERCANT | typeof UserRole.ANNONCEUR;
@@ -54,6 +58,7 @@ function RoleCard({
 function RegisterForm() {
   const t = useTranslations("Auth.register");
   const tErrors = useTranslations("Auth.errors");
+  const tStep = useTranslations("Auth.step");
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedRole = searchParams.get("role");
@@ -85,6 +90,59 @@ function RegisterForm() {
 
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Formulaire commerçant en plusieurs étapes (compte / commerce /
+  // adresse) plutôt qu'un unique long formulaire — voir StepWizard.
+  const [step, setStep] = useState(0);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const confirmPasswordRef = useRef<HTMLInputElement>(null);
+  const businessNameRef = useRef<HTMLInputElement>(null);
+  const businessIdNumberRef = useRef<HTMLInputElement>(null);
+
+  /** Valide l'étape courante avant de passer à la suivante — `reportValidity()`
+   * déclenche les bulles natives du navigateur sur les champs invalides. */
+  function validateStep(current: number): boolean {
+    setError(null);
+    if (current === 0) {
+      if (!emailRef.current?.reportValidity()) return false;
+      if (!passwordRef.current?.reportValidity()) return false;
+      if (!confirmPasswordRef.current?.reportValidity()) return false;
+      if (password !== confirmPassword) {
+        setError(tErrors("passwordMismatch"));
+        confirmPasswordRef.current?.focus();
+        return false;
+      }
+      return true;
+    }
+    if (current === 1) {
+      if (!businessNameRef.current?.reportValidity()) return false;
+      if (!businessIdNumberRef.current?.reportValidity()) return false;
+      return true;
+    }
+    return true;
+  }
+
+  function handleNextStep() {
+    if (validateStep(step)) setStep((s) => Math.min(s + 1, COMMERCANT_STEPS - 1));
+  }
+
+  function handlePreviousStep() {
+    setError(null);
+    setStep((s) => Math.max(s - 1, 0));
+  }
+
+  /** Enter dans un champ ne doit avancer d'étape (ou ne rien faire) que
+   * tant qu'on n'est pas sur la dernière étape — sinon le navigateur
+   * tenterait une soumission native prématurée du formulaire entier
+   * (et validerait au passage des champs pas encore affichés). */
+  function handleFormKeyDown(e: KeyboardEvent<HTMLFormElement>) {
+    if (e.key !== "Enter" || role !== UserRole.COMMERCANT) return;
+    if (step < COMMERCANT_STEPS - 1) {
+      e.preventDefault();
+      handleNextStep();
+    }
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -133,7 +191,10 @@ function RegisterForm() {
             icon={Store}
             title={t("roleCommercant")}
             description={t("roleCommercantDesc")}
-            onClick={() => setRole(UserRole.COMMERCANT)}
+            onClick={() => {
+              setStep(0);
+              setRole(UserRole.COMMERCANT);
+            }}
           />
           <RoleCard
             icon={Megaphone}
@@ -160,6 +221,19 @@ function RegisterForm() {
         <CardTitle className="font-heading text-3xl font-medium">
           {role === UserRole.COMMERCANT ? t("roleCommercant") : t("roleAnnonceur")}
         </CardTitle>
+        {role === UserRole.COMMERCANT && (
+          <div className="pt-2">
+            <p className="mb-1.5 text-xs font-medium text-muted-foreground">
+              {tStep("indicator", { current: step + 1, total: COMMERCANT_STEPS })}
+            </p>
+            <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary transition-[width] duration-300 ease-out"
+                style={{ width: `${((step + 1) / COMMERCANT_STEPS) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {role === UserRole.ANNONCEUR && providers?.googleEnabled && !showEmailForm && (
@@ -181,117 +255,199 @@ function RegisterForm() {
           </>
         )}
 
-        {(role === UserRole.COMMERCANT || !providers?.googleEnabled || showEmailForm) && (
+        {role === UserRole.COMMERCANT && (
+          <form onSubmit={handleSubmit} onKeyDown={handleFormKeyDown} className="flex flex-col gap-4">
+            <StepWizard step={step}>
+              {[
+                <div key="step-credentials" className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="email">{t("email")}</Label>
+                    <Input
+                      ref={emailRef}
+                      id="email"
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="password">{t("password")}</Label>
+                    <Input
+                      ref={passwordRef}
+                      id="password"
+                      type="password"
+                      required
+                      minLength={8}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">{t("passwordHint")}</p>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="confirmPassword">{t("password")} (confirmation)</Label>
+                    <Input
+                      ref={confirmPasswordRef}
+                      id="confirmPassword"
+                      type="password"
+                      required
+                      minLength={8}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
+                  </div>
+                </div>,
+
+                <div key="step-business" className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="businessName">{t("businessName")}</Label>
+                    <Input
+                      ref={businessNameRef}
+                      id="businessName"
+                      required
+                      value={businessName}
+                      onChange={(e) => setBusinessName(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="businessIdNumber">{t("businessIdNumber")}</Label>
+                    <Input
+                      ref={businessIdNumberRef}
+                      id="businessIdNumber"
+                      required
+                      value={businessIdNumber}
+                      onChange={(e) => setBusinessIdNumber(e.target.value)}
+                    />
+                  </div>
+                </div>,
+
+                <div key="step-address" className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="addressLine1">{t("addressLine1")}</Label>
+                    <Input
+                      id="addressLine1"
+                      required
+                      value={addressLine1}
+                      onChange={(e) => setAddressLine1(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="addressLine2">{t("addressLine2")}</Label>
+                    <Input id="addressLine2" value={addressLine2} onChange={(e) => setAddressLine2(e.target.value)} />
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="flex flex-1 flex-col gap-1.5">
+                      <Label htmlFor="city">{t("city")}</Label>
+                      <Input id="city" required value={city} onChange={(e) => setCity(e.target.value)} />
+                    </div>
+                    <div className="flex flex-1 flex-col gap-1.5">
+                      <Label htmlFor="postalCode">{t("postalCode")}</Label>
+                      <Input
+                        id="postalCode"
+                        required
+                        value={postalCode}
+                        onChange={(e) => setPostalCode(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{t("verificationNote")}</p>
+                </div>,
+              ]}
+            </StepWizard>
+
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="mt-1 flex gap-2">
+              {step > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 flex-1 rounded-full text-base"
+                  size="lg"
+                  onClick={handlePreviousStep}
+                >
+                  {tStep("previous")}
+                </Button>
+              )}
+              {step < COMMERCANT_STEPS - 1 ? (
+                <Button
+                  type="button"
+                  className="h-11 flex-1 rounded-full text-base"
+                  size="lg"
+                  onClick={handleNextStep}
+                >
+                  {tStep("next")}
+                </Button>
+              ) : (
+                <Button type="submit" disabled={submitting} className="h-11 flex-1 rounded-full text-base" size="lg">
+                  {t("submit")}
+                </Button>
+              )}
+            </div>
+          </form>
+        )}
+
+        {role === UserRole.ANNONCEUR && (!providers?.googleEnabled || showEmailForm) && (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="email">{t("email")}</Label>
-            <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-          </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="email">{t("email")}</Label>
+              <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="password">{t("password")}</Label>
-            <Input
-              id="password"
-              type="password"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">{t("passwordHint")}</p>
-          </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="password">{t("password")}</Label>
+              <Input
+                id="password"
+                type="password"
+                required
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">{t("passwordHint")}</p>
+            </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="confirmPassword">{t("password")} (confirmation)</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              required
-              minLength={8}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-            />
-          </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="confirmPassword">{t("password")} (confirmation)</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                required
+                minLength={8}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+            </div>
 
-          {role === UserRole.COMMERCANT && (
-            <>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="businessName">{t("businessName")}</Label>
-                <Input
-                  id="businessName"
-                  required
-                  value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value)}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="businessIdNumber">{t("businessIdNumber")}</Label>
-                <Input
-                  id="businessIdNumber"
-                  required
-                  value={businessIdNumber}
-                  onChange={(e) => setBusinessIdNumber(e.target.value)}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="addressLine1">{t("addressLine1")}</Label>
-                <Input
-                  id="addressLine1"
-                  required
-                  value={addressLine1}
-                  onChange={(e) => setAddressLine1(e.target.value)}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="addressLine2">{t("addressLine2")}</Label>
-                <Input id="addressLine2" value={addressLine2} onChange={(e) => setAddressLine2(e.target.value)} />
-              </div>
-              <div className="flex gap-4">
-                <div className="flex flex-1 flex-col gap-1.5">
-                  <Label htmlFor="city">{t("city")}</Label>
-                  <Input id="city" required value={city} onChange={(e) => setCity(e.target.value)} />
-                </div>
-                <div className="flex flex-1 flex-col gap-1.5">
-                  <Label htmlFor="postalCode">{t("postalCode")}</Label>
-                  <Input
-                    id="postalCode"
-                    required
-                    value={postalCode}
-                    onChange={(e) => setPostalCode(e.target.value)}
-                  />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">{t("verificationNote")}</p>
-            </>
-          )}
-
-          {role === UserRole.ANNONCEUR && (
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="companyName">{t("companyName")}</Label>
               <Input id="companyName" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
             </div>
-          )}
 
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
-          <Button type="submit" disabled={submitting} className="mt-1 h-11 w-full rounded-full text-base" size="lg">
-            {t("submit")}
-          </Button>
+            <Button type="submit" disabled={submitting} className="mt-1 h-11 w-full rounded-full text-base" size="lg">
+              {t("submit")}
+            </Button>
 
-          {role === UserRole.ANNONCEUR && providers?.googleEnabled && (
-            <button
-              type="button"
-              onClick={() => setShowEmailForm(false)}
-              className="text-center text-sm text-muted-foreground hover:text-foreground"
-            >
-              {t("back")}
-            </button>
-          )}
-        </form>
+            {providers?.googleEnabled && (
+              <button
+                type="button"
+                onClick={() => setShowEmailForm(false)}
+                className="text-center text-sm text-muted-foreground hover:text-foreground"
+              >
+                {t("back")}
+              </button>
+            )}
+          </form>
         )}
       </CardContent>
     </Card>

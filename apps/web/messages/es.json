@@ -113,6 +113,14 @@
       "generic": "Ha ocurrido un error. Inténtalo de nuevo.",
       "passwordMismatch": "Las contraseñas no coinciden."
     },
+    "step": {
+      "indicator": "Paso {current} de {total}",
+      "credentialsTitle": "Tu cuenta",
+      "businessTitle": "Tu comercio",
+      "addressTitle": "Dirección del comercio",
+      "next": "Siguiente",
+      "previous": "Anterior"
+    },
     "forgotPassword": {
       "title": "Contraseña olvidada",
       "description": "Indica tu email, te enviamos un enlace para elegir una nueva contraseña.",

@@ -618,3 +618,48 @@ d'application" ci-dessus (sidebar, tableaux de bord chiffrés).
   interne réservé à l'exploitant de la plateforme, pas aux
   commerçants/annonceurs, jugé non prioritaire pour ce recentrage.
   Signalé à l'utilisateur comme reste à faire si souhaité.
+
+### Menu latéral oublié, et inscription commerçant en plusieurs étapes (étape 18)
+
+- Signalé par l'utilisateur avec capture : le menu latéral de
+  l'application (`AppShell` — "Tableau de bord", "Rechercher", "Mes
+  réservations", badge "Commerçant"/"Annonceur") était resté
+  entièrement en français malgré le recentrage ES/EN de l'étape 17.
+  Cause : la méthode de balayage précédente cherchait un accent suivi
+  d'un espace (`"é "`), qui rate des mots comme "Réservations" ou
+  "Commerçant" où l'accent est suivi d'une autre lettre. Nouveau
+  balayage sur toute présence d'accent (plus fiable), qui a aussi
+  trouvé et corrigé : le séparateur "ou" et les boutons "Continuer
+  avec Google/email" des pages login/register, le titre et message
+  vide de `/mes-reservations`, les statuts dupliqués et non traduits
+  de `RecentReservationsList` (avec au passage le même bug de date
+  `fr-FR` en dur que `ReservationCard` — mutualisé dans un nouvel
+  utilitaire `lib/date-locale.ts`), les aria-label de navigation du
+  calendrier et de la feuille de recherche mobile. Au passage, le
+  libellé "Rechercher" devient "Buscar comercios"/"Find shops" (plus
+  explicite, demandé par l'utilisateur).
+- **Inscription commerçant repensée en assistant à 3 étapes** (compte
+  → commerce → adresse) avec animation de glissement, plutôt qu'un
+  unique long formulaire — demande explicite de l'utilisateur.
+  Nouveau composant générique `components/step-wizard.tsx` : panneaux
+  posés côte à côte, `transform: translateX()` pour glisser vers
+  l'étape active, hauteur du conteneur suivie dynamiquement via
+  `ResizeObserver` (les étapes n'ont pas le même nombre de champs) —
+  même philosophie que `Reveal` (pas de librairie d'animation,
+  CSS pur, `prefers-reduced-motion` respecté).
+  - Chaque étape est validée avant de pouvoir avancer
+    (`reportValidity()` sur les champs concernés + vérification
+    manuelle de la correspondance des mots de passe à l'étape 1) —
+    pas de soumission finale tant qu'une étape antérieure est invalide.
+  - La touche Entrée avance d'étape au lieu de tenter une soumission
+    native prématurée du formulaire entier (qui aurait autrement
+    déclenché la validation de champs pas encore affichés, situés
+    hors-écran par la translation).
+  - Indicateur de progression ("Paso 2 de 3" + barre) au-dessus du
+    formulaire.
+  - Le parcours annonceur (email/mot de passe/société, un seul écran)
+    reste inchangé — pas demandé par l'utilisateur, pas concerné par
+    la complexité qui justifiait de découper le formulaire commerçant.
+  - Vérifié : le payload final envoyé à `POST /auth/register` est
+    resté strictement identique (même test API direct que
+    précédemment, 201), seule la présentation a changé.
