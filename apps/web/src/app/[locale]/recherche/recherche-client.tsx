@@ -155,14 +155,14 @@ export function RechercheClient() {
 
           {results.map((commerce) => (
             <Link key={commerce.id} href={`/commerces/${commerce.id}`}>
-              <Card className="transition-colors hover:border-primary">
+              <Card className="hover-lift transition-colors hover:border-primary/50">
                 <CardContent className="flex gap-3 py-3">
-                  <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
+                  <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-primary/10">
                     {commerce.thumbnailUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={commerce.thumbnailUrl} alt="" className="size-full object-cover" />
                     ) : (
-                      <Store className="size-6 text-muted-foreground" />
+                      <Store className="size-6 text-primary" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
