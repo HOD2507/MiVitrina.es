@@ -2,7 +2,6 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { LocaleSwitcher } from "@/components/locale-switcher";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 export async function SiteHeader() {
   const t = await getTranslations("Nav");
@@ -21,9 +20,6 @@ export async function SiteHeader() {
           <Button variant="ghost" size="sm" className="hidden sm:inline-flex" render={<Link href="/recherche" />}>
             {t("search")}
           </Button>
-          <span className="hidden sm:inline-flex">
-            <ThemeToggle />
-          </span>
           <LocaleSwitcher />
           <span className="mx-1 hidden h-5 w-px bg-border sm:inline-block" aria-hidden />
           <Button variant="ghost" size="sm" className="px-2 sm:px-3" render={<Link href="/login" />}>

@@ -347,3 +347,64 @@ réservation → transaction avec calcul de commission depuis `PlatformSettings`
   paiement Stripe test (checkout complet par Playwright) confirmé côté
   API Stripe, résolution de litige mettant à jour transaction +
   réservation + dispute en une seule transaction logique.
+
+### Refonte design (retour utilisateur direct, étape 12)
+
+Retour direct : les espaces commerçant/annonceur "ne faisaient pas vrai
+site" et le design manquait de caractère. Reconstruit en plusieurs
+passes plutôt qu'un simple restylage — voir aussi l'étape "coquille
+d'application" ci-dessus (sidebar, tableaux de bord chiffrés).
+
+- **Mode sombre entièrement retiré** ("ne sert à rien") : `next-themes`
+  désinstallé, `ThemeProvider`/`ThemeToggle` supprimés, bloc CSS `.dark`
+  et `@custom-variant dark` retirés de `globals.css`. Un seul thème
+  clair, plus simple à maintenir et à tester.
+- **Calendrier personnalisé** (`components/date-picker.tsx`) en
+  remplacement de `<input type="date">`, dont le rendu dépend
+  entièrement du navigateur/OS (capture d'écran fournie montrant un
+  calendrier espagnol par défaut, incohérent avec le reste du site).
+  Aucune librairie : grille de mois calculée à la main, popover
+  positionné en absolu, fermeture au clic extérieur.
+- **Landing page** : accent manuscrit (SVG) et police italique jugés
+  "pas professionnels" — retirés. Le mock d'affiche générique du hero a
+  été remplacé par une vraie photo (vitrine parisienne, licence
+  Unsplash, téléchargée dans `public/images/`) et la section galerie
+  affiche désormais de vraies photographies (concert, théâtre, mode,
+  affichage urbain — cf. demande explicite de ne pas se limiter à la
+  mode) au lieu de mocks CSS. Deux photos candidates écartées en cours
+  de route car elles montraient un vrai théâtre nommé et le nom d'un
+  humoriste réel dans la programmation affichée — remplacées par des
+  photos plus neutres pour ne pas laisser croire à un partenariat
+  inexistant.
+- **Connexion "Continuer avec Google"** (`apps/api/src/auth/strategies/google.strategy.ts`,
+  `guards/google-auth.guard.ts`) : OAuth2 classique via Passport.
+  `GET /auth/config` indique si Google est configuré
+  (`GOOGLE_CLIENT_ID`/`SECRET` optionnels dans `env.validation.ts`) —
+  le bouton reste masqué côté front tant que ce n'est pas le cas,
+  jamais de bouton mort avant que l'utilisateur ne fournisse ses
+  propres clés (même pattern que Stripe). Un compte existant est
+  reconnecté par email quel que soit son mode d'inscription d'origine ;
+  une inscription **Google n'est proposée que pour ANNONCEUR** — un
+  commerçant nécessite des informations qu'OAuth ne fournit pas
+  (SIRET, adresse) et que le schéma actuel exige à la création du
+  profil, sans état "compte incomplet" prévu pour l'instant. Testé de
+  bout en bout avec de fausses clés temporaires dans `.env` (jamais
+  commitées) : bouton visible/masqué selon la config, flux visible sur
+  login et sur l'inscription annonceur uniquement.
+- **Page recherche repensée sur mobile** ("le bouton Rechercher n'est
+  pas clair") : carte plein écran + feuille coulissante en bas
+  (`components/bottom-sheet.tsx`, pointer events, glisser ou taper la
+  poignée) listant les commerces à proximité, façon Google Maps/Airbnb
+  — suggestion venue directement de l'utilisateur. Bug réel corrigé en
+  testant : la barre de recherche flottante et la feuille disparaissaient
+  derrière les contrôles Leaflet (zoom, popups), qui utilisent un
+  z-index ~1000 en interne — corrigé avec un z-index plus élevé sur nos
+  éléments superposés. Desktop inchangé (carte + liste côte à côte).
+- Refus maintenus : quatre nouveaux liens de "plugins design" proposés
+  au fil de la conversation (`taste-skill`, `impeccable`,
+  `awesome-design-md`, `microsoft/playwright-cli`) — les trois premiers
+  présentaient le même profil que `ui-ux-pro-max-skill` refusé plus tôt
+  (comptes obscurs, nombre d'étoiles GitHub totalement disproportionné,
+  instructions explicitement écrites pour qu'un agent IA s'auto-installe
+  sans revue humaine) ; le quatrième est légitime mais superflu (Playwright
+  tournait déjà en local pour tous les tests de ce projet).

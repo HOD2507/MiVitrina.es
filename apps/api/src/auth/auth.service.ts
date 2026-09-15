@@ -2,7 +2,9 @@ import { BadRequestException, ConflictException, Injectable, UnauthorizedExcepti
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
+import { randomUUID } from "node:crypto";
 import { BUSINESS_ID_TYPE_BY_COUNTRY, Country, Locale, UserRole } from "@mivitrina/shared";
+import type { GoogleProfile } from "./strategies/google.strategy";
 import { PrismaService } from "../prisma/prisma.service";
 import { MailService } from "../mail/mail.service";
 import { GeocodingService } from "../geocoding/geocoding.service";
@@ -129,6 +131,54 @@ export class AuthService {
     const passwordMatches = await bcrypt.compare(dto.password, user.passwordHash);
     if (!passwordMatches) {
       throw new UnauthorizedException("Identifiants invalides.");
+    }
+
+    await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+
+    const tokens = await this.issueTokens(user.id, user.email, user.role, user.tokenVersion);
+    return { user: this.toSafeUser(user), tokens };
+  }
+
+  /**
+   * Connexion ou inscription via Google. Si un compte existe déjà avec
+   * cet email (quel que soit son mode d'inscription d'origine), on se
+   * contente de l'y connecter — le `role` demandé n'a alors plus
+   * d'importance. Sinon, on crée un compte : uniquement pour ANNONCEUR,
+   * un CommercantProfile nécessitant des informations (SIRET, adresse...)
+   * que Google ne fournit pas — voir le refus explicite ci-dessous.
+   */
+  async loginOrRegisterWithGoogle(profile: GoogleProfile, requestedRole: UserRole) {
+    let user = await this.prisma.user.findUnique({ where: { email: profile.email } });
+
+    if (!user) {
+      if (requestedRole === UserRole.COMMERCANT) {
+        throw new BadRequestException(
+          "L'inscription avec Google n'est pas encore disponible pour les commerçants (numéro d'entreprise et adresse requis) — utilisez le formulaire classique.",
+        );
+      }
+
+      // Mot de passe aléatoire et jamais communiqué : ce compte ne peut
+      // se connecter que via Google tant que l'utilisateur ne passe pas
+      // par "mot de passe oublié" pour en définir un.
+      const passwordHash = await bcrypt.hash(randomUUID(), BCRYPT_SALT_ROUNDS);
+      user = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.user.create({
+          data: {
+            email: profile.email,
+            passwordHash,
+            role: UserRole.ANNONCEUR,
+            locale: Locale.FR,
+            // L'email est déjà vérifié par Google — pas besoin de notre propre lien de confirmation.
+            emailVerified: true,
+          },
+        });
+        await tx.annonceurProfile.create({
+          data: { userId: created.id, country: Country.FR },
+        });
+        return created;
+      });
+    } else if (user.suspended) {
+      throw new UnauthorizedException("Ce compte a été suspendu. Contactez le support.");
     }
 
     await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { DatePicker } from "@/components/date-picker";
 import { Loader2 } from "lucide-react";
 
 const DURATION_LABELS: Record<string, string> = {
@@ -120,14 +121,7 @@ export function ReserverClient({
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="startDate">Date de début</Label>
-            <Input
-              id="startDate"
-              type="date"
-              min={today}
-              required
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-            />
+            <DatePicker id="startDate" value={startDate} minDate={today} onChange={setStartDate} />
           </div>
 
           {durationType === RentalDurationType.LIBRE && (

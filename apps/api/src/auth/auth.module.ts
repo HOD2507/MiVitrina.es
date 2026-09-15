@@ -6,6 +6,7 @@ import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { JwtAccessStrategy } from "./strategies/jwt-access.strategy";
 import { JwtRefreshStrategy } from "./strategies/jwt-refresh.strategy";
+import { GoogleStrategy } from "./strategies/google.strategy";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { RolesGuard } from "./guards/roles.guard";
 import { GeocodingModule } from "../geocoding/geocoding.module";
@@ -23,6 +24,7 @@ import { GeocodingModule } from "../geocoding/geocoding.module";
     AuthService,
     JwtAccessStrategy,
     JwtRefreshStrategy,
+    GoogleStrategy,
     // Guards globaux : toute route est protégée par défaut (voir @Public()),
     // et RolesGuard applique les restrictions @Roles(...) le cas échéant.
     { provide: APP_GUARD, useClass: JwtAuthGuard },

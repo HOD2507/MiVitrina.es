@@ -7,7 +7,7 @@
  * navigateurs, donc SameSite=Lax suffit (voir apps/api AuthController).
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
 
 export class ApiError extends Error {
   constructor(

@@ -46,4 +46,14 @@ export const envValidationSchema = Joi.object({
   /// Secret de signature des webhooks — fourni par `stripe listen` en
   /// dev local, ou par le endpoint webhook créé dans le dashboard en prod.
   STRIPE_WEBHOOK_SECRET: Joi.string().required(),
+
+  /// Connexion "Continuer avec Google" — optionnelle : tant qu'absente,
+  /// GET /auth/config répond googleEnabled=false et le bouton reste
+  /// masqué côté front (voir GoogleStrategy pour le fallback au boot).
+  GOOGLE_CLIENT_ID: Joi.string().allow("").optional(),
+  GOOGLE_CLIENT_SECRET: Joi.string().allow("").optional(),
+  /// URL de callback à déclarer dans Google Cloud Console. Par défaut,
+  /// dérivée pour le dev local (voir GoogleStrategy) — à définir
+  /// explicitement en prod (ex: https://api.mivitrina.es/api/auth/google/callback).
+  GOOGLE_CALLBACK_URL: Joi.string().uri().allow("").optional(),
 }).unknown(true);

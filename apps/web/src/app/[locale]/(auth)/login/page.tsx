@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { GoogleAuthButton } from "@/components/google-auth-button";
 
 export default function LoginPage() {
   const t = useTranslations("Auth.login");
@@ -47,7 +48,9 @@ export default function LoginPage() {
           </Link>
         </CardDescription>
       </CardHeader>
-      <CardContent className="pt-4">
+      <CardContent className="flex flex-col gap-4 pt-4">
+        <GoogleAuthButton label="Continuer avec Google" dividerLabel="ou par email" />
+
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="email">{t("email")}</Label>

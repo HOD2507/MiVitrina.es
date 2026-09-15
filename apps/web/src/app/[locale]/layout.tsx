@@ -5,7 +5,6 @@ import { getMessages } from "next-intl/server";
 import { hasLocale } from "next-intl";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
-import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -54,12 +53,10 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} className={`${jakarta.variable} ${fraunces.variable}`} suppressHydrationWarning>
+    <html lang={locale} className={`${jakarta.variable} ${fraunces.variable}`}>
       <body>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
-          <Toaster position="top-center" />
-        </ThemeProvider>
+        <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
+        <Toaster position="top-center" />
       </body>
     </html>
   );

@@ -15,7 +15,6 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { UserRole } from "@mivitrina/shared";
 import type { AuthUser } from "@/lib/types";
 import { LocaleSwitcher } from "@/components/locale-switcher";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { LogoutButton } from "@/components/logout-button";
 import { Badge } from "@/components/ui/badge";
 
@@ -97,8 +96,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: ReactNo
         <div className="flex-1 px-3">{navLinks()}</div>
 
         <div className="border-t border-border/60 p-3">
-          <div className="mb-2 flex items-center justify-between gap-2 px-1">
-            <ThemeToggle />
+          <div className="mb-2 flex justify-end px-1">
             <LocaleSwitcher />
           </div>
           <div className="rounded-lg bg-muted/60 p-3">
@@ -148,8 +146,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: ReactNo
               </div>
               <div className="flex-1 px-3">{navLinks(() => setMobileOpen(false))}</div>
               <div className="border-t border-border/60 p-3">
-                <div className="mb-2 flex items-center justify-between gap-2 px-1">
-                  <ThemeToggle />
+                <div className="mb-2 flex justify-end px-1">
                   <LocaleSwitcher />
                 </div>
                 <div className="rounded-lg bg-muted/60 p-3">

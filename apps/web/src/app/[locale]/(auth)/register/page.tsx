@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { GoogleAuthButton } from "@/components/google-auth-button";
 import { Store, Megaphone, ArrowLeft } from "lucide-react";
 
 /** Rôles ouverts à l'inscription publique — reflète apps/api/.../register.dto.ts. */
@@ -150,7 +151,11 @@ function RegisterForm() {
           {role === UserRole.COMMERCANT ? t("roleCommercant") : t("roleAnnonceur")}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-col gap-4">
+        {role === UserRole.ANNONCEUR && (
+          <GoogleAuthButton role={UserRole.ANNONCEUR} label="S'inscrire avec Google" dividerLabel="ou par email" />
+        )}
+
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="country">{t("country")}</Label>
