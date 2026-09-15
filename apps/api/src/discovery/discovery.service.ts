@@ -1,8 +1,15 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@mivitrina/database";
-import { VerificationStatus } from "@mivitrina/shared";
+import { ReservationStatus, VerificationStatus } from "@mivitrina/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { StorageService } from "../storage/storage.service";
+
+/** Statuts qui bloquent réellement le créneau d'un espace — même liste que ReservationsService. */
+const BLOCKING_STATUSES: ReservationStatus[] = [
+  ReservationStatus.PENDING_VALIDATION,
+  ReservationStatus.CONFIRMED,
+  ReservationStatus.ACTIVE,
+];
 
 interface NearbyRow {
   id: string;
@@ -178,5 +185,28 @@ export class DiscoveryService {
       showcasePhotos,
       spaces,
     };
+  }
+
+  /**
+   * Périodes déjà occupées pour un espace — sert uniquement à guider
+   * visuellement l'annonceur dans le calendrier de réservation (dates
+   * grisées/rouges). La vérification qui compte réellement reste celle
+   * de ReservationsService.create au moment de la réservation : ceci
+   * n'est qu'un affichage indicatif, pas une garantie contre une course
+   * entre deux annonceurs.
+   */
+  async getSpaceAvailability(spaceId: string) {
+    const space = await this.prisma.vitrineSpace.findUnique({ where: { id: spaceId } });
+    if (!space) {
+      throw new NotFoundException("Espace introuvable.");
+    }
+
+    const reservations = await this.prisma.reservation.findMany({
+      where: { spaceId, status: { in: BLOCKING_STATUSES } },
+      select: { startDate: true, endDate: true },
+      orderBy: { startDate: "asc" },
+    });
+
+    return reservations.map((r) => ({ startDate: r.startDate, endDate: r.endDate }));
   }
 }

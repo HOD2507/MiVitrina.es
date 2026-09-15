@@ -408,3 +408,46 @@ d'application" ci-dessus (sidebar, tableaux de bord chiffrés).
   instructions explicitement écrites pour qu'un agent IA s'auto-installe
   sans revue humaine) ; le quatrième est légitime mais superflu (Playwright
   tournait déjà en local pour tous les tests de ce projet).
+
+### Connexion Google — vraies clés, calendrier avec disponibilités (étape 13)
+
+- Vraies clés Google fournies par l'utilisateur (Client ID/Secret, dans
+  `apps/api/.env`, jamais commitées) : flux testé jusqu'à la vraie page
+  de connexion Google, qui reconnaît déjà "MiVitrina" comme client
+  OAuth. Écran de connexion/inscription reconstruit en deux étapes
+  (bouton(s) externe(s) → "Continuer avec email" qui révèle le
+  formulaire) suite à une capture de référence de l'utilisateur —
+  "Apple" n'a pas été ajouté (compte développeur payant, 99$/an,
+  refusé par l'utilisateur pour l'instant).
+- **Calendrier de réservation** (`components/date-picker.tsx`), deux
+  bugs réels trouvés en testant avec de vraies données :
+  1. Le panneau était tronqué par `overflow-hidden` du composant `Card`
+     parent (visible sur une capture fournie par l'utilisateur) — corrigé
+     en rendant le panneau via un **portail React** (`createPortal` dans
+     `document.body`), positionné en `fixed` à partir du
+     `getBoundingClientRect()` du champ, recalculé au scroll/resize.
+  2. Les dates déjà réservées ne s'affichaient pas en rouge malgré des
+     données correctement récupérées : le parseur de dates courtes
+     (`"2026-09-20"`) était réutilisé tel quel sur les datetimes ISO
+     complets renvoyés par l'API (`"2026-09-20T00:00:00.000Z"`), lui
+     ajoutant un second suffixe d'heure invalide. Corrigé en parsant les
+     périodes bloquées avec `new Date(...)` directement.
+  - Nouvel endpoint public `GET /discovery/spaces/:id/availability`
+    (répercute les mêmes `BLOCKING_STATUSES` que
+    `ReservationsService.create`) : purement indicatif pour guider
+    visuellement l'annonceur (dates rouges, barrées, non cliquables,
+    légende) — le vrai contrôle anti-chevauchement reste dans
+    `ReservationsService.create` au moment de la réservation.
+  - Testé de bout en bout avec de vraies données (réservation CONFIRMED
+    existante) : les jours occupés apparaissent bien en rouge barré et
+    Playwright lui-même refuse de cliquer dessus (bouton réellement
+    `disabled`), sur desktop et mobile.
+- Incident d'infrastructure sans rapport avec le code, rencontré et
+  résolu en cours de route : le démon Docker s'était figé (process
+  vivant mais socket muet) après une veille système — redémarrage
+  complet de Docker Desktop nécessaire. Autre faux positif similaire :
+  un cache Next.js corrompu après plusieurs redémarrages rapprochés du
+  serveur web produisait une page 500 sur `/login`
+  (`SyntaxError: Unexpected non-whitespace character after JSON`,
+  aucun rapport avec le JSON des traductions, qui restait valide) —
+  résolu par un `rm -rf .next` complet, pas un vrai bug applicatif.

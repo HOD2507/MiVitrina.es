@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { useRouter } from "@/i18n/navigation";
 import { RentalDurationType } from "@mivitrina/shared";
@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { DatePicker } from "@/components/date-picker";
+import { DatePicker, type BlockedRange } from "@/components/date-picker";
 import { Loader2 } from "lucide-react";
 
 const DURATION_LABELS: Record<string, string> = {
@@ -61,6 +61,17 @@ export function ReserverClient({
   const [posterFile, setPosterFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [blockedRanges, setBlockedRanges] = useState<BlockedRange[]>([]);
+
+  useEffect(() => {
+    api
+      .get<BlockedRange[]>(`/discovery/spaces/${spaceId}/availability`)
+      .then(setBlockedRanges)
+      .catch(() => {
+        // Affichage indicatif seulement : une erreur ici ne bloque pas la réservation,
+        // le vrai contrôle anti-chevauchement reste fait par l'API à la création.
+      });
+  }, [spaceId]);
 
   const endDate = useMemo(
     () => computeEndDate(startDate, durationType, customDurationDays),
@@ -121,7 +132,13 @@ export function ReserverClient({
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="startDate">Date de début</Label>
-            <DatePicker id="startDate" value={startDate} minDate={today} onChange={setStartDate} />
+            <DatePicker
+              id="startDate"
+              value={startDate}
+              minDate={today}
+              onChange={setStartDate}
+              blockedRanges={blockedRanges}
+            />
           </div>
 
           {durationType === RentalDurationType.LIBRE && (

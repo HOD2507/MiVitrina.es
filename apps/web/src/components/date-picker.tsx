@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { cn } from "cn";
 
@@ -30,40 +31,79 @@ function buildMonthGrid(year: number, month: number): Date[] {
   });
 }
 
+export interface BlockedRange {
+  startDate: string;
+  endDate: string;
+}
+
 interface DatePickerProps {
   value: string;
   onChange: (isoDate: string) => void;
   minDate?: string;
   id?: string;
+  /** Périodes déjà réservées — les jours qui y tombent s'affichent en rouge et ne sont pas sélectionnables. */
+  blockedRanges?: BlockedRange[];
 }
 
 /**
  * Calendrier personnalisé — remplace le `<input type="date">` natif dont
- * le rendu dépend entièrement du navigateur/OS (jamais cohérent avec le
- * reste du design). Pas de librairie : la logique de grille tient en
- * quelques lignes et le contrôle total sur le style vaut la dépendance
- * en moins.
+ * le rendu dépend entièrement du navigateur/OS. Le panneau est rendu
+ * dans un portail (document.body) plutôt qu'en enfant direct : sans ça,
+ * il se retrouve tronqué par le premier ancêtre `overflow-hidden`
+ * rencontré (ex: le composant Card, qui l'utilise pour ses coins
+ * arrondis) — bug réel constaté sur la page de réservation.
  */
-export function DatePicker({ value, onChange, minDate, id }: DatePickerProps) {
+export function DatePicker({ value, onChange, minDate, id, blockedRanges = [] }: DatePickerProps) {
   const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState({ top: 0, left: 0, width: 0 });
   const selected = fromIso(value);
   const [viewYear, setViewYear] = useState(selected.getUTCFullYear());
   const [viewMonth, setViewMonth] = useState(selected.getUTCMonth());
-  const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  function updatePosition() {
+    const rect = buttonRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setPosition({ top: rect.bottom + 8, left: rect.left, width: rect.width });
+  }
 
   useEffect(() => {
     if (!open) return;
+    updatePosition();
+
     function handleClick(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        panelRef.current &&
+        !panelRef.current.contains(e.target as Node) &&
+        !buttonRef.current?.contains(e.target as Node)
+      ) {
         setOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const min = minDate ? fromIso(minDate) : null;
+  // Contrairement à `value`/`minDate` (dates courtes "2026-09-20"), l'API
+  // renvoie des datetimes ISO complets ("2026-09-20T00:00:00.000Z") pour
+  // les périodes bloquées — `fromIso` planterait en leur ajoutant un
+  // second suffixe "Tccc". `new Date(...)` les parse directement.
+  const blockedStarts = blockedRanges.map((r) => new Date(r.startDate));
+  const blockedEnds = blockedRanges.map((r) => new Date(r.endDate));
   const days = buildMonthGrid(viewYear, viewMonth);
+
+  function isBlocked(day: Date) {
+    return blockedRanges.some((_, i) => day >= blockedStarts[i] && day < blockedEnds[i]);
+  }
 
   function changeMonth(delta: number) {
     const next = new Date(Date.UTC(viewYear, viewMonth + delta, 1));
@@ -73,13 +113,15 @@ export function DatePicker({ value, onChange, minDate, id }: DatePickerProps) {
 
   function select(day: Date) {
     if (min && day < min) return;
+    if (isBlocked(day)) return;
     onChange(toIso(day));
     setOpen(false);
   }
 
   return (
-    <div className="relative" ref={containerRef}>
+    <div className="relative">
       <button
+        ref={buttonRef}
         id={id}
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -89,64 +131,81 @@ export function DatePicker({ value, onChange, minDate, id }: DatePickerProps) {
         <CalendarDays className="size-4 shrink-0 text-muted-foreground" />
       </button>
 
-      {open && (
-        <div className="absolute z-50 mt-2 w-72 rounded-xl border border-border bg-popover p-3 text-popover-foreground shadow-lg">
-          <div className="mb-2 flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => changeMonth(-1)}
-              className="flex size-7 items-center justify-center rounded-md hover:bg-muted"
-              aria-label="Mois précédent"
-            >
-              <ChevronLeft className="size-4" />
-            </button>
-            <p className="text-sm font-medium capitalize">{MONTH_FORMATTER.format(new Date(Date.UTC(viewYear, viewMonth, 1)))}</p>
-            <button
-              type="button"
-              onClick={() => changeMonth(1)}
-              className="flex size-7 items-center justify-center rounded-md hover:bg-muted"
-              aria-label="Mois suivant"
-            >
-              <ChevronRight className="size-4" />
-            </button>
-          </div>
+      {open &&
+        createPortal(
+          <div
+            ref={panelRef}
+            style={{ position: "fixed", top: position.top, left: position.left }}
+            className="z-[1100] w-72 rounded-xl border border-border bg-popover p-3 text-popover-foreground shadow-lg"
+          >
+            <div className="mb-2 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => changeMonth(-1)}
+                className="flex size-7 items-center justify-center rounded-md hover:bg-muted"
+                aria-label="Mois précédent"
+              >
+                <ChevronLeft className="size-4" />
+              </button>
+              <p className="text-sm font-medium capitalize">
+                {MONTH_FORMATTER.format(new Date(Date.UTC(viewYear, viewMonth, 1)))}
+              </p>
+              <button
+                type="button"
+                onClick={() => changeMonth(1)}
+                className="flex size-7 items-center justify-center rounded-md hover:bg-muted"
+                aria-label="Mois suivant"
+              >
+                <ChevronRight className="size-4" />
+              </button>
+            </div>
 
-          <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground">
-            {WEEKDAYS.map((w, i) => (
-              <span key={i} className="py-1">
-                {w}
-              </span>
-            ))}
-          </div>
+            <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground">
+              {WEEKDAYS.map((w, i) => (
+                <span key={i} className="py-1">
+                  {w}
+                </span>
+              ))}
+            </div>
 
-          <div className="grid grid-cols-7 gap-1">
-            {days.map((day) => {
-              const isCurrentMonth = day.getUTCMonth() === viewMonth;
-              const isSelected = toIso(day) === value;
-              const isDisabled = !!min && day < min;
-              const isToday = toIso(day) === toIso(new Date());
-              return (
-                <button
-                  key={day.toISOString()}
-                  type="button"
-                  disabled={isDisabled}
-                  onClick={() => select(day)}
-                  className={cn(
-                    "flex size-9 items-center justify-center rounded-md text-sm transition-colors",
-                    !isCurrentMonth && "text-muted-foreground/40",
-                    isCurrentMonth && !isSelected && "hover:bg-muted",
-                    isSelected && "bg-primary text-primary-foreground font-medium",
-                    isDisabled && "cursor-not-allowed opacity-30 hover:bg-transparent",
-                    isToday && !isSelected && "border border-primary/40",
-                  )}
-                >
-                  {day.getUTCDate()}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+            <div className="grid grid-cols-7 gap-1">
+              {days.map((day) => {
+                const isCurrentMonth = day.getUTCMonth() === viewMonth;
+                const isSelected = toIso(day) === value;
+                const beforeMin = !!min && day < min;
+                const blocked = isBlocked(day);
+                const isDisabled = beforeMin || blocked;
+                const isToday = toIso(day) === toIso(new Date());
+                return (
+                  <button
+                    key={day.toISOString()}
+                    type="button"
+                    disabled={isDisabled}
+                    title={blocked ? "Déjà réservé" : undefined}
+                    onClick={() => select(day)}
+                    className={cn(
+                      "flex size-9 items-center justify-center rounded-md text-sm transition-colors",
+                      !isCurrentMonth && "text-muted-foreground/40",
+                      isCurrentMonth && !isSelected && !blocked && "hover:bg-muted",
+                      isSelected && "bg-primary text-primary-foreground font-medium",
+                      blocked && isCurrentMonth && "cursor-not-allowed bg-destructive/10 text-destructive line-through",
+                      beforeMin && !blocked && "cursor-not-allowed opacity-30 hover:bg-transparent",
+                      isToday && !isSelected && "border border-primary/40",
+                    )}
+                  >
+                    {day.getUTCDate()}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-3 flex items-center gap-1.5 border-t border-border pt-2.5 text-xs text-muted-foreground">
+              <span className="size-2.5 rounded-full bg-destructive/40" />
+              Déjà réservé, non disponible
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

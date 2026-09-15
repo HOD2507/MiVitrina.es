@@ -38,4 +38,11 @@ export class DiscoveryController {
   async getCommercant(@Param("id") id: string) {
     return this.discovery.getPublicProfile(id);
   }
+
+  /** Périodes déjà occupées pour un espace — affichage indicatif dans le calendrier de réservation. */
+  @Public()
+  @Get("spaces/:id/availability")
+  async getSpaceAvailability(@Param("id") id: string) {
+    return this.discovery.getSpaceAvailability(id);
+  }
 }
