@@ -489,3 +489,30 @@ d'application" ci-dessus (sidebar, tableaux de bord chiffrés).
   l'expéditeur par défaut `onboarding@resend.dev` ne peut typiquement
   envoyer qu'à l'adresse du compte Resend lui-même, pas à n'importe
   quel destinataire.
+
+### Calendrier : jour de départ ignorant la durée de la période (bug réel, étape 15)
+
+- Signalé par l'utilisateur avec capture : réservation existante du 20
+  au 26 septembre (durée "par semaine", 7 jours) correctement affichée
+  en rouge sur le calendrier ; mais en cliquant sur le 19 (non rouge),
+  l'API refusait quand même la réservation ("Cet espace est déjà
+  réservé sur cette période").
+- Cause : `DatePicker.isBlocked(day)` ne testait que si **le jour
+  lui-même** tombait dans une période déjà réservée, sans tenir compte
+  de la durée de la réservation en cours de création. Le 19 n'est pas
+  occupé en soi, mais choisir le 19 avec une durée de 7 jours crée une
+  période 19→26 qui chevauche la réservation existante 20→27
+  (exclusif) — exactement le chevauchement que l'API détecte à la
+  création (`reservations.service.ts`, `startDate < endDate existant
+  && endDate > startDate existant`).
+- Corrigé en ajoutant une prop `computeRangeEnd` à `DatePicker` : pour
+  chaque jour du calendrier, on calcule la date de fin de la période
+  qui démarrerait ce jour-là (même fonction `computeEndDate` que le
+  reste de la page, tenant compte de semaine/mois/durée libre) et on
+  teste le chevauchement avec cette période complète, pas seulement le
+  jour. Même sémantique d'intervalle (fin exclusive) que le contrôle
+  serveur, pour rester cohérent.
+- Vérifié par un test direct reproduisant les dates exactes du
+  signalement (réservation bloquée 20→27 exclusif, durée 7 jours) :
+  les jours 14 à 26 sont maintenant correctement marqués bloqués comme
+  départ (avant : seuls 20 à 26 l'étaient), 13 et 27+ restent libres.

@@ -138,6 +138,7 @@ export function ReserverClient({
               minDate={today}
               onChange={setStartDate}
               blockedRanges={blockedRanges}
+              computeRangeEnd={(start) => computeEndDate(start, durationType, customDurationDays)}
             />
           </div>
 

@@ -43,6 +43,17 @@ interface DatePickerProps {
   id?: string;
   /** Périodes déjà réservées — les jours qui y tombent s'affichent en rouge et ne sont pas sélectionnables. */
   blockedRanges?: BlockedRange[];
+  /**
+   * Si fourni, calcule la date de fin (exclusive) de la période qui
+   * démarrerait à `startIso` — pour marquer en rouge un jour de départ
+   * dont la période complète chevaucherait une réservation existante,
+   * même si ce jour précis n'est pas lui-même occupé (ex: réservation
+   * "par semaine" du 20 au 26 → le 19 doit aussi être bloqué comme
+   * départ, sa période 19→26 chevauchant celle du 20). Sans cette
+   * fonction, seuls les jours strictement compris dans une période
+   * bloquée sont désactivés.
+   */
+  computeRangeEnd?: (startIso: string) => string | null;
 }
 
 /**
@@ -53,7 +64,7 @@ interface DatePickerProps {
  * rencontré (ex: le composant Card, qui l'utilise pour ses coins
  * arrondis) — bug réel constaté sur la page de réservation.
  */
-export function DatePicker({ value, onChange, minDate, id, blockedRanges = [] }: DatePickerProps) {
+export function DatePicker({ value, onChange, minDate, id, blockedRanges = [], computeRangeEnd }: DatePickerProps) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0, width: 0 });
   const selected = fromIso(value);
@@ -102,7 +113,15 @@ export function DatePicker({ value, onChange, minDate, id, blockedRanges = [] }:
   const days = buildMonthGrid(viewYear, viewMonth);
 
   function isBlocked(day: Date) {
-    return blockedRanges.some((_, i) => day >= blockedStarts[i] && day < blockedEnds[i]);
+    if (!computeRangeEnd) {
+      return blockedRanges.some((_, i) => day >= blockedStarts[i] && day < blockedEnds[i]);
+    }
+    // On teste le chevauchement entre la période complète qui démarrerait
+    // ce jour-là (day → rangeEnd exclu) et chaque période déjà réservée,
+    // pas seulement le jour lui-même.
+    const rangeEndIso = computeRangeEnd(toIso(day));
+    const rangeEnd = rangeEndIso ? new Date(`${rangeEndIso}T00:00:00Z`) : new Date(day.getTime() + 86_400_000);
+    return blockedRanges.some((_, i) => day < blockedEnds[i] && rangeEnd > blockedStarts[i]);
   }
 
   function changeMonth(delta: number) {
