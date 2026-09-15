@@ -3,6 +3,7 @@ import { LottiePlayer } from "@/components/lottie-player";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Reveal } from "@/components/reveal";
+import { PosterMock } from "@/components/poster-mock";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -72,7 +73,24 @@ export default function LandingPage() {
               <h1 className="text-4xl leading-[1.08] font-medium tracking-tight text-balance sm:text-5xl lg:text-[3.4rem]">
                 {t("title")}
                 <br />
-                <span className="text-primary italic">{t("titleAccent")}</span>
+                <span className="relative inline-block text-primary italic">
+                  {t("titleAccent")}
+                  {/* Trait "dessiné à la main" — clin d'œil aux vitrines réelles griffonnées à la craie/feutre */}
+                  <svg
+                    aria-hidden
+                    viewBox="0 0 200 12"
+                    className="absolute -bottom-2 left-0 h-3 w-full text-primary/70"
+                    preserveAspectRatio="none"
+                  >
+                    <path
+                      d="M2 8 C 40 2, 80 10, 120 5 S 180 2, 198 6"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </span>
               </h1>
               <p className="max-w-lg text-lg text-muted-foreground text-balance">{t("subtitle")}</p>
               <div className="flex flex-col justify-center gap-3 sm:flex-row md:justify-start">
@@ -97,14 +115,25 @@ export default function LandingPage() {
                 aria-hidden
                 className="absolute -inset-6 -z-10 rounded-[2rem] bg-primary/10 blur-2xl"
               />
-              <div className="flex aspect-square w-full max-w-sm items-center justify-center rounded-[1.75rem] border border-border bg-card p-8 shadow-[0_24px_60px_-24px_rgba(0,0,0,0.25)]">
-                <LottiePlayer
-                  src="/animations/hero-poster-loop.json"
-                  className="h-full w-full"
-                  ariaLabel="Une affiche publicitaire se pose sur une vitrine de commerce"
-                />
+              {/* Cadre "vitrine" : scotch aux coins + reflet de verre en diagonale,
+                  pour vraiment vendre l'idée d'une affiche posée derrière une vitre
+                  plutôt qu'une simple carte flottante. */}
+              <div className="relative -rotate-1">
+                <span className="absolute -top-2.5 left-10 z-10 h-6 w-16 -rotate-6 bg-[oklch(0.92_0.02_85_/_0.75)] shadow-sm" />
+                <span className="absolute -top-2 right-8 z-10 h-6 w-16 rotate-3 bg-[oklch(0.92_0.02_85_/_0.75)] shadow-sm" />
+                <div className="relative flex aspect-square w-full max-w-sm items-center justify-center overflow-hidden rounded-[1.25rem] border border-border bg-card p-8 shadow-[0_24px_60px_-24px_rgba(0,0,0,0.3)]">
+                  <LottiePlayer
+                    src="/animations/hero-poster-loop.json"
+                    className="h-full w-full"
+                    ariaLabel="Une affiche publicitaire se pose sur une vitrine de commerce"
+                  />
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-transparent via-white/15 to-transparent"
+                  />
+                </div>
               </div>
-              <div className="absolute -bottom-5 -left-5 hidden items-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 shadow-lg sm:flex">
+              <div className="absolute -bottom-6 -left-6 hidden rotate-2 items-center gap-2 rounded-lg border border-border bg-card px-4 py-3 shadow-lg sm:flex">
                 <CheckCircle2 className="size-5 text-primary" />
                 <div className="text-left">
                   <p className="text-xs font-semibold leading-tight">{t("trustVerifiedTitle")}</p>
@@ -131,6 +160,56 @@ export default function LandingPage() {
                 </div>
               </Reveal>
             ))}
+          </div>
+        </section>
+
+        {/* Galerie — collage d'affiches façon vraie vitrine, scotchées et légèrement de travers */}
+        <section className="overflow-hidden py-20 sm:py-28">
+          <Reveal className="mx-auto mb-16 max-w-xl px-4 text-center">
+            <p className="mb-2 text-sm font-medium text-primary">{t("galleryEyebrow")}</p>
+            <h2 className="text-3xl font-medium tracking-tight text-balance sm:text-4xl">{t("galleryTitle")}</h2>
+            <p className="mt-3 text-muted-foreground text-balance">{t("gallerySubtitle")}</p>
+          </Reveal>
+
+          <div className="mx-auto flex max-w-6xl justify-center gap-5 overflow-x-auto px-8 pb-4 sm:gap-6 sm:px-4">
+            <Reveal delay={0} className="mt-6">
+              <PosterMock
+                tone="corail"
+                rotate={-4}
+                eyebrow={t("galleryPoster1Eyebrow")}
+                title={t("galleryPoster1Title")}
+                subtitle={t("galleryPoster1Subtitle")}
+              />
+            </Reveal>
+            <Reveal delay={90}>
+              <PosterMock
+                tone="encre"
+                rotate={2}
+                eyebrow={t("galleryPoster2Eyebrow")}
+                title={t("galleryPoster2Title")}
+                subtitle={t("galleryPoster2Subtitle")}
+                className="hidden sm:block"
+              />
+            </Reveal>
+            <Reveal delay={180} className="mt-10">
+              <PosterMock
+                tone="olive"
+                rotate={-2}
+                eyebrow={t("galleryPoster3Eyebrow")}
+                title={t("galleryPoster3Title")}
+                subtitle={t("galleryPoster3Subtitle")}
+              />
+            </Reveal>
+            <Reveal delay={270} className="mt-2">
+              <PosterMock
+                tone="kraft"
+                rotate={3}
+                eyebrow={t("galleryPoster4Eyebrow")}
+                title={t("galleryPoster4Title")}
+                subtitle={t("galleryPoster4Subtitle")}
+                className="hidden md:block"
+              />
+            </Reveal>
           </div>
         </section>
 
