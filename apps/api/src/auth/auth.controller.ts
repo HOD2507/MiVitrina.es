@@ -104,6 +104,13 @@ export class AuthController {
     return { ok: true };
   }
 
+  @HttpCode(HttpStatus.OK)
+  @Post("resend-verification")
+  async resendVerification(@CurrentUser() user: AuthenticatedUser) {
+    await this.authService.resendVerificationEmail(user.id);
+    return { ok: true };
+  }
+
   @Public()
   @HttpCode(HttpStatus.OK)
   @Post("forgot-password")

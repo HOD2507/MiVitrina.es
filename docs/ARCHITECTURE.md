@@ -451,3 +451,41 @@ d'application" ci-dessus (sidebar, tableaux de bord chiffrés).
   (`SyntaxError: Unexpected non-whitespace character after JSON`,
   aucun rapport avec le JSON des traductions, qui restait valide) —
   résolu par un `rm -rf .next` complet, pas un vrai bug applicatif.
+
+### Vérification d'email et mot de passe oublié — pages manquantes (étape 14)
+
+- Signalement utilisateur : après inscription, aucun email de
+  confirmation reçu. Diagnostic : le backend exposait déjà
+  `GET /auth/verify-email`, `POST /auth/forgot-password` et
+  `POST /auth/reset-password`, et `MailService` envoie réellement via
+  Resend dès que `RESEND_API_KEY` est renseigné (sinon il journalise en
+  console, `[dev-mail]`) — mais **aucune page frontend n'existait** pour
+  ces trois routes : les liens dans les emails pointaient vers des 404.
+  C'était donc un vrai trou fonctionnel, pas un problème de
+  configuration seul.
+- Trois nouvelles pages ajoutées sous `(auth)` :
+  `forgot-password/page.tsx`, `reset-password/page.tsx` (lit `?token=`,
+  formulaire nouveau mot de passe + confirmation),
+  `verify-email/page.tsx` (appelle l'API au montage, affiche
+  chargement/succès/erreur avec CTA).
+- Nouvel endpoint `POST /auth/resend-verification` (authentifié) +
+  `AuthService.resendVerificationEmail()`, et bouton
+  `<ResendVerificationButton>` branché dans les deux alertes "email non
+  vérifié" des tableaux de bord commerçant/annonceur.
+- Testé de bout en bout via l'API réelle (pas de mock) : inscription →
+  token de vérification récupéré dans les logs `[dev-mail]` → appel de
+  la route → `emailVerified` bascule bien à `true` en base ; mot de
+  passe oublié → token de reset → nouveau mot de passe → ancien mot de
+  passe rejeté (401), nouveau accepté (200) ; renvoi de vérification
+  bloqué (400) sur un compte déjà vérifié ; token bidon rejeté (400).
+- En cours de route, le même faux positif de cache Next.js corrompu
+  qu'à l'étape 13 est réapparu (500 sur tout le site, pas seulement les
+  nouvelles pages) — même remède, `rm -rf .next` puis redémarrage
+  propre, confirmé par un nouveau tour de tests complet après coup.
+- Reste à faire, côté utilisateur : fournir une vraie clé
+  `RESEND_API_KEY` (offre gratuite disponible) pour que les emails
+  partent réellement au lieu d'être journalisés en console ; sans
+  domaine d'envoi vérifié dans Resend (ex. `mivitrina.es` via DNS),
+  l'expéditeur par défaut `onboarding@resend.dev` ne peut typiquement
+  envoyer qu'à l'adresse du compte Resend lui-même, pas à n'importe
+  quel destinataire.

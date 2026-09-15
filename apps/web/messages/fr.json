@@ -103,6 +103,30 @@
     "errors": {
       "generic": "Une erreur est survenue. Réessayez.",
       "passwordMismatch": "Les mots de passe ne correspondent pas."
+    },
+    "forgotPassword": {
+      "title": "Mot de passe oublié",
+      "description": "Indiquez votre email, on vous envoie un lien pour en choisir un nouveau.",
+      "submit": "Envoyer le lien",
+      "success": "Si un compte existe avec cet email, un lien de réinitialisation vient d'être envoyé — pensez à vérifier vos spams.",
+      "backToLogin": "← Retour à la connexion"
+    },
+    "resetPassword": {
+      "title": "Nouveau mot de passe",
+      "newPassword": "Nouveau mot de passe",
+      "confirmPassword": "Confirmation",
+      "submit": "Réinitialiser le mot de passe",
+      "success": "Mot de passe modifié avec succès — vous pouvez vous connecter.",
+      "goToLogin": "Se connecter",
+      "invalidToken": "Ce lien n'est plus valide ou a expiré."
+    },
+    "verifyEmail": {
+      "verifying": "Vérification de votre email...",
+      "success": "Votre email est vérifié !",
+      "error": "Ce lien de vérification n'est plus valide ou a expiré.",
+      "goToDashboard": "Accéder à mon tableau de bord",
+      "resend": "Renvoyer un email de vérification",
+      "resendSuccess": "Un nouvel email de vérification vient d'être envoyé."
     }
   },
   "Dashboard": {

@@ -12,6 +12,7 @@ import { RecentReservationsList } from "@/components/recent-reservations-list";
 import { Wallet, CalendarCheck, Store, Clock, Search, TrendingUp, CheckCircle2 } from "lucide-react";
 import { VerificationUpload } from "./verification-upload";
 import { StripeConnectCard } from "./stripe-connect-card";
+import { ResendVerificationButton } from "@/components/resend-verification-button";
 
 export default async function DashboardPage({
   searchParams,
@@ -74,7 +75,12 @@ async function CommercantDashboard({
 
       {!user.emailVerified && (
         <Alert>
-          <AlertDescription>{t("emailNotVerified")}</AlertDescription>
+          <AlertDescription>
+            {t("emailNotVerified")}
+            <div>
+              <ResendVerificationButton />
+            </div>
+          </AlertDescription>
         </Alert>
       )}
 
@@ -162,7 +168,12 @@ async function AnnonceurDashboard({
 
       {!user.emailVerified && (
         <Alert>
-          <AlertDescription>{t("emailNotVerified")}</AlertDescription>
+          <AlertDescription>
+            {t("emailNotVerified")}
+            <div>
+              <ResendVerificationButton />
+            </div>
+          </AlertDescription>
         </Alert>
       )}
 

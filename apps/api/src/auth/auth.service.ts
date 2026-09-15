@@ -193,6 +193,15 @@ export class AuthService {
     return this.issueTokens(user.id, user.email, user.role, user.tokenVersion);
   }
 
+  /** Renvoie l'email de vérification — utile si le premier est parti dans le vide ou a expiré. */
+  async resendVerificationEmail(userId: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    if (user.emailVerified) {
+      throw new BadRequestException("Cet email est déjà vérifié.");
+    }
+    await this.sendVerificationEmail(user.id, user.email, user.locale);
+  }
+
   /** Invalide tous les refresh tokens en circulation pour cet utilisateur. */
   async logout(userId: string) {
     await this.prisma.user.update({

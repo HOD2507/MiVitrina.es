@@ -103,6 +103,30 @@
     "errors": {
       "generic": "Ha ocurrido un error. Inténtalo de nuevo.",
       "passwordMismatch": "Las contraseñas no coinciden."
+    },
+    "forgotPassword": {
+      "title": "Contraseña olvidada",
+      "description": "Indica tu email, te enviamos un enlace para elegir una nueva contraseña.",
+      "submit": "Enviar el enlace",
+      "success": "Si existe una cuenta con este email, se acaba de enviar un enlace de restablecimiento — revisa también tus spam.",
+      "backToLogin": "← Volver a iniciar sesión"
+    },
+    "resetPassword": {
+      "title": "Nueva contraseña",
+      "newPassword": "Nueva contraseña",
+      "confirmPassword": "Confirmación",
+      "submit": "Restablecer la contraseña",
+      "success": "Contraseña modificada con éxito — ya puedes iniciar sesión.",
+      "goToLogin": "Iniciar sesión",
+      "invalidToken": "Este enlace ya no es válido o ha caducado."
+    },
+    "verifyEmail": {
+      "verifying": "Verificando tu email...",
+      "success": "¡Tu email está verificado!",
+      "error": "Este enlace de verificación ya no es válido o ha caducado.",
+      "goToDashboard": "Ir a mi panel",
+      "resend": "Reenviar un email de verificación",
+      "resendSuccess": "Se acaba de enviar un nuevo email de verificación."
     }
   },
   "Dashboard": {
