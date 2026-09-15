@@ -516,3 +516,36 @@ d'application" ci-dessus (sidebar, tableaux de bord chiffrés).
   signalement (réservation bloquée 20→27 exclusif, durée 7 jours) :
   les jours 14 à 26 sont maintenant correctement marqués bloqués comme
   départ (avant : seuls 20 à 26 l'étaient), 13 et 27+ restent libres.
+
+### Vraie clé Resend, et un vrai bug trouvé en la testant (étape 16)
+
+- L'utilisateur a fourni une vraie clé API Resend (`apps/api/.env`,
+  jamais commitée). Domaine `mivitrina.es` pas encore acheté → `from`
+  temporairement réglé sur `onboarding@resend.dev` (adresse de test
+  Resend, fonctionne sans domaine vérifié) au lieu de
+  `no-reply@mivitrina.es`, qui aurait été refusé.
+- **Bug réel trouvé en testant avec la vraie clé** : le SDK `resend`
+  (v4) ne lève pas d'exception sur une erreur API — il renvoie
+  `{ data, error }`. `MailService.send()` ignorait `error`, donc un
+  envoi refusé par Resend (ex: domaine non vérifié) passait pour un
+  succès aux yeux du code appelant, sans aucune trace. Corrigé en
+  vérifiant `error` et en le relayant.
+- Conséquence de ce premier correctif : comme `AuthService.register()`
+  attendait l'envoi d'email sans `try/catch`, une erreur désormais
+  levée y aurait fait échouer **toute l'inscription** alors que le
+  compte était déjà créé en base. Corrigé en encadrant l'envoi (dans
+  `register` et `forgotPassword`) d'un `try/catch` qui journalise
+  l'échec sans jamais bloquer la réponse — l'email peut toujours être
+  redemandé via "Renvoyer l'email de vérification".
+- Testé de bout en bout avec de vrais appels à l'API Resend (pas de
+  mock) : `GET /emails` confirme `last_event: "delivered"` pour un
+  compte réel (`felixing25@gmail.com`, seule adresse autorisée par ce
+  compte Resend tant qu'aucun domaine n'est vérifié) ; le token extrait
+  du vrai contenu HTML reçu (`GET /emails/:id`) active bien
+  `emailVerified` en base une fois "cliqué" ; la réinitialisation de
+  mot de passe part aussi réellement. Testé aussi le cas d'échec (email
+  vers un destinataire non autorisé) : Resend le refuse (403), l'erreur
+  est journalisée, mais l'inscription renvoie quand même 201.
+- Reste à faire pour un envoi à n'importe quel destinataire réel :
+  acheter le domaine `mivitrina.es`, le vérifier dans Resend (DNS), puis
+  repasser `RESEND_FROM_EMAIL` sur `no-reply@mivitrina.es`.

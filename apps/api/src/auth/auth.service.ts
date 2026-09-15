@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, Logger, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
@@ -34,6 +34,8 @@ export interface AuthTokens {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
@@ -112,7 +114,17 @@ export class AuthService {
       return created;
     });
 
-    await this.sendVerificationEmail(user.id, user.email, locale);
+    // Le compte est déjà créé en base à ce stade (transaction commitée) :
+    // un incident d'envoi (Resend en panne, quota dépassé...) ne doit pas
+    // faire échouer l'inscription elle-même — l'utilisateur pourra
+    // toujours redemander l'email depuis "Renvoyer l'email de vérification".
+    try {
+      await this.sendVerificationEmail(user.id, user.email, locale);
+    } catch (err) {
+      this.logger.error(
+        `Échec de l'envoi de l'email de vérification à ${user.email} (compte créé quand même) : ${err instanceof Error ? err.message : err}`,
+      );
+    }
 
     const tokens = await this.issueTokens(user.id, user.email, user.role, user.tokenVersion);
     return { user: this.toSafeUser(user), tokens };
@@ -235,11 +247,19 @@ export class AuthService {
     );
 
     const resetUrl = `${this.config.get<string>("WEB_APP_URL")}/${user.locale.toLowerCase()}/reset-password?token=${token}`;
-    await this.mail.send({
-      to: user.email,
-      subject: "Réinitialisation de votre mot de passe MiVitrina",
-      html: `<p>Cliquez sur ce lien pour choisir un nouveau mot de passe (valable 1h) :</p><p><a href="${resetUrl}">${resetUrl}</a></p>`,
-    });
+    try {
+      await this.mail.send({
+        to: user.email,
+        subject: "Réinitialisation de votre mot de passe MiVitrina",
+        html: `<p>Cliquez sur ce lien pour choisir un nouveau mot de passe (valable 1h) :</p><p><a href="${resetUrl}">${resetUrl}</a></p>`,
+      });
+    } catch (err) {
+      // Ne jamais laisser un échec d'envoi se traduire par une réponse
+      // différente : ce serait un moyen de deviner quels emails existent.
+      this.logger.error(
+        `Échec de l'envoi de l'email de réinitialisation à ${user.email} : ${err instanceof Error ? err.message : err}`,
+      );
+    }
   }
 
   async resetPassword(token: string, newPassword: string) {

@@ -35,11 +35,21 @@ export class MailService {
       return;
     }
 
-    await this.resend.emails.send({
+    // Le SDK Resend ne lève pas d'exception sur une erreur API : il
+    // renvoie `{ data, error }`. Sans vérifier `error` explicitement,
+    // un envoi refusé (ex: domaine d'expédition non vérifié) passe
+    // inaperçu — le code appelant croit l'email parti. On journalise
+    // et on relaie l'erreur pour que ça reste visible.
+    const { error } = await this.resend.emails.send({
       from: this.fromEmail,
       to,
       subject,
       html,
     });
+
+    if (error) {
+      this.logger.error(`Échec d'envoi Resend vers ${to} : ${error.message}`);
+      throw new Error(`Échec d'envoi d'email : ${error.message}`);
+    }
   }
 }
