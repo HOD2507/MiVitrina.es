@@ -123,14 +123,15 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
-        </section>
 
-        {/* Bandeau de confiance */}
-        <section className="border-y border-border/60">
-          <div className="mx-auto grid max-w-6xl gap-4 px-4 py-10 sm:grid-cols-3">
+          {/* Bandeau de confiance — volontairement dans la même section que
+              le hero (même bg-mesh, aucune bordure entre les deux) pour que
+              ça se lise comme un seul bloc continu plutôt que deux
+              encadrés empilés. */}
+          <div className="mx-auto grid max-w-6xl gap-4 border-t border-border/40 px-4 py-10 sm:grid-cols-3">
             {trustItems.map(({ icon: Icon, title, desc }, i) => (
               <Reveal key={title} delay={i * 80}>
-                <div className="hover-lift flex h-full items-start gap-3.5 rounded-xl border border-transparent p-3">
+                <div className="spotlight-hover hover-lift flex h-full items-start gap-3.5 rounded-xl border border-border/50 bg-background/60 p-4 backdrop-blur-sm">
                   <span className="flex size-10 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-primary">
                     <Icon className="size-5" />
                   </span>
@@ -145,10 +146,10 @@ export default function LandingPage() {
         </section>
 
         {/* Galerie — de vraies affiches, tous types d'événements confondus */}
-        <section className="py-20 sm:py-28">
+        <section className="bg-mesh-panel py-20 sm:py-28">
           <Reveal className="mx-auto mb-14 max-w-xl px-4 text-center">
             <p className="mb-2 text-sm font-medium text-primary">{t("galleryEyebrow")}</p>
-            <h2 className="text-3xl font-medium tracking-tight text-balance sm:text-4xl">{t("galleryTitle")}</h2>
+            <h2 className="font-heading text-3xl font-bold tracking-tight text-balance sm:text-4xl">{t("galleryTitle")}</h2>
             <p className="mt-3 text-muted-foreground text-balance">{t("gallerySubtitle")}</p>
           </Reveal>
 
@@ -169,7 +170,7 @@ export default function LandingPage() {
           <div className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
             <Reveal className="mx-auto mb-14 max-w-xl text-center">
               <p className="mb-2 text-sm font-medium text-primary">{t("stepsEyebrow")}</p>
-              <h2 className="text-3xl font-medium tracking-tight sm:text-4xl">{t("stepsTitle")}</h2>
+              <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">{t("stepsTitle")}</h2>
             </Reveal>
 
             <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
@@ -184,13 +185,13 @@ export default function LandingPage() {
           <div className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
             <Reveal className="mx-auto mb-14 max-w-xl text-center">
               <p className="mb-2 text-sm font-medium text-primary">{t("featuresEyebrow")}</p>
-              <h2 className="text-3xl font-medium tracking-tight sm:text-4xl">{t("featuresTitle")}</h2>
+              <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">{t("featuresTitle")}</h2>
             </Reveal>
 
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {features.map(({ icon: Icon, title, desc }, i) => (
                 <Reveal key={title} delay={(i % 3) * 90}>
-                  <Card className="hover-lift h-full">
+                  <Card className="spotlight-hover hover-lift h-full">
                     <CardHeader>
                       <span className="mb-1 flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
                         <Icon className="size-5" />
@@ -210,7 +211,7 @@ export default function LandingPage() {
           <Reveal className="mx-auto max-w-6xl">
             <div className="bg-grain relative overflow-hidden rounded-[2rem] bg-ink px-6 py-16 text-center text-ink-foreground sm:py-20">
               <div className="relative mx-auto flex max-w-xl flex-col items-center gap-5">
-                <h2 className="text-3xl font-medium tracking-tight text-balance sm:text-4xl">
+                <h2 className="font-heading text-3xl font-bold tracking-tight text-balance sm:text-4xl">
                   {t("finalCtaTitle")}
                 </h2>
                 <p className="text-balance text-ink-foreground/80">{t("finalCtaSubtitle")}</p>

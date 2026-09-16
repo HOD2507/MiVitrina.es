@@ -1,60 +1,36 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import type { ReactNode } from "react";
 
 interface RevealProps {
   children: ReactNode;
   className?: string;
-  /** Délai en ms avant l'animation, pour échelonner plusieurs éléments (effet cascade). */
+  /** Délai en ms avant l'animation (comme l'ancienne version CSS — tous les appels existants passent déjà des ms), pour échelonner plusieurs éléments (effet cascade). Converti en secondes en interne pour framer-motion. */
   delay?: number;
 }
 
 /**
- * Fait apparaître son contenu (fondu + léger glissement vers le haut) au
- * moment où il entre dans le viewport. Volontairement pas de librairie
- * d'animation (framer-motion, etc.) pour un effet aussi discret — un
- * simple IntersectionObserver + transition CSS suffit et évite une
- * dépendance de plus.
+ * Fait apparaître son contenu au moment où il entre dans le viewport — un
+ * léger effet ressort (fondu + remontée + micro-zoom) plutôt qu'un simple
+ * fondu linéaire, pour un rendu plus "premium". Migré vers framer-motion
+ * (déjà une dépendance réelle depuis PosterRing) au lieu de l'ancien
+ * IntersectionObserver fait main : `useReducedMotion` natif, et l'anneau
+ * de posters partage maintenant la même philosophie d'animation que le
+ * reste de la page.
  */
 export function Reveal({ children, className, delay = 0 }: RevealProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    // Respecte les préférences d'accessibilité : pas d'animation si demandé.
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setVisible(true);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.15 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+  const reduceMotion = useReducedMotion();
 
   return (
-    <div
-      ref={ref}
+    <motion.div
       className={className}
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(16px)",
-        transition: `opacity 0.6s ease, transform 0.6s ease`,
-        transitionDelay: `${delay}ms`,
-      }}
+      initial={reduceMotion ? undefined : { opacity: 0, y: 24, scale: 0.97 }}
+      whileInView={reduceMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ type: "spring", stiffness: 100, damping: 18, mass: 0.6, delay: delay / 1000 }}
     >
       {children}
-    </div>
+    </motion.div>
   );
 }
