@@ -20,7 +20,20 @@ import {
   MessageCircle,
   Percent,
   CheckCircle2,
+  CalendarCheck,
+  RotateCcw,
+  ImagePlus,
+  Handshake,
+  Search,
+  CreditCard,
 } from "lucide-react";
+
+/** Une couleur qui tourne par étape/fonctionnalité (palette "spotlight" — voir globals.css) plutôt qu'un unique bleu/orange partout : casse la monotonie visuelle pointée par l'utilisateur. */
+const TONE_CYCLE = [
+  { badge: "bg-primary/12 text-primary" },
+  { badge: "bg-glow-amber/30 text-amber-800" },
+  { badge: "bg-glow-plum/14 text-glow-plum" },
+] as const;
 
 /**
  * Landing page. L'animation hero (public/animations/hero-poster-loop.json)
@@ -38,21 +51,24 @@ export default function LandingPage() {
   ];
 
   const commercantSteps = [
-    { title: t("stepsCommercant1Title"), desc: t("stepsCommercant1Desc") },
-    { title: t("stepsCommercant2Title"), desc: t("stepsCommercant2Desc") },
-    { title: t("stepsCommercant3Title"), desc: t("stepsCommercant3Desc") },
+    { icon: ImagePlus, title: t("stepsCommercant1Title"), desc: t("stepsCommercant1Desc") },
+    { icon: Handshake, title: t("stepsCommercant2Title"), desc: t("stepsCommercant2Desc") },
+    { icon: Wallet, title: t("stepsCommercant3Title"), desc: t("stepsCommercant3Desc") },
   ];
 
   const annonceurSteps = [
-    { title: t("stepsAnnonceur1Title"), desc: t("stepsAnnonceur1Desc") },
-    { title: t("stepsAnnonceur2Title"), desc: t("stepsAnnonceur2Desc") },
-    { title: t("stepsAnnonceur3Title"), desc: t("stepsAnnonceur3Desc") },
+    { icon: Search, title: t("stepsAnnonceur1Title"), desc: t("stepsAnnonceur1Desc") },
+    { icon: CreditCard, title: t("stepsAnnonceur2Title"), desc: t("stepsAnnonceur2Desc") },
+    { icon: Camera, title: t("stepsAnnonceur3Title"), desc: t("stepsAnnonceur3Desc") },
   ];
 
+  // Ex-doublons avec le bandeau de confiance (Pago seguro / Verificación
+  // manual apparaissaient dans les deux sections) remplacés par deux
+  // fonctionnalités réelles pas encore mentionnées ailleurs sur la page.
   const features = [
     { icon: MapPin, title: t("featureGeoTitle"), desc: t("featureGeoDesc") },
-    { icon: Lock, title: t("featurePaymentTitle"), desc: t("featurePaymentDesc") },
-    { icon: ShieldCheck, title: t("featureVerificationTitle"), desc: t("featureVerificationDesc") },
+    { icon: CalendarCheck, title: t("featureCalendarTitle"), desc: t("featureCalendarDesc") },
+    { icon: RotateCcw, title: t("featureRefundTitle"), desc: t("featureRefundDesc") },
     { icon: Camera, title: t("featurePhotoTitle"), desc: t("featurePhotoDesc") },
     { icon: MessageCircle, title: t("featureChatTitle"), desc: t("featureChatDesc") },
     { icon: Percent, title: t("featureCommissionTitle"), desc: t("featureCommissionDesc") },
@@ -194,7 +210,9 @@ export default function LandingPage() {
                 <Reveal key={title} delay={(i % 3) * 90}>
                   <Card className="spotlight-hover hover-lift h-full">
                     <CardHeader>
-                      <span className="mb-1 flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <span
+                        className={`mb-1 flex size-11 items-center justify-center rounded-xl ${TONE_CYCLE[i % TONE_CYCLE.length].badge}`}
+                      >
                         <Icon className="size-5" />
                       </span>
                       <CardTitle className="text-lg">{title}</CardTitle>
@@ -210,7 +228,11 @@ export default function LandingPage() {
         {/* CTA final */}
         <section className="px-4 pb-20 sm:pb-28">
           <Reveal className="mx-auto max-w-6xl">
-            <div className="bg-grain relative overflow-hidden rounded-[2rem] bg-ink px-6 py-16 text-center text-ink-foreground sm:py-20">
+            <PointerGlow
+              as="div"
+              tone="plum"
+              className="bg-grain relative overflow-hidden rounded-[2rem] bg-ink px-6 py-16 text-center text-ink-foreground sm:py-20"
+            >
               <div className="relative mx-auto flex max-w-xl flex-col items-center gap-5">
                 <h2 className="font-heading text-3xl font-bold tracking-tight text-balance sm:text-4xl">
                   {t("finalCtaTitle")}
@@ -234,7 +256,7 @@ export default function LandingPage() {
                   </Button>
                 </div>
               </div>
-            </div>
+            </PointerGlow>
           </Reveal>
         </section>
       </main>
@@ -244,6 +266,11 @@ export default function LandingPage() {
   );
 }
 
+/** Une couleur par étape (cycle TONE_CYCLE) plutôt qu'un seul cercle
+ * orange répété 3 fois — casse la monotonie, chaque étape se distingue
+ * au premier coup d'œil. Chaque étape apparaît individuellement en
+ * cascade (au lieu de toute la colonne d'un coup) pour un défilement
+ * plus vivant. */
 function StepColumn({
   icon: Icon,
   heading,
@@ -252,28 +279,41 @@ function StepColumn({
 }: {
   icon: typeof Store;
   heading: string;
-  steps: { title: string; desc: string }[];
+  steps: { icon: typeof Store; title: string; desc: string }[];
   delayOffset?: number;
 }) {
   return (
-    <Reveal delay={delayOffset}>
-      <div className="flex items-center gap-2.5 mb-8">
-        <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <Icon className="size-4.5" />
-        </span>
-        <h3 className="text-xl font-semibold">{heading}</h3>
-      </div>
-      <ol className="relative flex flex-col gap-8 border-l border-border pl-8">
-        {steps.map((step, i) => (
-          <li key={step.title} className="relative">
-            <span className="absolute top-0 -left-[calc(2rem+1px)] flex size-8 items-center justify-center rounded-full border border-border bg-background font-heading text-sm font-semibold text-primary">
-              {i + 1}
-            </span>
-            <p className="font-semibold">{step.title}</p>
-            <p className="mt-1 text-sm text-muted-foreground">{step.desc}</p>
-          </li>
-        ))}
+    <div>
+      <Reveal delay={delayOffset}>
+        <div className="mb-8 flex items-center gap-2.5">
+          <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Icon className="size-4.5" />
+          </span>
+          <h3 className="text-xl font-semibold">{heading}</h3>
+        </div>
+      </Reveal>
+      <ol className="relative flex flex-col gap-8 border-l-2 border-dashed border-primary/25 pl-8">
+        {steps.map((step, i) => {
+          const tone = TONE_CYCLE[i % TONE_CYCLE.length];
+          const StepIcon = step.icon;
+          return (
+            <Reveal key={step.title} delay={delayOffset + 120 + i * 130}>
+              <li className="spotlight-hover hover-lift relative -m-2 rounded-xl p-2">
+                <span
+                  className={`absolute top-0 -left-[calc(2rem+1px)] flex size-8 items-center justify-center rounded-full font-heading text-sm font-bold ${tone.badge}`}
+                >
+                  {i + 1}
+                </span>
+                <div className="flex items-center gap-2">
+                  <StepIcon className="size-4 text-muted-foreground" />
+                  <p className="font-semibold">{step.title}</p>
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">{step.desc}</p>
+              </li>
+            </Reveal>
+          );
+        })}
       </ol>
-    </Reveal>
+    </div>
   );
 }
