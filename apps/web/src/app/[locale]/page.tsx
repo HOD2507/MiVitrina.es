@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserRole } from "@mivitrina/shared";
 import { PosterRing } from "@/components/poster-ring";
+import { PointerGlow } from "@/components/pointer-glow";
 import {
   Store,
   Wallet,
@@ -63,7 +64,7 @@ export default function LandingPage() {
 
       <main>
         {/* Hero */}
-        <section className="bg-mesh relative overflow-hidden">
+        <PointerGlow className="bg-mesh relative overflow-hidden">
           <div className="mx-auto grid max-w-6xl gap-12 px-4 pt-16 pb-20 sm:pt-24 sm:pb-28 md:grid-cols-[1.1fr_0.9fr] md:items-center md:gap-16">
             <div className="flex flex-col items-center gap-7 text-center md:items-start md:text-left">
               <Badge
@@ -79,19 +80,19 @@ export default function LandingPage() {
               <h1 className="font-heading text-5xl leading-[0.95] font-extrabold tracking-tighter text-balance sm:text-6xl lg:text-[4.5rem]">
                 {t("title")}
                 <br />
-                <span className="text-primary">{t("titleAccent")}</span>
+                <span className="text-shimmer">{t("titleAccent")}</span>
               </h1>
               <p className="max-w-lg text-lg text-muted-foreground text-balance">{t("subtitle")}</p>
               <div className="flex flex-col justify-center gap-3 sm:flex-row md:justify-start">
                 <Button
-                  className="h-12 rounded-full px-7 text-base shadow-lg shadow-primary/20"
+                  className="h-12 rounded-full px-7 text-base shadow-lg shadow-primary/20 transition-transform duration-200 hover:scale-[1.06] active:scale-95"
                   render={<Link href={{ pathname: "/register", query: { role: UserRole.COMMERCANT } }} />}
                 >
                   {t("ctaCommercant")}
                 </Button>
                 <Button
                   variant="outline"
-                  className="h-12 rounded-full border-foreground/15 px-7 text-base"
+                  className="h-12 rounded-full border-foreground/15 px-7 text-base transition-transform duration-200 hover:scale-[1.06] active:scale-95"
                   render={<Link href={{ pathname: "/register", query: { role: UserRole.ANNONCEUR } }} />}
                 >
                   {t("ctaAnnonceur")}
@@ -143,7 +144,7 @@ export default function LandingPage() {
               </Reveal>
             ))}
           </div>
-        </section>
+        </PointerGlow>
 
         {/* Galerie — de vraies affiches, tous types d'événements confondus */}
         <section className="bg-mesh-panel py-20 sm:py-28">
@@ -218,7 +219,7 @@ export default function LandingPage() {
                 <div className="mt-2 flex flex-col gap-3 sm:flex-row">
                   <Button
                     size="lg"
-                    className="h-12 rounded-full px-7 text-base"
+                    className="h-12 rounded-full px-7 text-base transition-transform duration-200 hover:scale-[1.06] active:scale-95"
                     render={<Link href={{ pathname: "/register", query: { role: UserRole.COMMERCANT } }} />}
                   >
                     {t("ctaCommercant")}
@@ -226,7 +227,7 @@ export default function LandingPage() {
                   <Button
                     size="lg"
                     variant="outline"
-                    className="h-12 rounded-full border-ink-foreground/25 bg-transparent px-7 text-base text-ink-foreground hover:bg-ink-foreground/10 hover:text-ink-foreground"
+                    className="h-12 rounded-full border-ink-foreground/25 bg-transparent px-7 text-base text-ink-foreground transition-transform duration-200 hover:scale-[1.06] hover:bg-ink-foreground/10 hover:text-ink-foreground active:scale-95"
                     render={<Link href={{ pathname: "/register", query: { role: UserRole.ANNONCEUR } }} />}
                   >
                     {t("ctaAnnonceur")}
