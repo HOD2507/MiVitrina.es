@@ -8,7 +8,7 @@ export async function SiteFooter() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-border/60 bg-card">
+    <footer className="relative overflow-hidden border-t border-border/60 bg-card">
       <div className="mx-auto max-w-6xl px-4 py-14">
         <div className="grid gap-10 sm:grid-cols-[1.4fr_1fr_1fr]">
           <div>
@@ -56,6 +56,16 @@ export async function SiteFooter() {
           © {year} MiVitrina
         </div>
       </div>
+
+      {/* Wordmark géant purement décoratif — signature visuelle de la
+          refonte, absente jusqu'ici. Tronqué en bas pour ne montrer que le
+          haut des lettres, comme un logo "posé" derrière le contenu. */}
+      <p
+        aria-hidden
+        className="ghost-wordmark pointer-events-none -mb-8 text-center text-[22vw] sm:text-[16vw] lg:text-[13rem]"
+      >
+        MiVitrina
+      </p>
     </footer>
   );
 }

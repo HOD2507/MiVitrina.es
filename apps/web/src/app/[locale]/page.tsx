@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserRole } from "@mivitrina/shared";
+import { PosterRing } from "@/components/poster-ring";
 import {
   Store,
   Wallet,
@@ -65,11 +66,17 @@ export default function LandingPage() {
         <section className="bg-mesh relative overflow-hidden">
           <div className="mx-auto grid max-w-6xl gap-12 px-4 pt-16 pb-20 sm:pt-24 sm:pb-28 md:grid-cols-[1.1fr_0.9fr] md:items-center md:gap-16">
             <div className="flex flex-col items-center gap-7 text-center md:items-start md:text-left">
-              <Badge variant="outline" className="gap-1.5 rounded-full border-primary/30 bg-background px-3.5 py-1.5">
-                <MapPin className="size-3.5 text-primary" />
+              <Badge
+                variant="outline"
+                className="gap-2 rounded-full border-primary/20 bg-background px-3.5 py-1.5 shadow-sm"
+              >
+                <span className="relative flex size-2">
+                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-60 motion-reduce:animate-none" />
+                  <span className="relative inline-flex size-2 rounded-full bg-primary" />
+                </span>
                 {t("eyebrow")}
               </Badge>
-              <h1 className="text-4xl leading-[1.08] font-medium tracking-tight text-balance sm:text-5xl lg:text-[3.4rem]">
+              <h1 className="font-heading text-5xl leading-[0.95] font-extrabold tracking-tighter text-balance sm:text-6xl lg:text-[4.5rem]">
                 {t("title")}
                 <br />
                 <span className="text-primary">{t("titleAccent")}</span>
@@ -145,29 +152,15 @@ export default function LandingPage() {
             <p className="mt-3 text-muted-foreground text-balance">{t("gallerySubtitle")}</p>
           </Reveal>
 
-          <div className="mx-auto grid max-w-6xl grid-cols-2 gap-4 px-4 sm:gap-5 lg:grid-cols-4">
-            {[
+          <PosterRing
+            hint={t("galleryDragHint")}
+            posters={[
               { src: "/images/poster-concert.jpg", label: t("galleryPoster1Label"), alt: t("galleryPoster1Alt") },
               { src: "/images/poster-theatre.jpg", label: t("galleryPoster2Label"), alt: t("galleryPoster2Alt") },
               { src: "/images/poster-mode.jpg", label: t("galleryPoster3Label"), alt: t("galleryPoster3Alt") },
               { src: "/images/poster-affiches.jpg", label: t("galleryPoster4Label"), alt: t("galleryPoster4Alt") },
-            ].map((item, i) => (
-              <Reveal key={item.src} delay={i * 90}>
-                <div className="hover-lift group overflow-hidden rounded-xl border border-border shadow-sm">
-                  <div className="relative aspect-[3/4] overflow-hidden">
-                    <Image
-                      src={item.src}
-                      alt={item.alt}
-                      fill
-                      sizes="(min-width: 1024px) 25vw, 50vw"
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                  </div>
-                  <p className="border-t border-border px-3 py-2.5 text-sm font-medium">{item.label}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
+            ]}
+          />
         </section>
 
         {/* Comment ça marche */}
