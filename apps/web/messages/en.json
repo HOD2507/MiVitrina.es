@@ -173,6 +173,7 @@
       "genericError": "Upload failed. Please try again."
     },
     "greeting": "Hello, {name}",
+    "greetingPrefix": "Hello",
     "verificationCardTitle": "Verify your shop",
     "quickActions": "Quick actions",
     "manageVitrine": "Manage my shop window",

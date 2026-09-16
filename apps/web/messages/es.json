@@ -173,6 +173,7 @@
       "genericError": "El envío ha fallado. Inténtalo de nuevo."
     },
     "greeting": "Hola, {name}",
+    "greetingPrefix": "Hola",
     "verificationCardTitle": "Verificación de tu comercio",
     "quickActions": "Acciones rápidas",
     "manageVitrine": "Gestionar mi escaparate",

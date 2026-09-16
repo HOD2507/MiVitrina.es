@@ -3,6 +3,17 @@
 @import "shadcn/tailwind.css";
 @import "leaflet/dist/leaflet.css";
 
+/* Le mode sombre a été retiré du produit (demande explicite de
+   l'utilisateur), mais Tailwind v4 active par défaut la variante `dark:`
+   sur la media query `prefers-color-scheme: dark` — sans cette ligne, les
+   classes `dark:` encore présentes ici et là (composants shadcn de base,
+   quelques cartes) s'activeraient silencieusement chez tout visiteur ayant
+   le mode sombre au niveau de son OS, alors qu'aucun mécanisme (`.dark`,
+   ThemeProvider) n'existe plus pour les prendre en charge correctement.
+   On restreint la variante à `.dark` explicite, qui n'est plus jamais
+   posé nulle part : ces classes deviennent inertes partout. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

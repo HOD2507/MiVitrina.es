@@ -109,10 +109,12 @@ export function VitrineClient({ initialVitrine }: { initialVitrine: MyVitrine | 
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="bg-mesh-panel flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold">{t("title")}</h1>
-        <p className="text-muted-foreground">{profile.businessName}</p>
+        <h1 className="font-heading text-3xl font-bold tracking-tight">{t("title")}</h1>
+        <p className="text-muted-foreground">
+          <span className="text-primary font-medium">{profile.businessName}</span>
+        </p>
       </div>
 
       {profile.verificationStatus !== VerificationStatus.VERIFIED && (

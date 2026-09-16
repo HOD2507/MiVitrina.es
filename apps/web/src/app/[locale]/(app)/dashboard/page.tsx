@@ -84,10 +84,12 @@ async function CommercantDashboard({
   ]);
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:py-10">
+    <div className="bg-mesh-panel mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:py-10">
       <div>
-        <h1 className="text-2xl font-medium">{t("greeting", { name: profile?.businessName ?? user.email })}</h1>
-        <div className="mt-1.5 flex items-center gap-2">
+        <h1 className="font-heading text-3xl font-bold tracking-tight">
+          {t("greetingPrefix")}, <span className="text-primary">{profile?.businessName ?? user.email}</span>
+        </h1>
+        <div className="mt-2 flex items-center gap-2">
           {profile?.verificationStatus === VerificationStatus.VERIFIED && (
             <Badge className="bg-green-600 text-white">✓ {t("verified")}</Badge>
           )}
@@ -138,10 +140,10 @@ async function CommercantDashboard({
 
       {stats && (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard icon={Wallet} label={t("statTotalReceived")} value={`${stats.totalPayout.toFixed(0)} €`} tone="accent" />
-          <StatCard icon={CalendarCheck} label={t("statActiveReservations")} value={stats.activeReservationsCount} />
-          <StatCard icon={Clock} label={t("statPendingRequests")} value={stats.pendingRequestsCount} />
-          <StatCard icon={Store} label={t("statPublishedSpaces")} value={stats.spacesCount} />
+          <StatCard icon={Wallet} label={t("statTotalReceived")} value={`${stats.totalPayout.toFixed(0)} €`} tone="primary" />
+          <StatCard icon={CalendarCheck} label={t("statActiveReservations")} value={stats.activeReservationsCount} tone="amber" />
+          <StatCard icon={Clock} label={t("statPendingRequests")} value={stats.pendingRequestsCount} tone="plum" />
+          <StatCard icon={Store} label={t("statPublishedSpaces")} value={stats.spacesCount} tone="muted" />
         </div>
       )}
 
@@ -196,10 +198,10 @@ async function AnnonceurDashboard({
   ]);
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:py-10">
+    <div className="bg-mesh-panel mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:py-10">
       <div>
-        <h1 className="text-2xl font-medium">
-          {t("greeting", { name: user.annonceurProfile?.companyName ?? user.email })}
+        <h1 className="font-heading text-3xl font-bold tracking-tight">
+          {t("greetingPrefix")}, <span className="text-primary">{user.annonceurProfile?.companyName ?? user.email}</span>
         </h1>
       </div>
 
@@ -216,10 +218,10 @@ async function AnnonceurDashboard({
 
       {stats && (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard icon={TrendingUp} label={t("statTotalSpent")} value={`${stats.totalSpent.toFixed(0)} €`} tone="accent" />
-          <StatCard icon={CalendarCheck} label={t("statActiveReservations")} value={stats.activeReservationsCount} />
-          <StatCard icon={Clock} label={t("statPending")} value={stats.pendingRequestsCount} />
-          <StatCard icon={CheckCircle2} label={t("statCompleted")} value={stats.completedReservationsCount} />
+          <StatCard icon={TrendingUp} label={t("statTotalSpent")} value={`${stats.totalSpent.toFixed(0)} €`} tone="primary" />
+          <StatCard icon={CalendarCheck} label={t("statActiveReservations")} value={stats.activeReservationsCount} tone="amber" />
+          <StatCard icon={Clock} label={t("statPending")} value={stats.pendingRequestsCount} tone="plum" />
+          <StatCard icon={CheckCircle2} label={t("statCompleted")} value={stats.completedReservationsCount} tone="muted" />
         </div>
       )}
 
