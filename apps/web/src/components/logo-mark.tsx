@@ -1,21 +1,23 @@
 /**
- * Logomark MiVitrina — une vitrine stylisée (montants + enseigne/affiche
- * posée + sol), déjà dessinée pour le favicon (apps/web/src/app/icon.svg)
- * mais jamais réutilisée ailleurs : le header/footer affichaient juste la
- * lettre "M" en texte système. Extrait ici en composant pour que le vrai
- * logo apparaisse partout où la marque est montrée, favicon compris.
+ * Logomark MiVitrina — un monogramme "M" géométrique dessiné au trait
+ * (pas une lettre de police système), avec un point plein au sommet
+ * central : la même signature "point qui accroche l'œil" déjà utilisée
+ * partout ailleurs sur le site (badges eyebrow, PointerGlow, spotlight-
+ * hover) — comme si le M lui-même portait le spotlight de la marque.
+ * Remplace une première version (icône de vitrine) que l'utilisateur
+ * n'a pas trouvée convaincante.
  */
 export function LogoMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 32 32" fill="none" className={className} aria-hidden>
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
       <path
-        d="M9 21V13.5C9 12.6716 9.67157 12 10.5 12H21.5C22.3284 12 23 12.6716 23 13.5V21"
+        d="M4 18V7L12 14L20 7V18"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="2.6"
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
-      <rect x="13" y="16" width="6" height="5" rx="1" fill="currentColor" />
-      <path d="M7 21H25" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="12" cy="14" r="1.7" fill="currentColor" />
     </svg>
   );
 }

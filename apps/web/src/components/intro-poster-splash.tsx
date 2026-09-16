@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 
@@ -13,9 +13,13 @@ const POSTERS = [
   "/images/poster-stage-lights.jpg",
 ];
 
-const TILE_COUNT = 14;
-const HOLD_MS = 500;
-const SESSION_KEY = "mivitrina-intro-seen";
+/** Beaucoup d'affiches ("millones de posters", demande de l'utilisateur)
+ * amoncelées au centre — pas un mur qui couvre tout l'écran, un vrai tas. */
+const TILE_COUNT = 46;
+const HOLD_MS = 450;
+/** Presque toutes en même temps ("no de una en una poco a poco") plutôt
+ * qu'un long décalage en cascade. */
+const MAX_STAGGER_S = 0.12;
 
 interface Tile {
   src: string;
@@ -27,44 +31,40 @@ interface Tile {
   flyY: number;
   flyRotate: number;
   delay: number;
+  z: number;
 }
 
-/** Positions éparpillées avec des trous entre elles (pas un mur plein) —
- * le site doit se voir tout de suite dans les intervalles, pas seulement
- * une fois les affiches parties. Grille lâche 4×4 + un peu de hasard sur
- * chaque tuile pour l'effet "collé à la main", pas un motif trop régulier. */
+/** Tas d'affiches concentré au centre de l'écran (~± 30% autour du milieu)
+ * — les bords/coins restent dégagés dès le départ pour qu'on voie déjà le
+ * site autour. Tailles et rotations très variées pour un vrai effet de
+ * pile chaotique, pas une grille propre. */
 function buildTiles(): Tile[] {
   return Array.from({ length: TILE_COUNT }, (_, i) => {
-    const col = i % 4;
-    const row = Math.floor(i / 4);
     const angle = Math.random() * Math.PI * 2;
-    const throwDistance = 500 + Math.random() * 400;
+    const throwDistance = 500 + Math.random() * 500;
     return {
       src: POSTERS[i % POSTERS.length],
-      leftPct: 6 + col * 24 + (Math.random() * 14 - 7),
-      topPct: 8 + row * 24 + (Math.random() * 14 - 7),
-      widthPx: 120 + Math.random() * 60,
-      rotate: Math.random() * 20 - 10,
+      leftPct: 50 + (Math.random() * 64 - 32),
+      topPct: 50 + (Math.random() * 56 - 28),
+      widthPx: 90 + Math.random() * 90,
+      rotate: Math.random() * 50 - 25,
       flyX: Math.cos(angle) * throwDistance,
       flyY: Math.sin(angle) * throwDistance,
-      flyRotate: Math.random() * 160 - 80,
-      delay: Math.random() * 0.35,
+      flyRotate: Math.random() * 200 - 100,
+      delay: Math.random() * MAX_STAGGER_S,
+      z: Math.round(Math.random() * 40),
     };
   });
 }
 
 /**
- * Quelques affiches (vraies photos déjà utilisées ailleurs) posées sur
- * l'écran à l'ouverture — le site est déjà visible en dessous et dans
- * les intervalles entre elles, pas caché par un mur plein — puis chaque
- * affiche se décolle dans sa propre direction pour dégager le reste.
- * Retour explicite de l'utilisateur après une première version qui
- * masquait tout le site derrière un mur opaque : "quiero que veamos un
- * poquito la web" — ici le site n'est jamais totalement caché.
+ * Tas d'affiches (vraies photos déjà utilisées ailleurs) amoncelées au
+ * centre de l'écran à l'ouverture — le site reste visible sur les bords —
+ * puis elles se décollent quasi toutes ensemble pour dégager le reste.
  *
- * `visible` démarre à `true` (identique au rendu serveur) pour ne jamais
- * laisser apparaître le site nu avant que le check sessionStorage
- * n'ait tranché côté client, dans un `useLayoutEffect` (avant peinture).
+ * Rejoue à chaque chargement/rafraîchissement de la page (pas de garde
+ * sessionStorage) — demande explicite de l'utilisateur après avoir
+ * remarqué qu'un rafraîchissement ne relançait pas l'animation.
  */
 export function IntroPosterSplash() {
   const reduceMotion = useReducedMotion();
@@ -72,23 +72,13 @@ export function IntroPosterSplash() {
   const [peeling, setPeeling] = useState(false);
   const tiles = useMemo(buildTiles, []);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (reduceMotion) {
       setVisible(false);
       return;
     }
-    try {
-      if (sessionStorage.getItem(SESSION_KEY)) {
-        setVisible(false);
-        return;
-      }
-      sessionStorage.setItem(SESSION_KEY, "1");
-    } catch {
-      // Stockage indisponible (navigation privée stricte, etc.) : tant
-      // pis, l'animation rejouera — ne jamais bloquer l'affichage pour ça.
-    }
     const peelTimer = setTimeout(() => setPeeling(true), HOLD_MS);
-    const hideTimer = setTimeout(() => setVisible(false), HOLD_MS + 1200);
+    const hideTimer = setTimeout(() => setVisible(false), HOLD_MS + 900);
     return () => {
       clearTimeout(peelTimer);
       clearTimeout(hideTimer);
@@ -114,11 +104,11 @@ export function IntroPosterSplash() {
           }
           transition={
             peeling
-              ? { duration: 0.8, delay: tile.delay, ease: [0.22, 1, 0.36, 1] }
-              : { duration: 0.25, delay: i * 0.02 }
+              ? { duration: 0.7, delay: tile.delay, ease: [0.22, 1, 0.36, 1] }
+              : { duration: 0.2, delay: i * 0.006 }
           }
           className="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg border border-black/10 shadow-xl"
-          style={{ left: `${tile.leftPct}%`, top: `${tile.topPct}%`, width: tile.widthPx }}
+          style={{ left: `${tile.leftPct}%`, top: `${tile.topPct}%`, width: tile.widthPx, zIndex: tile.z }}
         >
           <div className="relative aspect-[3/4]">
             <Image src={tile.src} alt="" fill sizes="200px" className="object-cover" />
