@@ -145,7 +145,7 @@ async function CommercantDashboard({
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+      <div className="grid items-start gap-6 lg:grid-cols-[2fr_1fr]">
         <RecentReservationsList
           title={t("recentRequests")}
           reservations={reservations ?? []}
@@ -153,19 +153,22 @@ async function CommercantDashboard({
           seeAllHref="/dashboard/reservations"
           seeAllLabel={t("seeAll")}
           emptyMessage={tReservations("noneYet")}
+          emptyIcon={Store}
+          emptyCtaHref="/dashboard/vitrine"
+          emptyCtaLabel={t("manageVitrine")}
           statusLabels={buildStatusLabels(tReservations)}
           dateLocale={dateLocale}
         />
-        <Card>
+        <Card size="sm">
           <CardHeader>
-            <CardTitle className="text-lg">{t("quickActions")}</CardTitle>
+            <CardTitle className="text-base">{t("quickActions")}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
-            <Button variant="outline" className="justify-start" render={<Link href="/dashboard/vitrine" />}>
+            <Button variant="outline" size="sm" className="justify-start" render={<Link href="/dashboard/vitrine" />}>
               <Store className="size-4" />
               {t("manageVitrine")}
             </Button>
-            <Button variant="outline" className="justify-start" render={<Link href="/dashboard/reservations" />}>
+            <Button variant="outline" size="sm" className="justify-start" render={<Link href="/dashboard/reservations" />}>
               <CalendarCheck className="size-4" />
               {t("viewRequests")}
             </Button>
@@ -220,7 +223,7 @@ async function AnnonceurDashboard({
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+      <div className="grid items-start gap-6 lg:grid-cols-[2fr_1fr]">
         <RecentReservationsList
           title={t("myRecentReservations")}
           reservations={reservations ?? []}
@@ -228,19 +231,22 @@ async function AnnonceurDashboard({
           seeAllHref="/mes-reservations"
           seeAllLabel={t("seeAll")}
           emptyMessage={t("noReservationsYet")}
+          emptyIcon={Search}
+          emptyCtaHref="/recherche"
+          emptyCtaLabel={t("searchCommerce")}
           statusLabels={buildStatusLabels(tReservations)}
           dateLocale={dateLocale}
         />
-        <Card>
+        <Card size="sm">
           <CardHeader>
-            <CardTitle className="text-lg">{t("quickActions")}</CardTitle>
+            <CardTitle className="text-base">{t("quickActions")}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
-            <Button className="justify-start" render={<Link href="/recherche" />}>
+            <Button size="sm" className="justify-start" render={<Link href="/recherche" />}>
               <Search className="size-4" />
               {t("searchCommerce")}
             </Button>
-            <Button variant="outline" className="justify-start" render={<Link href="/mes-reservations" />}>
+            <Button variant="outline" size="sm" className="justify-start" render={<Link href="/mes-reservations" />}>
               <CalendarCheck className="size-4" />
               {t("allMyReservations")}
             </Button>

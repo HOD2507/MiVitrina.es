@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Plus, Trash2, ImagePlus, ShieldCheck } from "lucide-react";
+import { Plus, Trash2, ImagePlus, ShieldCheck, Store } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { VerificationStatus } from "@mivitrina/shared";
@@ -198,22 +198,33 @@ export function VitrineClient({ initialVitrine }: { initialVitrine: MyVitrine | 
           </Button>
         </div>
 
-        {spaces.length === 0 && (
+        {spaces.length === 0 ? (
           <Card>
-            <CardContent className="py-8 text-center text-muted-foreground">{t("noSpacesYet")}</CardContent>
+            <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
+              <span className="flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                <Store className="size-5" />
+              </span>
+              <p className="text-sm text-muted-foreground">{t("noSpacesYet")}</p>
+              <Button size="sm" onClick={openCreateSpaceDialog}>
+                <Plus className="size-4" />
+                {t("addSpace")}
+              </Button>
+            </CardContent>
           </Card>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2">
+            {spaces.map((space) => (
+              <SpaceCard
+                key={space.id}
+                space={space}
+                onEdit={() => openEditSpaceDialog(space)}
+                onDeleted={handleSpaceDeleted}
+                onUpdated={handleSpaceUpdated}
+                onAddPricing={() => setPricingDialogSpaceId(space.id)}
+              />
+            ))}
+          </div>
         )}
-
-        {spaces.map((space) => (
-          <SpaceCard
-            key={space.id}
-            space={space}
-            onEdit={() => openEditSpaceDialog(space)}
-            onDeleted={handleSpaceDeleted}
-            onUpdated={handleSpaceUpdated}
-            onAddPricing={() => setPricingDialogSpaceId(space.id)}
-          />
-        ))}
       </div>
 
       <SpaceFormDialog

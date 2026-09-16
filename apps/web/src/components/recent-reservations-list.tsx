@@ -1,4 +1,5 @@
-import { CalendarDays } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { CalendarDays, Inbox } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import type { Reservation } from "@/lib/types";
 import type { ReservationStatus } from "@mivitrina/shared";
@@ -13,6 +14,12 @@ interface RecentReservationsListProps {
   seeAllHref: string;
   seeAllLabel: string;
   emptyMessage: string;
+  /** Icône + CTA de l'état vide — sans réservation, une carte vide toute
+   * blanche ne sert à rien : autant orienter vers l'action qui en produirait
+   * une (publier un espace / chercher un commerce). */
+  emptyIcon?: LucideIcon;
+  emptyCtaHref?: string;
+  emptyCtaLabel?: string;
   /** Construit côté appelant (composant serveur) avec `getTranslations` — ce composant n'a pas de traductions à lui. */
   statusLabels: Record<ReservationStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }>;
   /** Tag BCP-47 (ex: "es-ES", "en-GB") pour le formatage de date, calculé côté appelant depuis la locale courante. */
@@ -28,6 +35,9 @@ export function RecentReservationsList({
   seeAllHref,
   seeAllLabel,
   emptyMessage,
+  emptyIcon: EmptyIcon = Inbox,
+  emptyCtaHref,
+  emptyCtaLabel,
   statusLabels,
   dateLocale,
   limit = 5,
@@ -46,7 +56,17 @@ export function RecentReservationsList({
       </CardHeader>
       <CardContent>
         {items.length === 0 ? (
-          <p className="py-4 text-center text-sm text-muted-foreground">{emptyMessage}</p>
+          <div className="flex flex-col items-center gap-3 py-6 text-center">
+            <span className="flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
+              <EmptyIcon className="size-5" />
+            </span>
+            <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+            {emptyCtaHref && emptyCtaLabel && (
+              <Button size="sm" render={<Link href={emptyCtaHref} />}>
+                {emptyCtaLabel}
+              </Button>
+            )}
+          </div>
         ) : (
           <div className="flex flex-col divide-y divide-border">
             {items.map((r) => {
