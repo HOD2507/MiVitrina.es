@@ -6,10 +6,10 @@ import { Reveal } from "@/components/reveal";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserRole } from "@mivitrina/shared";
 import { PosterRing } from "@/components/poster-ring";
 import { PointerGlow } from "@/components/pointer-glow";
+import { IntroPosterSplash } from "@/components/intro-poster-splash";
 import {
   Store,
   Wallet,
@@ -30,9 +30,9 @@ import {
 
 /** Une couleur qui tourne par étape/fonctionnalité (palette "spotlight" — voir globals.css) plutôt qu'un unique bleu/orange partout : casse la monotonie visuelle pointée par l'utilisateur. */
 const TONE_CYCLE = [
-  { badge: "bg-primary/12 text-primary" },
-  { badge: "bg-glow-amber/30 text-amber-800" },
-  { badge: "bg-glow-plum/14 text-glow-plum" },
+  { badge: "bg-primary/12 text-primary", tile: "bg-primary/5" },
+  { badge: "bg-glow-amber/30 text-amber-800", tile: "bg-glow-amber/10" },
+  { badge: "bg-glow-plum/14 text-glow-plum", tile: "bg-glow-plum/5" },
 ] as const;
 
 /**
@@ -76,6 +76,7 @@ export default function LandingPage() {
 
   return (
     <>
+      <IntroPosterSplash />
       <SiteHeader />
 
       <main>
@@ -205,22 +206,41 @@ export default function LandingPage() {
               <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">{t("featuresTitle")}</h2>
             </Reveal>
 
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {features.map(({ icon: Icon, title, desc }, i) => (
-                <Reveal key={title} delay={(i % 3) * 90}>
-                  <Card className="spotlight-hover hover-lift h-full">
-                    <CardHeader>
-                      <span
-                        className={`mb-1 flex size-11 items-center justify-center rounded-xl ${TONE_CYCLE[i % TONE_CYCLE.length].badge}`}
+            {/* Mosaïque "bento" plutôt qu'une grille de rectangles identiques
+                (retour utilisateur) : les 2 premières fonctionnalités sont
+                mises en avant (tuile large, teintée, icône plus grosse), les
+                4 suivantes restent compactes et sans bordure — la section
+                cesse de se lire comme "6 boîtes pareilles". */}
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {features.map(({ icon: Icon, title, desc }, i) => {
+                const tone = TONE_CYCLE[i % TONE_CYCLE.length];
+                const featured = i < 2;
+                return (
+                  <Reveal key={title} delay={i * 70} className={featured ? "sm:col-span-2" : ""}>
+                    {featured ? (
+                      <div
+                        className={`spotlight-hover hover-lift h-full rounded-3xl border border-border/60 p-7 ${tone.tile}`}
                       >
-                        <Icon className="size-5" />
-                      </span>
-                      <CardTitle className="text-lg">{title}</CardTitle>
-                      <CardDescription>{desc}</CardDescription>
-                    </CardHeader>
-                  </Card>
-                </Reveal>
-              ))}
+                        <span className={`mb-4 flex size-14 items-center justify-center rounded-2xl ${tone.badge}`}>
+                          <Icon className="size-6" />
+                        </span>
+                        <p className="font-heading text-xl font-bold">{title}</p>
+                        <p className="mt-2 max-w-sm text-muted-foreground">{desc}</p>
+                      </div>
+                    ) : (
+                      <div className="hover-lift flex h-full flex-col gap-3 rounded-2xl p-5">
+                        <span className={`flex size-10 items-center justify-center rounded-xl ${tone.badge}`}>
+                          <Icon className="size-5" />
+                        </span>
+                        <div>
+                          <p className="font-semibold">{title}</p>
+                          <p className="mt-1 text-sm text-muted-foreground">{desc}</p>
+                        </div>
+                      </div>
+                    )}
+                  </Reveal>
+                );
+              })}
             </div>
           </div>
         </section>
