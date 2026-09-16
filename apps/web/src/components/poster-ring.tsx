@@ -16,38 +16,52 @@ interface PosterRingProps {
   hint: string;
 }
 
-const RADIUS_PX = 240;
-/** Degrés d'anneau parcourus par pixel glissé — accroche réactive sans être nerveuse. */
-const DRAG_SENSITIVITY = 0.45;
+/** Distance horizontale (px) entre deux affiches voisines au repos. */
+const SPACING_PX = 168;
 
 /**
- * Anneau de pósters qu'on fait tourner en le glissant (souris ou doigt) —
- * inspiré du "ring" de hikoway.com, mais avec du contenu propre à
- * MiVitrina (de vraies affiches d'événements plutôt que des écrans d'app)
- * et sa propre mécanique : pas de librairie de carrousel, juste
- * `useMotionValue` + un peu de trigonométrie CSS (chaque affiche est
- * positionnée par une double rotation qui la garde bien droite tout en la
- * plaçant sur le cercle). Celle qui passe devant grossit et s'éclaircit,
- * les autres reculent visuellement — mêmes hikoway mais réinterprété.
+ * Ramène un décalage brut (peut être n'importe quel entier/flottant) dans
+ * l'intervalle (-n/2, n/2] — c'est ce qui fait boucler l'anneau à l'infini
+ * dans les deux sens au lieu de s'arrêter au premier/dernier élément.
+ */
+function wrappedOffset(raw: number, n: number): number {
+  let o = raw % n;
+  if (o > n / 2) o -= n;
+  if (o < -n / 2) o += n;
+  return o;
+}
+
+/**
+ * Rangée d'affiches en "coverflow" qu'on fait tourner en la glissant —
+ * inspiré du ring de hikoway.com, mais entièrement horizontal (une vraie
+ * boucle 360° incluant le haut/bas ne tenait pas dans un bandeau large et
+ * bas : les affiches placées en haut/bas sortaient du cadre ou étaient
+ * rognées, et celle "au premier plan" n'était même pas centrée — d'où le
+ * rendu raté de la première version). Ici, la progression du glissement
+ * (en "nombre d'affiches parcourues", pas en degrés) pilote la position de
+ * chaque affiche sur un axe X ; l'affiche centrale grossit et s'éclaircit,
+ * les autres reculent avec une légère bascule 3D (rotateY) pour un effet
+ * de profondeur. Boucle à l'infini dans les deux sens même avec seulement
+ * 4 affiches.
  */
 export function PosterRing({ posters, hint }: PosterRingProps) {
-  const rotation = useMotionValue(0);
-  const dragStartRotation = useRef(0);
+  const progress = useMotionValue(0);
+  const dragStartProgress = useRef(0);
 
   function handleDragStart() {
-    dragStartRotation.current = rotation.get();
+    dragStartProgress.current = progress.get();
   }
 
   function handleDrag(_: PointerEvent | MouseEvent | TouchEvent, info: PanInfo) {
-    rotation.set(dragStartRotation.current + info.offset.x * DRAG_SENSITIVITY);
+    progress.set(dragStartProgress.current - info.offset.x / SPACING_PX);
   }
 
   function handleDragEnd(_: PointerEvent | MouseEvent | TouchEvent, info: PanInfo) {
-    const projected = rotation.get() + info.velocity.x * 0.12;
-    animate(rotation, projected, { type: "spring", stiffness: 55, damping: 20, mass: 0.6 });
+    const projected = progress.get() - (info.velocity.x / SPACING_PX) * 0.15;
+    // Se cale sur l'affiche la plus proche plutôt que de s'arrêter à un
+    // point aléatoire — sensation "carrousel" nette plutôt que flottante.
+    animate(progress, Math.round(projected), { type: "spring", stiffness: 220, damping: 28, mass: 0.7 });
   }
-
-  const step = 360 / posters.length;
 
   return (
     <div className="flex flex-col items-center gap-8">
@@ -59,10 +73,19 @@ export function PosterRing({ posters, hint }: PosterRingProps) {
         onDragStart={handleDragStart}
         onDrag={handleDrag}
         onDragEnd={handleDragEnd}
-        className="relative h-[19rem] w-full max-w-3xl cursor-grab touch-pan-y select-none active:cursor-grabbing sm:h-[22rem]"
+        style={{ perspective: 1100 }}
+        className="relative h-56 w-full max-w-3xl cursor-grab touch-pan-y overflow-hidden select-none active:cursor-grabbing sm:h-64"
       >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-background to-transparent sm:w-28"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-background to-transparent sm:w-28"
+        />
         {posters.map((poster, i) => (
-          <RingItem key={poster.src} poster={poster} angle={step * i} rotation={rotation} />
+          <RingItem key={poster.src} poster={poster} index={i} count={posters.length} progress={progress} />
         ))}
       </motion.div>
 
@@ -74,38 +97,36 @@ export function PosterRing({ posters, hint }: PosterRingProps) {
   );
 }
 
-/** Distance angulaire au point "face à l'écran" (0°), toujours entre 0 et 180. */
-function angularDistance(effectiveAngleDeg: number): number {
-  const normalized = ((effectiveAngleDeg % 360) + 360) % 360;
-  return normalized > 180 ? 360 - normalized : normalized;
-}
-
 function RingItem({
   poster,
-  angle,
-  rotation,
+  index,
+  count,
+  progress,
 }: {
   poster: RingPoster;
-  angle: number;
-  rotation: ReturnType<typeof useMotionValue<number>>;
+  index: number;
+  count: number;
+  progress: ReturnType<typeof useMotionValue<number>>;
 }) {
-  const transform = useTransform(rotation, (r) => {
-    const total = r + angle;
-    // Double rotation : place l'élément sur le cercle (translateX après une
-    // première rotation) puis annule la rotation sur l'élément lui-même
-    // (deuxième rotation inverse) pour qu'il reste bien droit, jamais penché.
-    return `translate(-50%, -50%) rotate(${total}deg) translateX(${RADIUS_PX}px) rotate(${-total}deg)`;
+  const transform = useTransform(progress, (p) => {
+    const offset = wrappedOffset(index - p, count);
+    const dist = Math.min(Math.abs(offset), 2.2);
+    const scale = 1 - dist * 0.22;
+    const rotateY = offset * -22;
+    return `translate(-50%, -50%) translateX(${offset * SPACING_PX}px) scale(${scale}) rotateY(${rotateY}deg)`;
   });
-  const opacity = useTransform(rotation, (r) => 1 - Math.min(angularDistance(r + angle) / 165, 1) * 0.75);
-  const scale = useTransform(rotation, (r) => 1 - Math.min(angularDistance(r + angle) / 165, 1) * 0.32);
-  const zIndex = useTransform(rotation, (r) => Math.round(1000 - angularDistance(r + angle)));
+  const opacity = useTransform(progress, (p) => {
+    const dist = Math.min(Math.abs(wrappedOffset(index - p, count)), 2.2);
+    return Math.max(1 - dist * 0.42, 0.15);
+  });
+  const zIndex = useTransform(progress, (p) => Math.round(100 - Math.abs(wrappedOffset(index - p, count)) * 10));
 
   return (
     <motion.div
-      style={{ transform, opacity, scale, zIndex }}
+      style={{ transform, opacity, zIndex, transformStyle: "preserve-3d" }}
       className="absolute top-1/2 left-1/2 w-32 sm:w-40"
     >
-      <div className="spotlight-hover overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+      <div className="spotlight-hover overflow-hidden rounded-xl border border-border bg-card shadow-xl">
         <div className="relative aspect-[3/4]">
           <Image
             src={poster.src}
