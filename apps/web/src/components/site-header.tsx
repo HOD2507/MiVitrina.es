@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { LocaleSwitcher } from "@/components/locale-switcher";
+import { LogoMark } from "@/components/logo-mark";
 
 export async function SiteHeader() {
   const t = await getTranslations("Nav");
@@ -10,8 +11,8 @@ export async function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/75 backdrop-blur-md">
       <div className="mx-auto flex h-18 max-w-6xl items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2.5">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-primary font-heading text-[1.05rem] font-semibold text-primary-foreground">
-            M
+          <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <LogoMark className="size-5" />
           </span>
           <span className="font-heading text-[1.2rem] font-semibold tracking-tight">MiVitrina</span>
         </Link>

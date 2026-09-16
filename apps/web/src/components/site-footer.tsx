@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { MapPin } from "lucide-react";
 import { Link } from "@/i18n/navigation";
+import { LogoMark } from "@/components/logo-mark";
 
 export async function SiteFooter() {
   const t = await getTranslations("Footer");
@@ -13,8 +14,8 @@ export async function SiteFooter() {
         <div className="grid gap-10 sm:grid-cols-[1.4fr_1fr_1fr]">
           <div>
             <Link href="/" className="flex items-center gap-2.5">
-              <span className="flex size-7 items-center justify-center rounded-md bg-primary font-heading text-sm font-semibold text-primary-foreground">
-                M
+              <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
+                <LogoMark className="size-4.5" />
               </span>
               <span className="font-heading text-lg font-semibold tracking-tight">MiVitrina</span>
             </Link>

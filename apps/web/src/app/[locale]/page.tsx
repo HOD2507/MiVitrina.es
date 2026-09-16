@@ -10,6 +10,8 @@ import { UserRole } from "@mivitrina/shared";
 import { PosterRing } from "@/components/poster-ring";
 import { PointerGlow } from "@/components/pointer-glow";
 import { IntroPosterSplash } from "@/components/intro-poster-splash";
+import { SmoothScroll } from "@/components/smooth-scroll";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionPanel } from "@/components/ui/accordion";
 import {
   Store,
   Wallet,
@@ -74,8 +76,18 @@ export default function LandingPage() {
     { icon: Percent, title: t("featureCommissionTitle"), desc: t("featureCommissionDesc") },
   ];
 
+  const faqItems = [
+    { q: t("faqQ1"), a: t("faqA1") },
+    { q: t("faqQ2"), a: t("faqA2") },
+    { q: t("faqQ3"), a: t("faqA3") },
+    { q: t("faqQ4"), a: t("faqA4") },
+    { q: t("faqQ5"), a: t("faqA5") },
+    { q: t("faqQ6"), a: t("faqA6") },
+  ];
+
   return (
     <>
+      <SmoothScroll />
       <IntroPosterSplash />
       <SiteHeader />
 
@@ -179,6 +191,7 @@ export default function LandingPage() {
               { src: "/images/poster-mode.jpg", label: t("galleryPoster3Label"), alt: t("galleryPoster3Alt") },
               { src: "/images/poster-affiches.jpg", label: t("galleryPoster4Label"), alt: t("galleryPoster4Alt") },
               { src: "/images/poster-market.jpg", label: t("galleryPoster5Label"), alt: t("galleryPoster5Alt") },
+              { src: "/images/poster-stage-lights.jpg", label: t("galleryPoster6Label"), alt: t("galleryPoster6Alt") },
             ]}
           />
         </section>
@@ -242,6 +255,27 @@ export default function LandingPage() {
                 );
               })}
             </div>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section className="bg-mesh-panel">
+          <div className="mx-auto max-w-3xl px-4 py-20 sm:py-28">
+            <Reveal className="mx-auto mb-12 max-w-xl text-center">
+              <p className="mb-2 text-sm font-medium text-primary">{t("faqEyebrow")}</p>
+              <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">{t("faqTitle")}</h2>
+            </Reveal>
+
+            <Reveal delay={100}>
+              <Accordion className="rounded-2xl border border-border bg-card px-6">
+                {faqItems.map(({ q, a }) => (
+                  <AccordionItem key={q} value={q}>
+                    <AccordionTrigger>{q}</AccordionTrigger>
+                    <AccordionPanel>{a}</AccordionPanel>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </Reveal>
           </div>
         </section>
 

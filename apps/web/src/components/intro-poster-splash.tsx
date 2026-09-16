@@ -10,66 +10,74 @@ const POSTERS = [
   "/images/poster-mode.jpg",
   "/images/poster-affiches.jpg",
   "/images/poster-market.jpg",
+  "/images/poster-stage-lights.jpg",
 ];
 
-const TILE_COUNT = 12;
+/** Colonnes supposées pour calculer la direction "explosion depuis le
+ * centre" — approximatif sur mobile (vraie grille en 4 colonnes via CSS)
+ * mais l'effet reste convaincant, le mouvement étant chaotique de toute
+ * façon. */
+const LAYOUT_COLS = 8;
+const LAYOUT_ROWS = 6;
+const HOLD_MS = 550;
 const SESSION_KEY = "mivitrina-intro-seen";
 
-interface Tile {
+interface WallTile {
   src: string;
-  leftPct: number;
-  topPct: number;
-  rotate: number;
-  fromX: number;
-  fromY: number;
+  restRotate: number;
+  flyX: number;
+  flyY: number;
+  flyRotate: number;
   delay: number;
 }
 
-/** Dispose les tuiles en grille lâche (4 colonnes) avec un peu de hasard,
- * chacune arrivant d'un bord différent — évite le clustering au centre
- * qu'un positionnement 100% aléatoire produirait souvent. */
-function buildTiles(): Tile[] {
-  const edges = [
-    { x: 0, y: -1 },
-    { x: 0, y: 1 },
-    { x: -1, y: 0 },
-    { x: 1, y: 0 },
-  ];
-  return Array.from({ length: TILE_COUNT }, (_, i) => {
-    const col = i % 4;
-    const row = Math.floor(i / 4);
-    const edge = edges[i % edges.length];
-    const throwDistance = 900;
-    return {
-      src: POSTERS[i % POSTERS.length],
-      leftPct: 8 + col * 24 + (Math.random() * 10 - 5),
-      topPct: 12 + row * 32 + (Math.random() * 10 - 5),
-      rotate: Math.random() * 26 - 13,
-      fromX: edge.x * throwDistance,
-      fromY: edge.y * throwDistance,
-      delay: i * 0.06,
-    };
-  });
+/** Construit le mur : chaque tuile part du centre logique de la grille et
+ * s'envole dans la direction opposée au décollage, un peu de hasard en
+ * plus pour ne pas avoir un motif trop parfaitement symétrique. */
+function buildWallTiles(): WallTile[] {
+  const centerCol = (LAYOUT_COLS - 1) / 2;
+  const centerRow = (LAYOUT_ROWS - 1) / 2;
+  const tiles: WallTile[] = [];
+  let i = 0;
+  for (let row = 0; row < LAYOUT_ROWS; row++) {
+    for (let col = 0; col < LAYOUT_COLS; col++) {
+      const dx = (col - centerCol) / centerCol;
+      const dy = (row - centerRow) / centerRow;
+      const dist = Math.hypot(dx, dy);
+      tiles.push({
+        src: POSTERS[i % POSTERS.length],
+        restRotate: Math.random() * 6 - 3,
+        flyX: dx * 900 + (Math.random() * 240 - 120),
+        flyY: dy * 900 + (Math.random() * 240 - 120),
+        flyRotate: Math.random() * 140 - 70,
+        // Les tuiles proches du centre partent un chouïa avant celles des
+        // bords — la déchirure semble commencer au milieu et se propager.
+        delay: dist * 0.16 + Math.random() * 0.12,
+      });
+      i++;
+    }
+  }
+  return tiles;
 }
 
 /**
- * Rideau d'ouverture joué une fois par session : une volée d'affiches
- * (vraies photos déjà utilisées ailleurs sur le site) arrive de tous les
- * bords et "se colle" à l'écran façon mur d'affichage, avant que le site
- * n'apparaisse dessous. Idée demandée par l'utilisateur ("millions de
- * posters qui se collent").
+ * Rideau d'ouverture joué une fois par session : au lieu d'affiches qui
+ * arrivent pour couvrir l'écran, l'écran est *déjà* couvert par un mur
+ * d'affichage (comme un vrai mur de rue) dès le premier rendu — puis
+ * chaque affiche se décolle et s'envole dans sa propre direction pour
+ * révéler le site en dessous. Version inversée d'un premier essai que
+ * l'utilisateur n'a pas aimé (affiches qui arrivaient plutôt que de se
+ * détacher).
  *
- * `visible` démarre à `true` (rendu serveur identique pour tout le monde)
- * pour ne jamais laisser transparaître le contenu réel avant que le check
- * sessionStorage n'ait tranché, côté client, dans un `useLayoutEffect`
- * (avant peinture) plutôt qu'un `useEffect` — sur une visite déjà vue dans
- * la session, ça évite un flash du site nu avant disparition immédiate.
+ * `visible` démarre à `true` (identique au rendu serveur) pour ne jamais
+ * laisser transparaître le site avant que le check sessionStorage
+ * n'ait tranché côté client, dans un `useLayoutEffect` (avant peinture).
  */
 export function IntroPosterSplash() {
   const reduceMotion = useReducedMotion();
   const [visible, setVisible] = useState(true);
-  const [exiting, setExiting] = useState(false);
-  const tiles = useMemo(buildTiles, []);
+  const [peeling, setPeeling] = useState(false);
+  const tiles = useMemo(buildWallTiles, []);
 
   useLayoutEffect(() => {
     if (reduceMotion) {
@@ -83,50 +91,61 @@ export function IntroPosterSplash() {
       }
       sessionStorage.setItem(SESSION_KEY, "1");
     } catch {
-      // Stockage indisponible (navigation privée stricte, etc.) : on
-      // laisse l'animation jouer une fois quand même, tant pis si elle
-      // se répète — ne jamais bloquer l'affichage du site pour ça.
+      // Stockage indisponible (navigation privée stricte, etc.) : tant
+      // pis, l'animation rejouera — ne jamais bloquer l'affichage pour ça.
     }
-    const exitTimer = setTimeout(() => setExiting(true), 1500);
-    const hideTimer = setTimeout(() => setVisible(false), 2200);
+    const peelTimer = setTimeout(() => setPeeling(true), HOLD_MS);
+    const hideTimer = setTimeout(() => setVisible(false), HOLD_MS + 1500);
     return () => {
-      clearTimeout(exitTimer);
+      clearTimeout(peelTimer);
       clearTimeout(hideTimer);
     };
   }, [reduceMotion]);
 
   if (!visible) return null;
 
+  function skip() {
+    setPeeling(true);
+    setTimeout(() => setVisible(false), 500);
+  }
+
   return (
-    <div
+    <motion.div
       aria-hidden
-      onClick={() => setExiting(true)}
-      className={`bg-ink fixed inset-0 z-[100] cursor-pointer overflow-hidden transition-[opacity,transform] duration-700 ease-in ${
-        exiting ? "pointer-events-none scale-110 opacity-0" : "opacity-100"
-      }`}
+      onClick={skip}
+      initial={{ opacity: 1 }}
+      animate={{ opacity: peeling ? 0 : 1 }}
+      transition={{ duration: 1.1, delay: peeling ? 0.4 : 0 }}
+      className="bg-ink fixed inset-0 z-[100] cursor-pointer overflow-hidden"
     >
-      {tiles.map((tile, i) => (
-        <motion.div
-          key={i}
-          initial={{ opacity: 0, scale: 0.5, x: tile.fromX, y: tile.fromY, rotate: tile.rotate * 2 }}
-          animate={{ opacity: 1, scale: 1, x: 0, y: 0, rotate: tile.rotate }}
-          transition={{ type: "spring", stiffness: 190, damping: 17, delay: tile.delay }}
-          className="absolute w-24 -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg border border-white/10 shadow-2xl sm:w-32"
-          style={{ left: `${tile.leftPct}%`, top: `${tile.topPct}%` }}
-        >
-          <div className="relative aspect-[3/4]">
-            <Image src={tile.src} alt="" fill sizes="140px" className="object-cover" />
-          </div>
-        </motion.div>
-      ))}
+      <div
+        className="grid size-full grid-cols-4 sm:grid-cols-6 lg:grid-cols-8"
+        style={{ gridAutoRows: "1fr" }}
+      >
+        {tiles.map((tile, i) => (
+          <motion.div
+            key={i}
+            initial={false}
+            animate={
+              peeling
+                ? { x: tile.flyX, y: tile.flyY, rotate: tile.flyRotate, opacity: 0, scale: 0.7 }
+                : { x: 0, y: 0, rotate: tile.restRotate, opacity: 1, scale: 1.08 }
+            }
+            transition={{ duration: 0.85, delay: peeling ? tile.delay : 0, ease: [0.22, 1, 0.36, 1] }}
+            className="relative border border-white/5"
+          >
+            <Image src={tile.src} alt="" fill sizes="200px" className="object-cover" />
+          </motion.div>
+        ))}
+      </div>
       <motion.p
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1, duration: 0.4 }}
-        className="text-ink-foreground/95 font-heading absolute inset-0 flex items-center justify-center text-3xl font-extrabold tracking-tight sm:text-5xl"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: peeling ? 0 : 1 }}
+        transition={{ duration: 0.3, delay: peeling ? 0 : 0.4 }}
+        className="text-ink-foreground/95 font-heading pointer-events-none absolute inset-0 flex items-center justify-center text-3xl font-extrabold tracking-tight drop-shadow-lg sm:text-5xl"
       >
         MiVitrina
       </motion.p>
-    </div>
+    </motion.div>
   );
 }

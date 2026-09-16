@@ -17,6 +17,7 @@ import { UserRole } from "@mivitrina/shared";
 import type { AuthUser } from "@/lib/types";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { LogoutButton } from "@/components/logout-button";
+import { LogoMark } from "@/components/logo-mark";
 import { Badge } from "@/components/ui/badge";
 
 interface NavItem {
@@ -90,8 +91,8 @@ export function AppShell({ user, children }: { user: AuthUser; children: ReactNo
       {/* Sidebar desktop, persistante */}
       <aside className="hidden w-64 shrink-0 flex-col border-r border-border/60 bg-card md:flex">
         <Link href="/" className="flex items-center gap-2.5 px-5 py-5">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-primary font-heading text-[1.05rem] font-semibold text-primary-foreground">
-            M
+          <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <LogoMark className="size-5" />
           </span>
           <span className="font-heading text-[1.1rem] font-semibold tracking-tight">MiVitrina</span>
         </Link>
@@ -116,8 +117,8 @@ export function AppShell({ user, children }: { user: AuthUser; children: ReactNo
         {/* Barre mobile */}
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-border/60 bg-card px-4 md:hidden">
           <Link href="/" className="flex items-center gap-2">
-            <span className="flex size-7 items-center justify-center rounded-lg bg-primary font-heading text-sm font-semibold text-primary-foreground">
-              M
+            <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <LogoMark className="size-4.5" />
             </span>
             <span className="font-heading text-base font-semibold">MiVitrina</span>
           </Link>
