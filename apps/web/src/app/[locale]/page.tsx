@@ -159,6 +159,7 @@ export default function LandingPage() {
               { src: "/images/poster-theatre.jpg", label: t("galleryPoster2Label"), alt: t("galleryPoster2Alt") },
               { src: "/images/poster-mode.jpg", label: t("galleryPoster3Label"), alt: t("galleryPoster3Alt") },
               { src: "/images/poster-affiches.jpg", label: t("galleryPoster4Label"), alt: t("galleryPoster4Alt") },
+              { src: "/images/poster-market.jpg", label: t("galleryPoster5Label"), alt: t("galleryPoster5Alt") },
             ]}
           />
         </section>

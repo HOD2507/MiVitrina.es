@@ -1,8 +1,15 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import Image from "next/image";
-import { motion, useMotionValue, useTransform, animate, type PanInfo } from "framer-motion";
+import {
+  motion,
+  useMotionValue,
+  useTransform,
+  useAnimationFrame,
+  animate,
+  type PanInfo,
+} from "framer-motion";
 import { Hand } from "lucide-react";
 
 export interface RingPoster {
@@ -17,7 +24,9 @@ interface PosterRingProps {
 }
 
 /** Distance horizontale (px) entre deux affiches voisines au repos. */
-const SPACING_PX = 168;
+const SPACING_PX = 210;
+/** Vitesse de rotation automatique, en "affiches par seconde" — lent et élégant. */
+const AUTO_ROTATE_SPEED = 0.11;
 
 /**
  * Ramène un décalage brut (peut être n'importe quel entier/flottant) dans
@@ -32,23 +41,39 @@ function wrappedOffset(raw: number, n: number): number {
 }
 
 /**
- * Rangée d'affiches en "coverflow" qu'on fait tourner en la glissant —
+ * Rangée d'affiches en "coverflow" qui tourne toute seule au repos (lent,
+ * continu) et qu'on peut aussi faire tourner à la main en la glissant —
  * inspiré du ring de hikoway.com, mais entièrement horizontal (une vraie
  * boucle 360° incluant le haut/bas ne tenait pas dans un bandeau large et
- * bas : les affiches placées en haut/bas sortaient du cadre ou étaient
- * rognées, et celle "au premier plan" n'était même pas centrée — d'où le
- * rendu raté de la première version). Ici, la progression du glissement
- * (en "nombre d'affiches parcourues", pas en degrés) pilote la position de
- * chaque affiche sur un axe X ; l'affiche centrale grossit et s'éclaircit,
- * les autres reculent avec une légère bascule 3D (rotateY) pour un effet
- * de profondeur. Boucle à l'infini dans les deux sens même avec seulement
- * 4 affiches.
+ * bas, voir historique de ce composant) et avec du contenu propre à
+ * MiVitrina. La progression du glissement (en "nombre d'affiches
+ * parcourues", pas en degrés) pilote la position de chaque affiche sur un
+ * axe X ; l'affiche centrale grossit et s'éclaircit, les autres reculent
+ * avec une légère bascule 3D (rotateY). Boucle à l'infini même avec peu
+ * d'affiches.
  */
 export function PosterRing({ posters, hint }: PosterRingProps) {
   const progress = useMotionValue(0);
   const dragStartProgress = useRef(0);
+  // Ref plutôt que state : lue à chaque frame par useAnimationFrame, pas
+  // besoin de re-render à chaque changement.
+  const isInteracting = useRef(false);
+  const reducedMotion = useRef(false);
+
+  useEffect(() => {
+    reducedMotion.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }, []);
+
+  // Rotation automatique continue tant que l'utilisateur ne glisse pas la
+  // main dessus (et pas de rotation automatique si mouvement réduit
+  // demandé — seule l'interaction volontaire au glisser reste possible).
+  useAnimationFrame((_, delta) => {
+    if (isInteracting.current || reducedMotion.current) return;
+    progress.set(progress.get() + (AUTO_ROTATE_SPEED * delta) / 1000);
+  });
 
   function handleDragStart() {
+    isInteracting.current = true;
     dragStartProgress.current = progress.get();
   }
 
@@ -60,7 +85,17 @@ export function PosterRing({ posters, hint }: PosterRingProps) {
     const projected = progress.get() - (info.velocity.x / SPACING_PX) * 0.15;
     // Se cale sur l'affiche la plus proche plutôt que de s'arrêter à un
     // point aléatoire — sensation "carrousel" nette plutôt que flottante.
-    animate(progress, Math.round(projected), { type: "spring", stiffness: 220, damping: 28, mass: 0.7 });
+    // La rotation automatique ne reprend qu'une fois cette animation finie
+    // (onComplete), sinon les deux se battraient sur la même valeur.
+    animate(progress, Math.round(projected), {
+      type: "spring",
+      stiffness: 220,
+      damping: 28,
+      mass: 0.7,
+      onComplete: () => {
+        isInteracting.current = false;
+      },
+    });
   }
 
   return (
@@ -74,15 +109,15 @@ export function PosterRing({ posters, hint }: PosterRingProps) {
         onDrag={handleDrag}
         onDragEnd={handleDragEnd}
         style={{ perspective: 1100 }}
-        className="relative h-56 w-full max-w-3xl cursor-grab touch-pan-y overflow-hidden select-none active:cursor-grabbing sm:h-64"
+        className="relative h-64 w-full max-w-4xl cursor-grab touch-pan-y overflow-hidden select-none active:cursor-grabbing sm:h-80 lg:h-96"
       >
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-background to-transparent sm:w-28"
+          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-background to-transparent sm:w-32"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-background to-transparent sm:w-28"
+          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-background to-transparent sm:w-32"
         />
         {posters.map((poster, i) => (
           <RingItem key={poster.src} poster={poster} index={i} count={posters.length} progress={progress} />
@@ -124,7 +159,7 @@ function RingItem({
   return (
     <motion.div
       style={{ transform, opacity, zIndex, transformStyle: "preserve-3d" }}
-      className="absolute top-1/2 left-1/2 w-32 sm:w-40"
+      className="absolute top-1/2 left-1/2 w-36 sm:w-48 lg:w-56"
     >
       <div className="spotlight-hover overflow-hidden rounded-xl border border-border bg-card shadow-xl">
         <div className="relative aspect-[3/4]">
@@ -132,13 +167,13 @@ function RingItem({
             src={poster.src}
             alt={poster.alt}
             fill
-            sizes="160px"
+            sizes="(min-width: 1024px) 224px, (min-width: 640px) 192px, 144px"
             draggable={false}
             className="pointer-events-none object-cover"
           />
         </div>
       </div>
-      <p className="mt-2 text-center text-xs font-medium text-muted-foreground">{poster.label}</p>
+      <p className="mt-2 text-center text-xs font-medium text-muted-foreground sm:text-sm">{poster.label}</p>
     </motion.div>
   );
 }
