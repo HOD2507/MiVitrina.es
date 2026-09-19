@@ -14,11 +14,22 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { GoogleAuthButton } from "@/components/google-auth-button";
+import { EmailField } from "@/components/email-field";
+import { PasswordField } from "@/components/password-field";
+import { TaxIdField } from "@/components/tax-id-field";
+import { isValidSpanishTaxId } from "@/lib/spanish-tax-id";
+import { withTimeout } from "@/lib/with-timeout";
 import { StepWizard } from "@/components/step-wizard";
-import { Store, Megaphone, ArrowLeft, Mail } from "lucide-react";
+import { Store, Megaphone, ArrowLeft, Mail, User, Building2 } from "lucide-react";
 
-/** Inscription commerçant en 3 étapes (compte / commerce / adresse) — voir StepWizard. */
-const COMMERCANT_STEPS = 3;
+/** Inscription commerçant en 4 étapes (compte / particulier ou entreprise / commerce / adresse) — voir StepWizard. */
+const COMMERCANT_STEPS = 4;
+
+/** Filet de sécurité pour la vérification en arrière-plan (voir
+ * runBackgroundCheck) : évite qu'une requête réseau bloquée reste
+ * indéfiniment "en vol" — sans effet sur la vitesse ressentie puisqu'elle
+ * ne retarde plus l'avancée du formulaire. */
+const STEP_CHECK_TIMEOUT_MS = 5000;
 
 /** Rôles ouverts à l'inscription publique — reflète apps/api/.../register.dto.ts. */
 type RegisterableRole = typeof UserRole.COMMERCANT | typeof UserRole.ANNONCEUR;
@@ -80,6 +91,10 @@ function RegisterForm() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  // Détermine juste le libellé/l'exemple affichés pour le NIF/CIF (étape
+  // suivante) — la structure NIF/CIF elle-même ne dépend pas de ce choix
+  // côté API (voir BUSINESS_ID_TYPE_BY_COUNTRY, un seul type "NIF_CIF" pour l'Espagne).
+  const [commercantIsCompany, setCommercantIsCompany] = useState(false);
   const [businessName, setBusinessName] = useState("");
   const [businessIdNumber, setBusinessIdNumber] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
@@ -87,6 +102,9 @@ function RegisterForm() {
   const [city, setCity] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [companyName, setCompanyName] = useState("");
+  // "Razón social" n'a de sens que pour une entreprise — un particulier
+  // peut aussi être annonceur (voir AnnonceurProfile.companyName, optionnel).
+  const [annonceurIsCompany, setAnnonceurIsCompany] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -100,9 +118,13 @@ function RegisterForm() {
   const businessNameRef = useRef<HTMLInputElement>(null);
   const businessIdNumberRef = useRef<HTMLInputElement>(null);
 
-  /** Valide l'étape courante avant de passer à la suivante — `reportValidity()`
-   * déclenche les bulles natives du navigateur sur les champs invalides. */
-  function validateStep(current: number): boolean {
+  /**
+   * Validation strictement locale (aucun appel réseau) avant de passer à
+   * l'étape suivante — `reportValidity()` déclenche les bulles natives du
+   * navigateur sur les champs invalides. Instantanée : demande explicite
+   * de l'utilisateur, plus aucune latence perceptible en cliquant "Suivant".
+   */
+  function validateStepLocal(current: number): boolean {
     setError(null);
     if (current === 0) {
       if (!emailRef.current?.reportValidity()) return false;
@@ -115,16 +137,68 @@ function RegisterForm() {
       }
       return true;
     }
-    if (current === 1) {
+    if (current === 2) {
       if (!businessNameRef.current?.reportValidity()) return false;
       if (!businessIdNumberRef.current?.reportValidity()) return false;
+      if (!isValidSpanishTaxId(businessIdNumber)) {
+        setError(tErrors("invalidBusinessId"));
+        businessIdNumberRef.current?.focus();
+        return false;
+      }
       return true;
     }
     return true;
   }
 
+  /**
+   * Vérifications serveur (email déjà pris, NIF/CIF déjà pris) lancées
+   * APRÈS être passé à l'étape suivante, jamais avant — demande explicite
+   * de l'utilisateur : plus aucune attente avant d'avancer. Si l'une
+   * échoue, on revient sur l'étape concernée et on affiche l'erreur là où
+   * elle s'applique, au lieu de la découvrir seulement à la soumission finale.
+   * Reçoit les valeurs au moment du clic (pas `email`/`businessIdNumber`
+   * depuis le closure) pour rester correcte même si l'utilisateur a déjà
+   * changé de champ pendant que la requête était en vol.
+   */
+  async function runBackgroundCheck(leftStep: number, emailAtClick: string, businessIdAtClick: string) {
+    try {
+      if (leftStep === 0) {
+        const { deliverable, available } = await withTimeout(
+          api.get<{ deliverable: boolean; available: boolean }>(
+            `/auth/check-email?email=${encodeURIComponent(emailAtClick)}`,
+          ),
+          STEP_CHECK_TIMEOUT_MS,
+        );
+        if (!deliverable || !available) {
+          setStep(0);
+          setError(!deliverable ? tErrors("emailDomainNotDeliverable") : tErrors("emailAlreadyUsed"));
+          emailRef.current?.focus();
+        }
+      } else if (leftStep === 2) {
+        const { available } = await withTimeout(
+          api.get<{ available: boolean }>(
+            `/auth/check-business-id?country=${Country.ES}&businessIdNumber=${encodeURIComponent(businessIdAtClick)}`,
+          ),
+          STEP_CHECK_TIMEOUT_MS,
+        );
+        if (!available) {
+          setStep(2);
+          setError(tErrors("businessIdAlreadyUsed"));
+          businessIdNumberRef.current?.focus();
+        }
+      }
+    } catch {
+      // Vérification indisponible ou trop lente (API en panne, réseau...) :
+      // on ne fait rien de plus — l'erreur réelle serait de toute façon
+      // rattrapée à la soumission finale.
+    }
+  }
+
   function handleNextStep() {
-    if (validateStep(step)) setStep((s) => Math.min(s + 1, COMMERCANT_STEPS - 1));
+    if (!validateStepLocal(step)) return;
+    const leftStep = step;
+    setStep((s) => Math.min(s + 1, COMMERCANT_STEPS - 1));
+    void runBackgroundCheck(leftStep, email, businessIdNumber);
   }
 
   function handlePreviousStep() {
@@ -163,7 +237,7 @@ function RegisterForm() {
         locale: preferredLocale,
         ...(role === UserRole.COMMERCANT
           ? { businessName, businessIdNumber, addressLine1, addressLine2: addressLine2 || undefined, city, postalCode }
-          : { companyName: companyName || undefined }),
+          : { companyName: annonceurIsCompany ? companyName : undefined }),
       });
       router.push("/dashboard");
       router.refresh();
@@ -260,41 +334,70 @@ function RegisterForm() {
             <StepWizard step={step}>
               {[
                 <div key="step-credentials" className="flex flex-col gap-4">
+                  <EmailField
+                    ref={emailRef}
+                    id="email"
+                    label={t("email")}
+                    required
+                    checkAvailability
+                    value={email}
+                    onChange={setEmail}
+                  />
+                  <PasswordField
+                    ref={passwordRef}
+                    id="password"
+                    label={t("password")}
+                    required
+                    minLength={8}
+                    value={password}
+                    onChange={setPassword}
+                    hint={t("passwordHint")}
+                    toggleAriaLabel={t("togglePasswordVisibility")}
+                  />
+                  <PasswordField
+                    ref={confirmPasswordRef}
+                    id="confirmPassword"
+                    label={`${t("password")} (confirmation)`}
+                    required
+                    minLength={8}
+                    value={confirmPassword}
+                    onChange={setConfirmPassword}
+                    toggleAriaLabel={t("togglePasswordVisibility")}
+                  />
+                </div>,
+
+                <div key="step-type" className="flex flex-col gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="email">{t("email")}</Label>
-                    <Input
-                      ref={emailRef}
-                      id="email"
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="password">{t("password")}</Label>
-                    <Input
-                      ref={passwordRef}
-                      id="password"
-                      type="password"
-                      required
-                      minLength={8}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                    <p className="text-xs text-muted-foreground">{t("passwordHint")}</p>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="confirmPassword">{t("password")} (confirmation)</Label>
-                    <Input
-                      ref={confirmPasswordRef}
-                      id="confirmPassword"
-                      type="password"
-                      required
-                      minLength={8}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                    />
+                    <Label>{t("commercantTypeLabel")}</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setCommercantIsCompany(false)}
+                        aria-pressed={!commercantIsCompany}
+                        className={`flex h-10 items-center justify-center gap-2 rounded-lg border text-sm font-medium transition-colors ${
+                          !commercantIsCompany
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-input text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <User className="size-4" />
+                        {t("commercantTypeIndividual")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCommercantIsCompany(true)}
+                        aria-pressed={commercantIsCompany}
+                        className={`flex h-10 items-center justify-center gap-2 rounded-lg border text-sm font-medium transition-colors ${
+                          commercantIsCompany
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-input text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <Building2 className="size-4" />
+                        {t("commercantTypeCompany")}
+                      </button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{t("commercantTypeHint")}</p>
                   </div>
                 </div>,
 
@@ -309,16 +412,17 @@ function RegisterForm() {
                       onChange={(e) => setBusinessName(e.target.value)}
                     />
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="businessIdNumber">{t("businessIdNumber")}</Label>
-                    <Input
-                      ref={businessIdNumberRef}
-                      id="businessIdNumber"
-                      required
-                      value={businessIdNumber}
-                      onChange={(e) => setBusinessIdNumber(e.target.value)}
-                    />
-                  </div>
+                  <TaxIdField
+                    ref={businessIdNumberRef}
+                    id="businessIdNumber"
+                    label={commercantIsCompany ? t("businessIdNumberCompanyLabel") : t("businessIdNumberIndividualLabel")}
+                    required
+                    country={Country.ES}
+                    hint={commercantIsCompany ? t("businessIdNumberCompanyHint") : t("businessIdNumberIndividualHint")}
+                    placeholder={commercantIsCompany ? "B12345674" : "12345678Z"}
+                    value={businessIdNumber}
+                    onChange={setBusinessIdNumber}
+                  />
                 </div>,
 
                 <div key="step-address" className="flex flex-col gap-4">
@@ -374,12 +478,7 @@ function RegisterForm() {
                 </Button>
               )}
               {step < COMMERCANT_STEPS - 1 ? (
-                <Button
-                  type="button"
-                  className="h-11 flex-1 rounded-full text-base"
-                  size="lg"
-                  onClick={handleNextStep}
-                >
+                <Button type="button" className="h-11 flex-1 rounded-full text-base" size="lg" onClick={handleNextStep}>
                   {tStep("next")}
                 </Button>
               ) : (
@@ -393,40 +492,70 @@ function RegisterForm() {
 
         {role === UserRole.ANNONCEUR && (!providers?.googleEnabled || showEmailForm) && (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <EmailField id="email" label={t("email")} required checkAvailability value={email} onChange={setEmail} />
+
+            <PasswordField
+              id="password"
+              label={t("password")}
+              required
+              minLength={8}
+              value={password}
+              onChange={setPassword}
+              hint={t("passwordHint")}
+              toggleAriaLabel={t("togglePasswordVisibility")}
+            />
+
+            <PasswordField
+              id="confirmPassword"
+              label={`${t("password")} (confirmation)`}
+              required
+              minLength={8}
+              value={confirmPassword}
+              onChange={setConfirmPassword}
+              toggleAriaLabel={t("togglePasswordVisibility")}
+            />
+
+            {/* Un particulier peut aussi être annonceur (voir AnnonceurProfile.companyName,
+                optionnel) — la "raison sociale" ne s'affiche donc que si l'option "Empresa"
+                est choisie, plutôt qu'un unique champ texte toujours visible. */}
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="email">{t("email")}</Label>
-              <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Label>{t("annonceurTypeLabel")}</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAnnonceurIsCompany(false)}
+                  aria-pressed={!annonceurIsCompany}
+                  className={`flex h-10 items-center justify-center gap-2 rounded-lg border text-sm font-medium transition-colors ${
+                    !annonceurIsCompany
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-input text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <User className="size-4" />
+                  {t("annonceurTypeParticular")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAnnonceurIsCompany(true)}
+                  aria-pressed={annonceurIsCompany}
+                  className={`flex h-10 items-center justify-center gap-2 rounded-lg border text-sm font-medium transition-colors ${
+                    annonceurIsCompany
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-input text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Building2 className="size-4" />
+                  {t("annonceurTypeCompany")}
+                </button>
+              </div>
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="password">{t("password")}</Label>
-              <Input
-                id="password"
-                type="password"
-                required
-                minLength={8}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">{t("passwordHint")}</p>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="confirmPassword">{t("password")} (confirmation)</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                required
-                minLength={8}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="companyName">{t("companyName")}</Label>
-              <Input id="companyName" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
-            </div>
+            {annonceurIsCompany && (
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="companyName">{t("companyName")}</Label>
+                <Input id="companyName" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
+              </div>
+            )}
 
             {error && (
               <Alert variant="destructive">

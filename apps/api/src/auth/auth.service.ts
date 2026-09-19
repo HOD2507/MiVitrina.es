@@ -7,9 +7,11 @@ import { BUSINESS_ID_TYPE_BY_COUNTRY, Country, Locale, UserRole } from "@mivitri
 import type { GoogleProfile } from "./strategies/google.strategy";
 import { PrismaService } from "../prisma/prisma.service";
 import { MailService } from "../mail/mail.service";
-import { GeocodingService } from "../geocoding/geocoding.service";
+import { GeocodingService, buildGeocodingAddress } from "../geocoding/geocoding.service";
+import { isEmailDomainDeliverable } from "./email-domain.util";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
+import { UpdateAccountDto } from "./dto/update-account.dto";
 import { EMAIL_VERIFY_TOKEN_TTL, PASSWORD_RESET_TOKEN_TTL, asJwtExpiry } from "./auth.constants";
 import type { AccessTokenPayload, EmailActionTokenPayload, RefreshTokenPayload } from "./types/jwt-payload.interface";
 
@@ -24,12 +26,6 @@ const BCRYPT_SALT_ROUNDS = 12;
 const DEFAULT_LOCALE_BY_COUNTRY: Record<Country, Locale> = {
   [Country.FR]: Locale.ES,
   [Country.ES]: Locale.ES,
-};
-
-/** Nom complet du pays, plus fiable que le code ISO pour le géocodage Nominatim. */
-const COUNTRY_NAME_FOR_GEOCODING: Record<Country, string> = {
-  [Country.FR]: "France",
-  [Country.ES]: "España",
 };
 
 /**
@@ -78,6 +74,20 @@ export class AuthService {
       throw new ConflictException("Un compte existe déjà avec cet email.");
     }
 
+    // Rejette un domaine qui n'a même pas de configuration mail (MX ou
+    // A/AAAA) — attrape une adresse clairement injoignable (domaine
+    // inexistant, faute de frappe sur le TLD...) avant de créer un compte
+    // dont l'email de vérification ne pourra jamais arriver. Ne prouve
+    // pas que la boîte précise existe (voir email-domain.util.ts) : la
+    // détection de faute de frappe sur les domaines connus, côté front,
+    // reste la première ligne de défense pour un domaine squatté comme
+    // "gmil.com" qui, lui, a de vrais enregistrements MX.
+    if (!(await isEmailDomainDeliverable(dto.email))) {
+      throw new BadRequestException(
+        "Le domaine de cet email ne semble pas exister ou ne peut pas recevoir de courrier. Vérifie qu'il est bien orthographié.",
+      );
+    }
+
     if (dto.role === UserRole.COMMERCANT) {
       const existingBusiness = await this.prisma.commercantProfile.findUnique({
         where: { country_businessIdNumber: { country: dto.country, businessIdNumber: dto.businessIdNumber! } },
@@ -90,19 +100,12 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_SALT_ROUNDS);
     const locale = dto.locale ?? DEFAULT_LOCALE_BY_COUNTRY[dto.country];
 
-    // Géocodage AVANT la transaction : c'est un appel réseau externe, il
-    // ne doit jamais rester dans une transaction DB ouverte. Un échec ne
-    // bloque pas l'inscription — le commerce reste juste invisible dans
-    // la recherche tant que ses coordonnées ne sont pas connues (voir
-    // GeocodingService).
-    let coordinates: { latitude: number; longitude: number } | null = null;
-    if (dto.role === UserRole.COMMERCANT) {
-      const fullAddress = [dto.addressLine1, dto.postalCode, dto.city, COUNTRY_NAME_FOR_GEOCODING[dto.country]]
-        .filter(Boolean)
-        .join(", ");
-      coordinates = await this.geocoding.geocode(fullAddress);
-    }
-
+    // Le profil est créé sans coordonnées : le géocodage (Nominatim, avec
+    // son propre throttle d'1,1s minimum entre deux appels) se fait APRÈS
+    // avoir répondu, en arrière-plan (voir plus bas) — retardait avant
+    // chaque inscription de plusieurs secondes pour un appel dont l'échec
+    // est de toute façon déjà toléré (le commerce reste juste invisible
+    // dans la recherche tant que ses coordonnées ne sont pas connues).
     const user = await this.prisma.$transaction(async (tx) => {
       const created = await tx.user.create({
         data: {
@@ -125,8 +128,6 @@ export class AuthService {
             addressLine2: dto.addressLine2,
             city: dto.city!,
             postalCode: dto.postalCode!,
-            latitude: coordinates?.latitude,
-            longitude: coordinates?.longitude,
           },
         });
       } else {
@@ -142,20 +143,40 @@ export class AuthService {
       return created;
     });
 
-    // Le compte est déjà créé en base à ce stade (transaction commitée) :
-    // un incident d'envoi (Resend en panne, quota dépassé...) ne doit pas
-    // faire échouer l'inscription elle-même — l'utilisateur pourra
-    // toujours redemander l'email depuis "Renvoyer l'email de vérification".
-    try {
-      await this.sendVerificationEmail(user.id, user.email, locale);
-    } catch (err) {
+    // Ni le géocodage ni l'envoi de l'email de vérification ne doivent
+    // retarder la réponse : ce sont deux appels réseau externes (Nominatim,
+    // Resend) sans aucune raison de faire attendre l'utilisateur avant
+    // qu'il arrive sur son tableau de bord — un échec de l'un ou l'autre
+    // était déjà toléré (voir commentaires ci-dessus/dans GeocodingService),
+    // il n'y a donc rien à perdre à ne plus les attendre du tout.
+    if (dto.role === UserRole.COMMERCANT) {
+      void this.geocodeAndSaveCoordinates(user.id, user.email, dto);
+    }
+    void this.sendVerificationEmail(user.id, user.email, locale).catch((err) => {
       this.logger.error(
         `Échec de l'envoi de l'email de vérification à ${user.email} (compte créé quand même) : ${err instanceof Error ? err.message : err}`,
       );
-    }
+    });
 
     const tokens = await this.issueTokens(user.id, user.email, user.role, user.tokenVersion);
     return { user: this.toSafeUser(user), tokens };
+  }
+
+  /** Géocodage post-inscription, jamais attendu par `register` (voir ci-dessus). */
+  private async geocodeAndSaveCoordinates(userId: string, email: string, dto: RegisterDto) {
+    try {
+      const fullAddress = buildGeocodingAddress(dto.addressLine1!, dto.postalCode!, dto.city!, dto.country);
+      const coordinates = await this.geocoding.geocode(fullAddress);
+      if (!coordinates) return;
+      await this.prisma.commercantProfile.update({
+        where: { userId },
+        data: { latitude: coordinates.latitude, longitude: coordinates.longitude },
+      });
+    } catch (err) {
+      this.logger.error(
+        `Géocodage en arrière-plan échoué pour ${email} : ${err instanceof Error ? err.message : err}`,
+      );
+    }
   }
 
   async login(dto: LoginDto) {
@@ -313,6 +334,40 @@ export class AuthService {
       include: { commercantProfile: true, annonceurProfile: true },
     });
     return this.toSafeUser(user);
+  }
+
+  /** Page "Ajustes" — nom et téléphone de la personne qui gère le compte. */
+  async updateAccount(userId: string, dto: UpdateAccountDto) {
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { name: dto.name, phone: dto.phone },
+      include: { commercantProfile: true, annonceurProfile: true },
+    });
+    return this.toSafeUser(updated);
+  }
+
+  /**
+   * Vérification en direct pendant l'inscription (étape "compte" du
+   * formulaire commerçant/annonceur) : le domaine peut-il recevoir du
+   * courrier, ET un compte existe-t-il déjà avec cet email ? Permet de
+   * bloquer le passage à l'étape suivante avant même de tenter la
+   * création du compte — demande explicite de l'utilisateur, l'erreur
+   * n'apparaissait auparavant qu'à la toute fin du formulaire.
+   */
+  async checkEmailStatus(email: string): Promise<{ deliverable: boolean; available: boolean }> {
+    const [deliverable, existing] = await Promise.all([
+      isEmailDomainDeliverable(email),
+      this.prisma.user.findUnique({ where: { email } }),
+    ]);
+    return { deliverable, available: !existing };
+  }
+
+  /** Même logique que ci-dessus pour le numéro NIF/CIF, étape "commerce". */
+  async isBusinessIdAvailable(country: Country, businessIdNumber: string): Promise<boolean> {
+    const existing = await this.prisma.commercantProfile.findUnique({
+      where: { country_businessIdNumber: { country, businessIdNumber } },
+    });
+    return !existing;
   }
 
   // ---------------------------------------------------------------------

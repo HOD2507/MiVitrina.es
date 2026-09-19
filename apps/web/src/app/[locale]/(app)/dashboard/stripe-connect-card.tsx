@@ -2,29 +2,34 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { cn } from "cn";
 import { useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { api, ApiError } from "@/lib/api-client";
 import type { StripeStatus } from "@/lib/types";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Loader2, CheckCircle2 } from "lucide-react";
+import { Loader2, CheckCircle2, CreditCard } from "lucide-react";
 
-interface StripeConnectCardProps {
+interface StripeConnectActionProps {
   status: StripeStatus;
   /** true si on revient tout juste du parcours d'onboarding Stripe (?stripe=return). */
   justReturned?: boolean;
+  /** "lg" pour l'étape la plus critique du parcours de mise en route — sans Stripe, aucune réservation payante n'est possible. */
+  size?: "sm" | "lg";
 }
 
 /**
- * Carte "Connecter Stripe" du tableau de bord commerçant. `status` vient
- * d'un fetch serveur (GET /commercants/me/stripe/status côté page.tsx),
- * lequel resynchronise déjà `stripeOnboardingComplete` en base à chaque
- * appel — donc au retour d'onboarding (`?stripe=return`), la donnée
- * affichée ici est déjà à jour sans logique supplémentaire côté client.
+ * Juste l'action Stripe (badge "connecté" ou bouton), sans habillage de
+ * carte — pensé pour s'insérer comme une ligne du "Primeros pasos" du
+ * tableau de bord (voir OnboardingChecklist) plutôt que dans sa propre
+ * carte séparée. `status` vient d'un fetch serveur (GET
+ * /commercants/me/stripe/status côté page.tsx), lequel resynchronise déjà
+ * `stripeOnboardingComplete` en base à chaque appel — donc au retour
+ * d'onboarding (`?stripe=return`), la donnée affichée ici est déjà à jour
+ * sans logique supplémentaire côté client.
  */
-export function StripeConnectCard({ status, justReturned }: StripeConnectCardProps) {
+export function StripeConnectAction({ status, justReturned, size = "sm" }: StripeConnectActionProps) {
   const t = useTranslations("Dashboard");
   const router = useRouter();
   const pathname = usePathname();
@@ -55,38 +60,24 @@ export function StripeConnectCard({ status, justReturned }: StripeConnectCardPro
 
   if (status.onboardingComplete) {
     return (
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <CreditCard className="size-4.5" />
-              {t("paymentsTitle")}
-            </CardTitle>
-            <CardDescription>{t("stripeConnectedDesc")}</CardDescription>
-          </div>
-          <Badge className="bg-green-600 text-white">
-            <CheckCircle2 className="size-3.5" /> {t("connected")}
-          </Badge>
-        </CardHeader>
-      </Card>
+      <Badge variant="success" className="gap-1">
+        <CheckCircle2 className="size-3.5" /> {t("connected")}
+      </Badge>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <CreditCard className="size-4.5" />
-          {t("paymentsTitle")}
-        </CardTitle>
-        <CardDescription>{status.connected ? t("stripeIncompleteDesc") : t("stripeMissingDesc")}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Button size="sm" disabled={loading} onClick={startOnboarding}>
-          {loading && <Loader2 className="size-3.5 animate-spin" />}
-          {status.connected ? t("stripeFinishSetup") : t("stripeConnect")}
-        </Button>
-      </CardContent>
-    </Card>
+    <Button
+      size={size}
+      className={cn(
+        "shadow-sm transition-transform duration-150 hover:scale-[1.03] active:scale-95",
+        size === "lg" && "h-11 gap-2 rounded-full bg-gradient-to-r from-primary to-glow-amber px-6 text-base shadow-primary/25",
+      )}
+      disabled={loading}
+      onClick={startOnboarding}
+    >
+      {loading ? <Loader2 className="size-4 animate-spin" /> : size === "lg" && <CreditCard className="size-4.5" />}
+      {status.connected ? t("stripeFinishSetup") : t("stripeConnect")}
+    </Button>
   );
 }

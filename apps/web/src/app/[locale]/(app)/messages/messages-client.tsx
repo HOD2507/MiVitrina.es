@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
-import { Loader2, Send, ShieldAlert } from "lucide-react";
+import { Loader2, Send, ShieldAlert, MessageCircle, MessagesSquare } from "lucide-react";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { api, ApiError } from "@/lib/api-client";
 import type { ChatThreadSummary, ChatMessage } from "@/lib/types";
@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/empty-state";
 
 const THREADS_POLL_MS = 15000;
 const MESSAGES_POLL_MS = 4000;
@@ -111,37 +112,38 @@ export function MessagesClient({ initialThreads, initialThreadId, currentUserId 
 
   return (
     <div className="grid gap-4 md:grid-cols-[280px_1fr]">
-      <Card className="h-[32rem] gap-0 overflow-y-auto p-0">
-        {threads.length === 0 && (
-          <p className="p-4 text-sm text-muted-foreground">{t("noConversationsYet")}</p>
+      <Card className="h-[32rem] gap-0 overflow-y-auto p-0 shadow-sm">
+        {threads.length === 0 ? (
+          <EmptyState icon={MessagesSquare} title={t("noConversationsYet")} className="h-full justify-center" />
+        ) : (
+          <div className="flex flex-col divide-y divide-border">
+            {threads.map((thread) => (
+              <button
+                key={thread.id}
+                type="button"
+                onClick={() => selectThread(thread.id)}
+                className={`flex flex-col gap-0.5 px-4 py-3 text-left text-sm transition-colors hover:bg-muted ${
+                  thread.id === selectedId ? "bg-primary/[0.06]" : ""
+                }`}
+              >
+                <span className="flex items-center justify-between gap-2 font-medium">
+                  <span className="truncate">{thread.otherPartyName}</span>
+                  {thread.unreadCount > 0 && (
+                    <Badge className="rounded-full">{thread.unreadCount}</Badge>
+                  )}
+                </span>
+                {thread.lastMessage && (
+                  <span className="truncate text-xs text-muted-foreground">{thread.lastMessage.content}</span>
+                )}
+              </button>
+            ))}
+          </div>
         )}
-        <div className="flex flex-col divide-y divide-border">
-          {threads.map((thread) => (
-            <button
-              key={thread.id}
-              type="button"
-              onClick={() => selectThread(thread.id)}
-              className={`flex flex-col gap-0.5 px-4 py-3 text-left text-sm transition-colors hover:bg-muted ${
-                thread.id === selectedId ? "bg-muted" : ""
-              }`}
-            >
-              <span className="flex items-center justify-between gap-2 font-medium">
-                <span className="truncate">{thread.otherPartyName}</span>
-                {thread.unreadCount > 0 && <Badge>{thread.unreadCount}</Badge>}
-              </span>
-              {thread.lastMessage && (
-                <span className="truncate text-xs text-muted-foreground">{thread.lastMessage.content}</span>
-              )}
-            </button>
-          ))}
-        </div>
       </Card>
 
-      <Card className="h-[32rem] gap-0 p-0">
+      <Card className="h-[32rem] gap-0 p-0 shadow-sm">
         {!selectedThread ? (
-          <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-            {t("selectConversation")}
-          </div>
+          <EmptyState icon={MessageCircle} title={t("selectConversation")} className="h-full justify-center" />
         ) : (
           <>
             <div className="border-b border-border px-4 py-3 font-medium">{selectedThread.otherPartyName}</div>
@@ -157,8 +159,8 @@ export function MessagesClient({ initialThreads, initialThreadId, currentUserId 
                 return (
                   <div key={msg.id} className={`flex flex-col ${isMine ? "items-end" : "items-start"}`}>
                     <div
-                      className={`max-w-[75%] rounded-lg px-3 py-2 text-sm ${
-                        isMine ? "bg-primary text-primary-foreground" : "bg-muted"
+                      className={`max-w-[75%] rounded-2xl px-3.5 py-2 text-sm shadow-sm ${
+                        isMine ? "bg-gradient-to-br from-primary to-glow-amber text-primary-foreground" : "bg-muted"
                       }`}
                     >
                       {msg.content}
@@ -181,7 +183,12 @@ export function MessagesClient({ initialThreads, initialThreadId, currentUserId 
                 placeholder={t("placeholder")}
                 disabled={sending}
               />
-              <Button type="submit" size="icon" disabled={sending || !input.trim()}>
+              <Button
+                type="submit"
+                size="icon"
+                className="shrink-0 transition-transform duration-150 hover:scale-105 active:scale-95"
+                disabled={sending || !input.trim()}
+              >
                 {sending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
               </Button>
             </form>

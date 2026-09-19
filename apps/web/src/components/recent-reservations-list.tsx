@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { CalendarDays, Inbox } from "lucide-react";
 import { Link } from "@/i18n/navigation";
@@ -6,6 +7,7 @@ import type { ReservationStatus } from "@mivitrina/shared";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/empty-state";
 
 interface RecentReservationsListProps {
   title: string;
@@ -14,10 +16,10 @@ interface RecentReservationsListProps {
   seeAllHref: string;
   seeAllLabel: string;
   emptyMessage: string;
-  /** Icône + CTA de l'état vide — sans réservation, une carte vide toute
-   * blanche ne sert à rien : autant orienter vers l'action qui en produirait
-   * une (publier un espace / chercher un commerce). */
+  /** Icône (repli générique) de l'état vide — remplacée par `emptyIllustration` si fournie. */
   emptyIcon?: LucideIcon;
+  /** Petite illustration de marque pour l'état vide, plutôt qu'une icône grise générique de bibliothèque. */
+  emptyIllustration?: ReactNode;
   emptyCtaHref?: string;
   emptyCtaLabel?: string;
   /** Construit côté appelant (composant serveur) avec `getTranslations` — ce composant n'a pas de traductions à lui. */
@@ -36,6 +38,7 @@ export function RecentReservationsList({
   seeAllLabel,
   emptyMessage,
   emptyIcon: EmptyIcon = Inbox,
+  emptyIllustration,
   emptyCtaHref,
   emptyCtaLabel,
   statusLabels,
@@ -45,7 +48,7 @@ export function RecentReservationsList({
   const items = reservations.slice(0, limit);
 
   return (
-    <Card>
+    <Card className="shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
         <CardTitle className="text-lg">{title}</CardTitle>
         {reservations.length > 0 && (
@@ -56,17 +59,14 @@ export function RecentReservationsList({
       </CardHeader>
       <CardContent>
         {items.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-6 text-center">
-            <span className="flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
-              <EmptyIcon className="size-5" />
-            </span>
-            <p className="text-sm text-muted-foreground">{emptyMessage}</p>
-            {emptyCtaHref && emptyCtaLabel && (
-              <Button size="sm" render={<Link href={emptyCtaHref} />}>
-                {emptyCtaLabel}
-              </Button>
-            )}
-          </div>
+          <EmptyState
+            illustration={emptyIllustration}
+            icon={EmptyIcon}
+            title={emptyMessage}
+            ctaHref={emptyCtaHref}
+            ctaLabel={emptyCtaLabel}
+            className="py-6"
+          />
         ) : (
           <div className="flex flex-col divide-y divide-border">
             {items.map((r) => {
@@ -76,7 +76,10 @@ export function RecentReservationsList({
                   ? r.space.commercantProfile?.businessName
                   : r.annonceurProfile?.companyName || r.annonceurProfile?.user.email;
               return (
-                <div key={r.id} className="flex items-center justify-between gap-3 py-3">
+                <div
+                  key={r.id}
+                  className="-mx-(--card-spacing) flex items-center justify-between gap-3 px-(--card-spacing) py-3 transition-colors hover:bg-muted/50"
+                >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{name}</p>
                     <p className="flex items-center gap-1 text-xs text-muted-foreground">

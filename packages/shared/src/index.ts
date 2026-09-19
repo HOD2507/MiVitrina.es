@@ -62,6 +62,96 @@ export const UserRole = {
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
 // ---------------------------------------------------------------------------
+// Niveaux d'accès admin (sous-rôles à l'intérieur de UserRole.ADMIN)
+// ---------------------------------------------------------------------------
+
+/**
+ * Un compte ADMIN a toujours l'un de ces niveaux (jamais `null` en usage
+ * normal — nullable en base uniquement pour la période de transition
+ * avant la migration de rétro-compatibilité, voir packages/database).
+ * SUPERADMIN = accès total. SUPPORT et FINANCE sont deux périmètres
+ * disjoints, pas des paliers d'un même axe : un compte FINANCE n'a pas
+ * "moins" que SUPPORT, il a un périmètre différent (voir ADMIN_PERMISSIONS).
+ */
+export const AdminLevel = {
+  SUPERADMIN: "SUPERADMIN",
+  SUPPORT: "SUPPORT",
+  FINANCE: "FINANCE",
+} as const;
+export type AdminLevel = (typeof AdminLevel)[keyof typeof AdminLevel];
+
+/**
+ * Permissions fines vérifiées côté API pour chaque action sensible du
+ * panel admin — jamais une simple hiérarchie de niveaux, voir le
+ * commentaire sur AdminLevel. Source unique partagée par apps/api (guard)
+ * et apps/web (affichage conditionnel des sections) : les deux doivent
+ * toujours s'accorder, d'où le partage via @mivitrina/shared plutôt que
+ * deux copies qui pourraient diverger.
+ */
+export const AdminPermission = {
+  USERS_VIEW: "users.view",
+  USERS_SUSPEND: "users.suspend",
+  USERS_DELETE: "users.delete",
+  USERS_VERIFY: "users.verify",
+  FINANCE_VIEW: "finance.view",
+  FINANCE_REFUND: "finance.refund",
+  SETTINGS_MANAGE: "settings.manage",
+  ADMINS_MANAGE: "admins.manage",
+} as const;
+export type AdminPermission = (typeof AdminPermission)[keyof typeof AdminPermission];
+
+export const ADMIN_PERMISSIONS: Record<AdminLevel, AdminPermission[]> = {
+  [AdminLevel.SUPERADMIN]: Object.values(AdminPermission),
+  // "Soporte/Moderador" : voir/suspendre/vérifier les comptes — jamais les
+  // supprimer (irréversible) ni toucher à l'argent ou à la gestion d'admins.
+  [AdminLevel.SUPPORT]: [AdminPermission.USERS_VIEW, AdminPermission.USERS_SUSPEND, AdminPermission.USERS_VERIFY],
+  // "Finanzas" : transactions, remboursements, règles de commission —
+  // jamais suspendre/supprimer un compte ni gérer d'autres admins.
+  [AdminLevel.FINANCE]: [AdminPermission.FINANCE_VIEW, AdminPermission.FINANCE_REFUND, AdminPermission.SETTINGS_MANAGE],
+};
+
+export function hasAdminPermission(level: AdminLevel | null | undefined, permission: AdminPermission): boolean {
+  if (!level) return false;
+  return ADMIN_PERMISSIONS[level].includes(permission);
+}
+
+// ---------------------------------------------------------------------------
+// Journal d'audit admin (AuditLog) — liste canonique des actions
+// ---------------------------------------------------------------------------
+
+/**
+ * Chaque action admin sensible écrit une entrée dans AuditLog avec l'une de
+ * ces valeurs (voir AdminService.logAction côté API). Centralisé ici plutôt
+ * que des chaînes en dur dispersées, pour que le backend (qui écrit) et le
+ * frontend (qui filtre/affiche par type d'action, voir la page "Registro de
+ * actividad") restent forcément d'accord sur l'ensemble des valeurs possibles.
+ *
+ * Les entrées marquées "réservé" n'ont encore aucun code qui les écrit — la
+ * fonctionnalité correspondante (modération de contenu) n'existe pas encore
+ * côté admin — mais le nom est fixé dès maintenant pour que son implémentation
+ * future utilise directement la bonne valeur plutôt que d'en inventer une.
+ */
+export const AdminAuditAction = {
+  USER_SUSPEND: "user.suspend",
+  USER_UNSUSPEND: "user.unsuspend",
+  USER_DELETE: "user.delete",
+  VERIFICATION_REVIEW: "verification.review",
+  ADMIN_CREATE: "admin.create",
+  ADMIN_UPDATE_LEVEL: "admin.update_level",
+  ADMIN_DELETE: "admin.delete",
+  RESERVATION_FORCE_REFUND: "reservation.force_refund",
+  DISPUTE_RESOLVE: "dispute.resolve",
+  SETTINGS_UPDATE: "settings.update",
+  /** Réservé : approbation d'une affiche publicitaire par un admin (file de modération non encore implémentée). */
+  POSTER_APPROVE: "poster.approve",
+  /** Réservé : rejet d'une affiche publicitaire par un admin. */
+  POSTER_REJECT: "poster.reject",
+  /** Réservé : suppression d'une affiche/publication par un admin. */
+  POSTER_DELETE: "poster.delete",
+} as const;
+export type AdminAuditAction = (typeof AdminAuditAction)[keyof typeof AdminAuditAction];
+
+// ---------------------------------------------------------------------------
 // Vérification d'identité commerçant
 // ---------------------------------------------------------------------------
 

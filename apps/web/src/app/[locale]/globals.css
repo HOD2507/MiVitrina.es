@@ -154,12 +154,20 @@
   .text-balance {
     text-wrap: balance;
   }
+  /* transform + filter (drop-shadow) plutôt que transform + box-shadow :
+     box-shadow force un repaint de toute la zone couverte par l'ombre à
+     chaque frame de la transition, alors que transform/filter peuvent
+     être accélérés par le compositeur — retour utilisateur explicite sur
+     la lenteur/réactivité au clic après l'ajout de ces micro-interactions
+     (voir aussi TiltCard/PointerGlow pour le volet "throttle" du même
+     retour). drop-shadow n'accepte pas de spread négatif comme
+     box-shadow ; valeurs réajustées pour un rendu visuellement proche. */
   .hover-lift {
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    transition: transform 0.25s ease, filter 0.25s ease;
   }
   .hover-lift:hover {
     transform: translateY(-3px);
-    box-shadow: 0 16px 32px -16px color-mix(in oklch, var(--foreground), transparent 82%);
+    filter: drop-shadow(0 10px 14px color-mix(in oklch, var(--foreground), transparent 88%));
   }
 
   /* Wordmark géant et très pâle, purement décoratif (footer) — signature
@@ -271,6 +279,52 @@
     }
     50% {
       background-position: -20% 0;
+    }
+  }
+
+  /* Lueur ambre qui dérive très lentement en fond — pensée pour combler
+     sans s'imposer le grand espace vide d'une sidebar courte (peu
+     d'entrées de menu) : un signal "vivant" discret plutôt qu'un aplat
+     blanc mort.
+     Portée par un calque séparé (`ambient-drift-glow`, positionné en
+     absolute derrière le contenu) plutôt que par overflow:hidden posé
+     directement sur le conteneur du menu : l'ancienne version recadrait
+     aussi la pastille de l'item actif (motion.span animé en layout,
+     voir SidebarShell) dès qu'elle touchait un bord — coin haut/droit
+     visiblement tronqué en cours de transition. Le menu lui-même n'a
+     donc plus aucun ancêtre overflow:hidden. */
+  .ambient-drift-glow {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    isolation: isolate;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .ambient-drift-glow::before {
+    content: "";
+    position: absolute;
+    inset: -30% -70%;
+    background:
+      radial-gradient(38% 28% at 25% 30%, color-mix(in oklch, var(--glow-amber), transparent 62%), transparent 70%),
+      radial-gradient(32% 24% at 75% 78%, color-mix(in oklch, var(--primary), transparent 82%), transparent 70%);
+    filter: blur(50px);
+    animation: ambient-drift-move 22s ease-in-out infinite alternate;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ambient-drift-glow::before {
+      animation: none;
+    }
+  }
+  @keyframes ambient-drift-move {
+    0% {
+      transform: translate(0, 0) scale(1);
+    }
+    50% {
+      transform: translate(5%, 7%) scale(1.1);
+    }
+    100% {
+      transform: translate(-4%, -3%) scale(1.03);
     }
   }
 }

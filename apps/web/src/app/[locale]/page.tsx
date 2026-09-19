@@ -106,7 +106,7 @@ export default function LandingPage() {
                 </span>
                 {t("eyebrow")}
               </Badge>
-              <h1 className="font-heading text-5xl leading-[0.95] font-extrabold tracking-tighter text-balance sm:text-6xl lg:text-[4.5rem]">
+              <h1 className="font-heading text-5xl leading-[1.08] font-extrabold tracking-tighter text-balance sm:text-6xl lg:text-[4.5rem]">
                 {t("title")}
                 <br />
                 <span className="text-shimmer">{t("titleAccent")}</span>
@@ -192,12 +192,14 @@ export default function LandingPage() {
               { src: "/images/poster-affiches.jpg", label: t("galleryPoster4Label"), alt: t("galleryPoster4Alt") },
               { src: "/images/poster-market.jpg", label: t("galleryPoster5Label"), alt: t("galleryPoster5Alt") },
               { src: "/images/poster-stage-lights.jpg", label: t("galleryPoster6Label"), alt: t("galleryPoster6Alt") },
+              { src: "/images/poster-graffiti.jpg", label: t("galleryPoster7Label"), alt: t("galleryPoster7Alt") },
+              { src: "/images/poster-confetti.jpg", label: t("galleryPoster8Label"), alt: t("galleryPoster8Alt") },
             ]}
           />
         </section>
 
         {/* Comment ça marche */}
-        <section className="bg-muted/30">
+        <section id="como-funciona" className="scroll-mt-24 bg-muted/30">
           <div className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
             <Reveal className="mx-auto mb-14 max-w-xl text-center">
               <p className="mb-2 text-sm font-medium text-primary">{t("stepsEyebrow")}</p>
@@ -212,7 +214,7 @@ export default function LandingPage() {
         </section>
 
         {/* Fonctionnalités */}
-        <section>
+        <section id="funcionalidades" className="scroll-mt-24">
           <div className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
             <Reveal className="mx-auto mb-14 max-w-xl text-center">
               <p className="mb-2 text-sm font-medium text-primary">{t("featuresEyebrow")}</p>
@@ -259,7 +261,7 @@ export default function LandingPage() {
         </section>
 
         {/* FAQ */}
-        <section className="bg-mesh-panel">
+        <section id="faq" className="scroll-mt-24 bg-mesh-panel">
           <div className="mx-auto max-w-3xl px-4 py-20 sm:py-28">
             <Reveal className="mx-auto mb-12 max-w-xl text-center">
               <p className="mb-2 text-sm font-medium text-primary">{t("faqEyebrow")}</p>

@@ -17,6 +17,21 @@ export async function SiteHeader() {
           <span className="font-heading text-[1.2rem] font-semibold tracking-tight">MiVitrina</span>
         </Link>
 
+        {/* Liens vers les sections de la page d'accueil — depuis n'importe
+            quelle page publique (login, recherche...), ça ramène à l'accueil
+            et défile jusqu'à la section grâce à `scroll-mt` sur chacune. */}
+        <nav className="hidden items-center gap-6 lg:flex">
+          <Link href={{ pathname: "/", hash: "como-funciona" }} className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+            {t("howItWorks")}
+          </Link>
+          <Link href={{ pathname: "/", hash: "funcionalidades" }} className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+            {t("features")}
+          </Link>
+          <Link href={{ pathname: "/", hash: "faq" }} className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+            {t("faq")}
+          </Link>
+        </nav>
+
         <div className="flex items-center gap-1 sm:gap-2">
           <Button variant="ghost" size="sm" className="hidden sm:inline-flex" render={<Link href="/recherche" />}>
             {t("search")}

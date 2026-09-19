@@ -14,6 +14,7 @@ import { ReservationStatus, UserRole, VerificationStatus } from "@mivitrina/shar
 import { PrismaService } from "../prisma/prisma.service";
 import { StorageService, UploadPurpose } from "../storage/storage.service";
 import { StripeService } from "../stripe/stripe.service";
+import { GeocodingService, buildGeocodingAddress } from "../geocoding/geocoding.service";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { CurrentUser, AuthenticatedUser } from "../auth/decorators/current-user.decorator";
 import { UpdateVerificationDocumentDto } from "./dto/update-verification-document.dto";
@@ -27,6 +28,7 @@ export class CommercantsController {
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     private readonly stripe: StripeService,
+    private readonly geocoding: GeocodingService,
   ) {}
 
   /**
@@ -80,10 +82,17 @@ export class CommercantsController {
         id: profile.id,
         businessName: profile.businessName,
         description: profile.description,
+        addressLine1: profile.addressLine1,
+        addressLine2: profile.addressLine2,
         city: profile.city,
         postalCode: profile.postalCode,
         verificationStatus: profile.verificationStatus,
         stripeOnboardingComplete: profile.stripeOnboardingComplete,
+        // Un commerce n'apparaît dans la recherche géolocalisée que s'il
+        // est à la fois géocodé (latitude/longitude connues) ET vérifié
+        // par l'admin — le front s'en sert pour expliquer clairement
+        // pourquoi le commerce reste invisible sur la carte en attendant.
+        hasCoordinates: profile.latitude != null && profile.longitude != null,
       },
       showcasePhotos,
       spaces,
@@ -132,12 +141,61 @@ export class CommercantsController {
     };
   }
 
+  /**
+   * Corrige un trou fonctionnel réel : jusqu'ici, seule `description`
+   * était modifiable après l'inscription — une erreur de frappe dans le
+   * nom du commerce ou l'adresse (donc dans les coordonnées géocodées)
+   * était irrécupérable sans intervention manuelle en base. Re-géocode
+   * automatiquement dès que l'une des trois parties de l'adresse change,
+   * exactement comme à l'inscription (voir AuthService.register).
+   */
   @Patch("me")
   async updateProfile(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpdateCommercantProfileDto) {
-    return this.prisma.commercantProfile.update({
+    const profile = await this.prisma.commercantProfile.findUnique({ where: { userId: user.id } });
+    if (!profile) {
+      throw new NotFoundException("Profil commerçant introuvable.");
+    }
+
+    const addressChanged =
+      (dto.addressLine1 !== undefined && dto.addressLine1 !== profile.addressLine1) ||
+      (dto.city !== undefined && dto.city !== profile.city) ||
+      (dto.postalCode !== undefined && dto.postalCode !== profile.postalCode);
+
+    let coordinates: { latitude: number; longitude: number } | null = null;
+    if (addressChanged) {
+      const fullAddress = buildGeocodingAddress(
+        dto.addressLine1 ?? profile.addressLine1,
+        dto.postalCode ?? profile.postalCode,
+        dto.city ?? profile.city,
+        profile.country,
+      );
+      coordinates = await this.geocoding.geocode(fullAddress);
+    }
+
+    const updated = await this.prisma.commercantProfile.update({
       where: { userId: user.id },
-      data: { description: dto.description },
+      data: {
+        description: dto.description,
+        businessName: dto.businessName,
+        addressLine1: dto.addressLine1,
+        addressLine2: dto.addressLine2,
+        city: dto.city,
+        postalCode: dto.postalCode,
+        // Nulles si la nouvelle adresse n'a pas pu être géocodée, plutôt
+        // que de garder les anciennes coordonnées d'une autre adresse :
+        // le commerce redevient invisible dans la recherche jusqu'à
+        // correction, au lieu d'afficher un mauvais emplacement.
+        ...(addressChanged && { latitude: coordinates?.latitude ?? null, longitude: coordinates?.longitude ?? null }),
+      },
     });
+
+    return {
+      ...updated,
+      // Le front s'en sert pour prévenir explicitement : l'enregistrement
+      // a réussi, mais l'adresse n'a pas pu être localisée (adresse
+      // incomplète/introuvable) donc le commerce est invisible sur la carte.
+      geocodeFailed: addressChanged && coordinates === null,
+    };
   }
 
   @Post("me/showcase-photos")

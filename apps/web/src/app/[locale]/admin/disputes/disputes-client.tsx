@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Loader2, ShieldAlert } from "lucide-react";
 import { api, ApiError } from "@/lib/api-client";
 import type { AdminDispute } from "@/lib/types";
@@ -21,14 +22,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-const NEXT_STATUS_LABELS: Record<string, string> = {
-  ACTIVE: "Remettre en cours (litige non fondé)",
-  COMPLETED: "Marquer comme terminée",
-  CANCELLED_BY_COMMERCANT: "Annuler la réservation",
-};
+import { EmptyState } from "@/components/empty-state";
+import { Reveal } from "@/components/reveal";
 
 export function DisputesClient({ initialDisputes }: { initialDisputes: AdminDispute[] }) {
+  const t = useTranslations("Admin.disputes");
   const [disputes, setDisputes] = useState(initialDisputes);
   const [target, setTarget] = useState<AdminDispute | null>(null);
   const [resolution, setResolution] = useState("");
@@ -36,6 +34,12 @@ export function DisputesClient({ initialDisputes }: { initialDisputes: AdminDisp
   const [refundAmount, setRefundAmount] = useState("");
   const [nextStatus, setNextStatus] = useState<string>(ReservationStatus.CANCELLED_BY_COMMERCANT);
   const [submitting, setSubmitting] = useState(false);
+
+  const NEXT_STATUS_LABELS: Record<string, string> = {
+    ACTIVE: t("nextStatusActive"),
+    COMPLETED: t("nextStatusCompleted"),
+    CANCELLED_BY_COMMERCANT: t("nextStatusCancelled"),
+  };
 
   function openDialog(d: AdminDispute) {
     setTarget(d);
@@ -55,81 +59,92 @@ export function DisputesClient({ initialDisputes }: { initialDisputes: AdminDisp
         refundAmount: refundAmount ? Number(refundAmount) : undefined,
         nextStatus,
       });
-      toast.success("Litige résolu.");
+      toast.success(t("resolveSuccess"));
       setDisputes((prev) => prev.filter((d) => d.id !== target.id));
       setTarget(null);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Une erreur est survenue.");
+      toast.error(err instanceof ApiError ? err.message : t("genericError"));
     } finally {
       setSubmitting(false);
     }
   }
 
-  if (disputes.length === 0) {
-    return <p className="text-muted-foreground">Aucun litige ouvert.</p>;
-  }
-
   return (
-    <div className="flex flex-col gap-4">
-      {disputes.map((d) => (
-        <Card key={d.id}>
-          <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
-            <div>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <ShieldAlert className="size-4.5 text-destructive" />
-                {d.reservation.space.commercantProfile.businessName} ↔ {d.reservation.annonceurProfile.user.email}
-              </CardTitle>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Ouvert par {d.raisedBy.email} ({d.raisedBy.role === "ANNONCEUR" ? "annonceur" : "commerçant"})
-              </p>
-            </div>
-            <Badge variant="outline">{Number(d.reservation.transaction.amount).toFixed(2)} €</Badge>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <p className="text-sm">{d.reason}</p>
-            <Button size="sm" onClick={() => openDialog(d)} className="self-start">
-              Résoudre
-            </Button>
-          </CardContent>
-        </Card>
-      ))}
+    <div className="bg-mesh-panel mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8 sm:py-10">
+      <Reveal>
+        <div>
+          <h1 className="font-heading text-4xl font-extrabold tracking-tight">{t("title")}</h1>
+          <p className="mt-1 text-muted-foreground">{t("subtitle")}</p>
+        </div>
+      </Reveal>
+
+      {disputes.length === 0 ? (
+        <Reveal delay={80}>
+          <div className="rounded-2xl border border-border bg-card shadow-sm">
+            <EmptyState icon={ShieldAlert} title={t("emptyTitle")} description={t("emptyDesc")} className="py-10" />
+          </div>
+        </Reveal>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {disputes.map((d, i) => (
+            <Reveal key={d.id} delay={80 + i * 60}>
+              <Card className="shadow-sm">
+                <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <ShieldAlert className="size-4.5 text-destructive" />
+                      {d.reservation.space.commercantProfile.businessName} ↔ {d.reservation.annonceurProfile.user.email}
+                    </CardTitle>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {t("openedBy", {
+                        email: d.raisedBy.email,
+                        role: d.raisedBy.role === "ANNONCEUR" ? t("roleAnnonceur") : t("roleCommercant"),
+                      })}
+                    </p>
+                  </div>
+                  <Badge variant="outline">{Number(d.reservation.transaction.amount).toFixed(2)} €</Badge>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-3">
+                  <p className="text-sm">{d.reason}</p>
+                  <Button size="sm" onClick={() => openDialog(d)} className="self-start">
+                    {t("resolve")}
+                  </Button>
+                </CardContent>
+              </Card>
+            </Reveal>
+          ))}
+        </div>
+      )}
 
       <Dialog open={!!target} onOpenChange={(open) => !open && setTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Résoudre le litige</DialogTitle>
+            <DialogTitle>{t("resolveDialogTitle")}</DialogTitle>
             <DialogDescription>{target?.reason}</DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <Label>Décision</Label>
-              <Select value={outcome} onValueChange={(v) => setOutcome(v as "RESOLVED" | "REJECTED")}>
+              <Label>{t("decisionLabel")}</Label>
+              <Select value={outcome} onValueChange={(v) => v && setOutcome(v as "RESOLVED" | "REJECTED")}>
                 <SelectTrigger className="w-full">
-                  <SelectValue>
-                    {(value: string) => (value === "RESOLVED" ? "Réclamation actée" : "Litige non fondé (rejeté)")}
-                  </SelectValue>
+                  <SelectValue>{(value: string) => (value === "RESOLVED" ? t("decisionResolved") : t("decisionRejected"))}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="RESOLVED">Réclamation actée</SelectItem>
-                  <SelectItem value="REJECTED">Litige non fondé (rejeté)</SelectItem>
+                  <SelectItem value="RESOLVED">{t("decisionResolved")}</SelectItem>
+                  <SelectItem value="REJECTED">{t("decisionRejected")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label>Explication</Label>
-              <Textarea
-                rows={3}
-                value={resolution}
-                onChange={(e) => setResolution(e.target.value)}
-                placeholder="Ex : la photo confirme que l'affiche n'était pas posée, remboursement accordé."
-              />
+              <Label>{t("explanationLabel")}</Label>
+              <Textarea rows={3} value={resolution} onChange={(e) => setResolution(e.target.value)} placeholder={t("explanationPlaceholder")} />
             </div>
 
             {target && target.reservation.transaction.status === TransactionStatus.PAID && (
               <div className="flex flex-col gap-1.5">
-                <Label>Montant à rembourser à l'annonceur (€, optionnel)</Label>
+                <Label>{t("refundLabel")}</Label>
                 <Input
                   type="number"
                   min={0}
@@ -143,7 +158,7 @@ export function DisputesClient({ initialDisputes }: { initialDisputes: AdminDisp
             )}
 
             <div className="flex flex-col gap-1.5">
-              <Label>Suite pour la réservation</Label>
+              <Label>{t("nextStatusLabel")}</Label>
               <Select value={nextStatus} onValueChange={(v) => v && setNextStatus(v)}>
                 <SelectTrigger className="w-full">
                   <SelectValue>{(value: string) => NEXT_STATUS_LABELS[value]}</SelectValue>
@@ -151,9 +166,7 @@ export function DisputesClient({ initialDisputes }: { initialDisputes: AdminDisp
                 <SelectContent>
                   <SelectItem value={ReservationStatus.ACTIVE}>{NEXT_STATUS_LABELS.ACTIVE}</SelectItem>
                   <SelectItem value={ReservationStatus.COMPLETED}>{NEXT_STATUS_LABELS.COMPLETED}</SelectItem>
-                  <SelectItem value={ReservationStatus.CANCELLED_BY_COMMERCANT}>
-                    {NEXT_STATUS_LABELS.CANCELLED_BY_COMMERCANT}
-                  </SelectItem>
+                  <SelectItem value={ReservationStatus.CANCELLED_BY_COMMERCANT}>{NEXT_STATUS_LABELS.CANCELLED_BY_COMMERCANT}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -162,7 +175,7 @@ export function DisputesClient({ initialDisputes }: { initialDisputes: AdminDisp
           <DialogFooter>
             <Button disabled={!resolution.trim() || submitting} onClick={submit}>
               {submitting && <Loader2 className="size-3.5 animate-spin" />}
-              Valider la résolution
+              {t("confirmResolve")}
             </Button>
           </DialogFooter>
         </DialogContent>

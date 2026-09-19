@@ -8,11 +8,11 @@ import { api, ApiError } from "@/lib/api-client";
 import { useAuthProviders } from "@/lib/use-auth-providers";
 import type { AuthUser } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { GoogleAuthButton } from "@/components/google-auth-button";
+import { EmailField } from "@/components/email-field";
+import { PasswordField } from "@/components/password-field";
 
 export default function LoginPage() {
   const t = useTranslations("Auth.login");
@@ -86,36 +86,24 @@ export default function LoginPage() {
 
         {(!hasExternalProvider || showEmailForm) && (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="email">{t("email")}</Label>
-              <Input
-                id="email"
-                type="email"
-                required
-                className="h-11"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">{t("password")}</Label>
+            <EmailField id="email" label={t("email")} required className="h-11" value={email} onChange={setEmail} />
+            <PasswordField
+              id="password"
+              label={t("password")}
+              required
+              className="h-11"
+              value={password}
+              onChange={setPassword}
+              toggleAriaLabel={t("togglePasswordVisibility")}
+              labelSlot={
                 <Link
                   href="/forgot-password"
                   className="text-xs font-medium text-primary underline-offset-4 hover:underline"
                 >
                   {t("forgotPassword")}
                 </Link>
-              </div>
-              <Input
-                id="password"
-                type="password"
-                required
-                className="h-11"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
+              }
+            />
 
             {error && (
               <Alert variant="destructive">

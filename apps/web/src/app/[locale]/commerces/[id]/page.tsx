@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { ContactCommerceButton } from "@/components/contact-commerce-button";
+import { BackLink } from "@/components/back-link";
 
 export default async function CommerceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -42,6 +43,8 @@ export default async function CommerceDetailPage({ params }: { params: Promise<{
       <SiteHeader />
 
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8">
+        <BackLink href="/recherche" label={t("backToResults")} className="mb-4" />
+
         <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold">{profile.businessName}</h1>

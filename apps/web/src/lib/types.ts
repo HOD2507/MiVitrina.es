@@ -10,6 +10,7 @@ import type {
   ModerationStatus,
   TransactionStatus,
   DisputeStatus,
+  AdminLevel,
 } from "@mivitrina/shared";
 
 /** Reflète la sortie de AuthService.toSafeUser côté API (sans passwordHash/tokenVersion). */
@@ -18,6 +19,7 @@ export interface AuthUser {
   email: string;
   role: UserRole;
   locale: Locale;
+  name: string | null;
   phone: string | null;
   avatarUrl: string | null;
   emailVerified: boolean;
@@ -25,6 +27,8 @@ export interface AuthUser {
   lastLoginAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Non-null uniquement quand role === ADMIN — voir AdminLevel/ADMIN_PERMISSIONS. */
+  adminLevel?: AdminLevel | null;
   commercantProfile?: CommercantProfileSummary | null;
   annonceurProfile?: AnnonceurProfileSummary | null;
 }
@@ -79,9 +83,13 @@ export interface MyVitrine {
     id: string;
     businessName: string;
     description: string | null;
+    addressLine1: string;
+    addressLine2: string | null;
     city: string;
     postalCode: string;
     verificationStatus: VerificationStatus;
+    /** Le commerce a des coordonnées géocodées (condition, avec la vérification admin, pour apparaître dans la recherche géolocalisée). */
+    hasCoordinates: boolean;
   };
   showcasePhotos: Photo[];
   spaces: VitrineSpace[];
@@ -229,6 +237,96 @@ export interface AdminDispute {
     annonceurProfile: { user: { email: string } };
     transaction: { amount: string; status: TransactionStatus; stripePaymentIntentId: string | null };
   };
+}
+
+/** Un élément de GET /admin/users. */
+export interface AdminUserListItem {
+  id: string;
+  email: string;
+  name: string | null;
+  role: UserRole;
+  createdAt: string;
+  suspended: boolean;
+  emailVerified: boolean;
+  displayName: string | null;
+  verificationStatus: VerificationStatus | null;
+}
+
+/** Résultat de GET /admin/users/:id. */
+export interface AdminUserDetail {
+  id: string;
+  email: string;
+  name: string | null;
+  phone: string | null;
+  role: UserRole;
+  locale: Locale;
+  suspended: boolean;
+  emailVerified: boolean;
+  lastLoginAt: string | null;
+  createdAt: string;
+  verificationDocumentReadUrl: string | null;
+  commercantProfile: {
+    id: string;
+    businessName: string;
+    country: Country;
+    businessIdType: BusinessIdType;
+    businessIdNumber: string;
+    addressLine1: string;
+    city: string;
+    postalCode: string;
+    verificationStatus: VerificationStatus;
+    verificationNote: string | null;
+    stripeOnboardingComplete: boolean;
+  } | null;
+  annonceurProfile: {
+    id: string;
+    companyName: string | null;
+  } | null;
+  disputesRaised: { id: string; reason: string; status: DisputeStatus; createdAt: string }[];
+  reservations: {
+    id: string;
+    status: ReservationStatus;
+    createdAt: string;
+    startDate: string;
+    endDate: string;
+    space: { name: string } | { commercantProfile: { businessName: string } };
+    annonceurProfile?: { user: { email: string }; companyName: string | null };
+    transaction: { amount: string; status: TransactionStatus } | null;
+  }[];
+}
+
+/** Un élément de GET /admin/reservations. */
+export interface AdminReservationListItem {
+  id: string;
+  status: ReservationStatus;
+  startDate: string;
+  endDate: string;
+  createdAt: string;
+  space: { name: string; commercantProfile: { businessName: string } };
+  annonceurProfile: { companyName: string | null; user: { email: string } };
+  transaction: { amount: string; commissionAmount: string; status: TransactionStatus; refundedAmount: string; stripePaymentIntentId: string | null } | null;
+}
+
+/** Résultat de GET /admin/admins (liste) et POST /admin/admins (création). */
+export interface AdminAccountListItem {
+  id: string;
+  email: string;
+  name: string | null;
+  adminLevel: AdminLevel | null;
+  createdAt: string;
+  lastLoginAt: string | null;
+}
+
+/** Résultat de GET /admin/audit-log. */
+export interface AuditLogEntry {
+  id: string;
+  adminEmail: string;
+  action: string;
+  targetType: string;
+  targetId: string;
+  targetLabel: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
 }
 
 /** Résultat de GET /commercants/me/stats. */

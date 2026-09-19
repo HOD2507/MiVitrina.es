@@ -1,23 +1,24 @@
 /**
- * Logomark MiVitrina — un monogramme "M" géométrique dessiné au trait
- * (pas une lettre de police système), avec un point plein au sommet
- * central : la même signature "point qui accroche l'œil" déjà utilisée
- * partout ailleurs sur le site (badges eyebrow, PointerGlow, spotlight-
- * hover) — comme si le M lui-même portait le spotlight de la marque.
- * Remplace une première version (icône de vitrine) que l'utilisateur
- * n'a pas trouvée convaincante.
+ * Logomark MiVitrina — monograma plano y minimalista (flat design, sin 3D,
+ * bisel, sombra ni textura): un único marco cuadrado de esquinas
+ * redondeadas (la vitrina) y, dentro, una sola forma geométrica de trazo
+ * uniforme que es a la vez una "M" y, en su valle central, una "V" —
+ * MiVitrina — compartiendo el mismo trazo, sin relleno sólido ni efecto de
+ * insignia. Dos elementos visuales en total, como en Notion/Linear/Stripe.
  */
 export function LogoMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+      {/* Marco de la vitrina: un único cuadro, sin capas anidadas */}
+      <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="1.7" />
+      {/* M y V fusionadas: las dos diagonales centrales forman la V */}
       <path
-        d="M4 18V7L12 14L20 7V18"
+        d="M7 16V8L12 13L17 8V16"
         stroke="currentColor"
-        strokeWidth="2.6"
+        strokeWidth="1.7"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <circle cx="12" cy="14" r="1.7" fill="currentColor" />
     </svg>
   );
 }

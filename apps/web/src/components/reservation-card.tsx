@@ -61,10 +61,10 @@ export function ReservationCard({ reservation, viewer, onUpdated }: ReservationC
   };
 
   /** Badge de statut de paiement — affiché seulement pour les statuts qui apportent une info utile. */
-  const PAYMENT_BADGE: Partial<Record<TransactionStatus, { label: string; className: string }>> = {
-    PAID: { label: t("paymentPaid"), className: "bg-green-600 text-white" },
-    REFUNDED: { label: t("paymentRefunded"), className: "" },
-    PARTIALLY_REFUNDED: { label: t("paymentPartiallyRefunded"), className: "" },
+  const PAYMENT_BADGE: Partial<Record<TransactionStatus, { label: string; variant: "success" | "secondary" }>> = {
+    PAID: { label: t("paymentPaid"), variant: "success" },
+    REFUNDED: { label: t("paymentRefunded"), variant: "secondary" },
+    PARTIALLY_REFUNDED: { label: t("paymentPartiallyRefunded"), variant: "secondary" },
   };
 
   const statusInfo = STATUS_LABELS[reservation.status];
@@ -142,7 +142,7 @@ export function ReservationCard({ reservation, viewer, onUpdated }: ReservationC
   }
 
   return (
-    <Card>
+    <Card interactive className="cursor-default">
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
         <div>
           <CardTitle className="text-lg">
@@ -163,7 +163,7 @@ export function ReservationCard({ reservation, viewer, onUpdated }: ReservationC
         </div>
         <div className="flex flex-col items-end gap-1.5">
           <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
-          {paymentBadge && <Badge className={paymentBadge.className}>{paymentBadge.label}</Badge>}
+          {paymentBadge && <Badge variant={paymentBadge.variant}>{paymentBadge.label}</Badge>}
         </div>
       </CardHeader>
 

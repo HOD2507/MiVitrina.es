@@ -56,4 +56,12 @@ export const envValidationSchema = Joi.object({
   /// dérivée pour le dev local (voir GoogleStrategy) — à définir
   /// explicitement en prod (ex: https://api.mivitrina.es/api/auth/google/callback).
   GOOGLE_CALLBACK_URL: Joi.string().uri().allow("").optional(),
+
+  /// Géocodage des adresses commerçant (voir GeocodingService). Optionnelle :
+  /// tant qu'absente, on géocode via Nominatim (OpenStreetMap, gratuit) ;
+  /// dès qu'elle est renseignée, on bascule sur Google Geocoding API
+  /// (payant au-delà du crédit gratuit mensuel Google, mais plus précis/
+  /// fiable en volume). Nécessite une clé API Google Cloud avec la
+  /// "Geocoding API" activée et la facturation configurée.
+  GOOGLE_MAPS_API_KEY: Joi.string().allow("").optional(),
 }).unknown(true);

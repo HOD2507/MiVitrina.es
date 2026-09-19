@@ -4,22 +4,33 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 
+// Photos propres au rideau d'ouverture, différentes de celles de l'anneau
+// de la galerie plus bas sur la page (demande explicite : "no quiero que
+// sean lo mismo que los que estan en la parte del arrastro"). Thème : les
+// coulisses de l'impression (presse, papier, sérigraphie, encres) plutôt
+// que des affiches finies — cohérent avec les imprentas, un des types de
+// commerces de la marketplace, et sans aucun texte/marque réels.
 const POSTERS = [
-  "/images/poster-concert.jpg",
-  "/images/poster-theatre.jpg",
-  "/images/poster-mode.jpg",
-  "/images/poster-affiches.jpg",
-  "/images/poster-market.jpg",
-  "/images/poster-stage-lights.jpg",
+  "/images/intro-print-press.jpg",
+  "/images/intro-paper-stock.jpg",
+  "/images/intro-screenprint.jpg",
+  "/images/intro-paint-buckets.jpg",
+  "/images/intro-chalk-pastels.jpg",
+  "/images/intro-thread-cones.jpg",
+  "/images/intro-thread-spools.jpg",
+  "/images/intro-color-pencils.jpg",
+  "/images/intro-ink-swirls.jpg",
+  "/images/intro-gradient-stripes.jpg",
 ];
 
 /** Beaucoup d'affiches ("millones de posters", demande de l'utilisateur)
  * amoncelées au centre — pas un mur qui couvre tout l'écran, un vrai tas. */
 const TILE_COUNT = 46;
 const HOLD_MS = 450;
-/** Presque toutes en même temps ("no de una en una poco a poco") plutôt
- * qu'un long décalage en cascade. */
-const MAX_STAGGER_S = 0.12;
+/** Un petit groupe "meneur" se décolle lentement en premier, avant que
+ * le reste du tas ne parte d'un coup, vite — demande explicite : "primero
+ * que se despeguen lentamente y después rápidamente". */
+const LEADER_COUNT = 5;
 
 interface Tile {
   src: string;
@@ -31,6 +42,7 @@ interface Tile {
   flyY: number;
   flyRotate: number;
   delay: number;
+  duration: number;
   z: number;
 }
 
@@ -42,6 +54,7 @@ function buildTiles(): Tile[] {
   return Array.from({ length: TILE_COUNT }, (_, i) => {
     const angle = Math.random() * Math.PI * 2;
     const throwDistance = 500 + Math.random() * 500;
+    const isLeader = i < LEADER_COUNT;
     return {
       src: POSTERS[i % POSTERS.length],
       leftPct: 50 + (Math.random() * 64 - 32),
@@ -51,7 +64,11 @@ function buildTiles(): Tile[] {
       flyX: Math.cos(angle) * throwDistance,
       flyY: Math.sin(angle) * throwDistance,
       flyRotate: Math.random() * 200 - 100,
-      delay: Math.random() * MAX_STAGGER_S,
+      // Meneurs : partent tout de suite, lentement (1.1s). Le gros du tas
+      // attend qu'ils soient bien engagés puis part très vite (0.35s),
+      // avec très peu d'écart entre eux — l'effet "lent puis rapide".
+      delay: isLeader ? Math.random() * 0.15 : 0.55 + Math.random() * 0.1,
+      duration: isLeader ? 1.1 : 0.35,
       z: Math.round(Math.random() * 40),
     };
   });
@@ -78,7 +95,9 @@ export function IntroPosterSplash() {
       return;
     }
     const peelTimer = setTimeout(() => setPeeling(true), HOLD_MS);
-    const hideTimer = setTimeout(() => setVisible(false), HOLD_MS + 900);
+    // Les meneurs partent lentement (jusqu'à 1.25s après le début du
+    // décollage) — on attend qu'ils aient fini avant de démonter le voile.
+    const hideTimer = setTimeout(() => setVisible(false), HOLD_MS + 1400);
     return () => {
       clearTimeout(peelTimer);
       clearTimeout(hideTimer);
@@ -104,7 +123,7 @@ export function IntroPosterSplash() {
           }
           transition={
             peeling
-              ? { duration: 0.7, delay: tile.delay, ease: [0.22, 1, 0.36, 1] }
+              ? { duration: tile.duration, delay: tile.delay, ease: [0.22, 1, 0.36, 1] }
               : { duration: 0.2, delay: i * 0.006 }
           }
           className="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg border border-black/10 shadow-xl"

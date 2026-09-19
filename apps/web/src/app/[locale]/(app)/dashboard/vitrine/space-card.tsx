@@ -82,7 +82,7 @@ export function SpaceCard({ space, onEdit, onDeleted, onUpdated, onAddPricing }:
   }
 
   return (
-    <Card>
+    <Card interactive className="cursor-default">
       <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
         <div>
           <CardTitle className="flex items-center gap-2 text-lg">

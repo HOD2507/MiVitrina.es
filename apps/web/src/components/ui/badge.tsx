@@ -13,6 +13,11 @@ const badgeVariants = cva(
           "bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80",
         destructive:
           "bg-destructive/10 text-destructive focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:focus-visible:ring-destructive/40 [a]:hover:bg-destructive/20",
+        // Ton doux + texte plus foncé de la même teinte, plutôt qu'un aplat
+        // saturé (l'ancien `bg-green-600 text-white` codé en dur à chaque
+        // usage) — cohérent avec `destructive`/`outline`, qui suivent déjà ce principe.
+        success: "bg-green-500/15 text-green-700 [a]:hover:bg-green-500/25 dark:text-green-400",
+        warning: "bg-glow-amber/25 text-amber-800 [a]:hover:bg-glow-amber/35 dark:text-amber-400",
         outline:
           "border-border text-foreground [a]:hover:bg-muted [a]:hover:text-muted-foreground",
         ghost:

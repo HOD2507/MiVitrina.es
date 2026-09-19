@@ -68,16 +68,16 @@ export function VerificationUpload() {
   }
 
   return (
-    <div className="rounded-lg border border-border bg-muted/30 p-4">
-      <p className="mb-1 text-sm font-medium">{t("title")}</p>
-      <p className="mb-3 text-xs text-muted-foreground">{t("hint")}</p>
+    <div className="max-w-56">
       <Input
         ref={inputRef}
         type="file"
         accept={ACCEPTED_TYPES.join(",")}
         onChange={handleFileChange}
         disabled={status === "uploading"}
+        className="text-xs file:text-xs"
       />
+      <p className="mt-1.5 text-xs text-muted-foreground">{t("hint")}</p>
       {status === "uploading" && (
         <p className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">
           <Loader2 className="size-3.5 animate-spin" />

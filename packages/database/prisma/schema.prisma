@@ -50,6 +50,14 @@ enum UserRole {
   COMMERCANT
 }
 
+/// Sous-rôle d'un compte ADMIN — voir AdminLevel/ADMIN_PERMISSIONS dans
+/// @mivitrina/shared, seule source de vérité sur ce que chaque niveau peut faire.
+enum AdminLevel {
+  SUPERADMIN
+  SUPPORT
+  FINANCE
+}
+
 /// Type de numéro d'identification d'entreprise, dépendant du pays
 /// (FR -> SIRET, ES -> NIF/CIF). Permet de valider le format côté
 /// application sans coder un format unique en dur dans le schéma.
@@ -142,7 +150,13 @@ model User {
   email         String    @unique
   passwordHash  String
   role          UserRole
+  /// Uniquement pour role = ADMIN — quel périmètre du panel admin ce
+  /// compte peut toucher (voir enum AdminLevel + AdminPermission côté API).
+  adminLevel    AdminLevel?
   locale        Locale    @default(ES)
+  /// Nom de la personne qui gère le compte (page "Ajustes") — distinct du
+  /// nom du commerce/de la société, qui vit sur le profil métier.
+  name          String?
   phone         String?
   avatarUrl     String?
   emailVerified Boolean   @default(false)
@@ -596,4 +610,36 @@ model PlatformSettings {
   updatedAt   DateTime @updatedAt
 
   @@map("platform_settings")
+}
+
+// ---------------------------------------------------------------------------
+// Journal d'audit admin
+// ---------------------------------------------------------------------------
+
+/// Trace des actions sensibles de l'admin (suppression/suspension de compte,
+/// vérification, résolution de litige, remboursement forcé...) —
+/// "traçabilité si algo se cuestiona después" (demande explicite). `adminEmail`
+/// et `targetLabel` sont dénormalisés : le journal reste lisible même si le
+/// compte admin ou la cible ont depuis été supprimés.
+model AuditLog {
+  id String @id @default(cuid())
+
+  adminId    String
+  adminEmail String
+
+  /// Ex: "user.suspend", "user.unsuspend", "user.delete", "verification.review", "dispute.resolve", "reservation.force_refund".
+  action String
+
+  targetType String
+  targetId   String
+  targetLabel String?
+
+  /// Détails libres selon l'action (ex: { "reason": "...", "refundAmount": 42.5 }).
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([targetType, targetId])
+  @@index([createdAt])
+  @@map("audit_logs")
 }

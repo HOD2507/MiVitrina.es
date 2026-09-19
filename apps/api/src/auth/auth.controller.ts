@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, Req, Res, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, Query, Req, Res, UseGuards } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Request, Response } from "express";
 import { UserRole } from "@mivitrina/shared";
@@ -7,6 +7,9 @@ import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
+import { CheckEmailQueryDto } from "./dto/check-email-query.dto";
+import { CheckBusinessIdQueryDto } from "./dto/check-business-id-query.dto";
+import { UpdateAccountDto } from "./dto/update-account.dto";
 import { Public } from "./decorators/public.decorator";
 import { CurrentUser, AuthenticatedUser } from "./decorators/current-user.decorator";
 import { JwtRefreshGuard } from "./guards/jwt-refresh.guard";
@@ -61,11 +64,43 @@ export class AuthController {
     return this.authService.me(user.id);
   }
 
+  /** Page "Ajustes" : nom et téléphone de la personne qui gère le compte — jamais le nom du commerce/de la société, qui a son propre endpoint. */
+  @Patch("me")
+  async updateAccount(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpdateAccountDto) {
+    return this.authService.updateAccount(user.id, dto);
+  }
+
   /** Indique au front si le bouton "Continuer avec Google" doit être affiché. */
   @Public()
   @Get("config")
   getConfig() {
     return { googleEnabled: Boolean(this.config.get<string>("GOOGLE_CLIENT_ID")) };
+  }
+
+  /**
+   * Vérification en direct (débattue côté front) pendant la saisie de
+   * l'email à l'inscription/la connexion :
+   * - `deliverable` : le domaine a-t-il ne serait-ce qu'une configuration
+   *   mail (MX ou A/AAAA) ? Ne prouve pas que la boîte précise existe
+   *   (impossible à vérifier de façon fiable sans service tiers payant —
+   *   Gmail/Outlook/Yahoo ne le révèlent jamais par SMTP), mais attrape un
+   *   domaine qui n'existe pas du tout ou une faute de frappe sur le TLD.
+   * - `available` : aucun compte n'existe déjà avec cet email — permet de
+   *   bloquer le passage à l'étape suivante du formulaire d'inscription
+   *   avant même de tenter la création du compte, plutôt que de ne le
+   *   découvrir qu'à la validation finale.
+   */
+  @Public()
+  @Get("check-email")
+  async checkEmail(@Query() query: CheckEmailQueryDto) {
+    return this.authService.checkEmailStatus(query.email);
+  }
+
+  /** Même logique que ci-dessus pour le numéro NIF/CIF, à l'étape "commerce". */
+  @Public()
+  @Get("check-business-id")
+  async checkBusinessId(@Query() query: CheckBusinessIdQueryDto) {
+    return { available: await this.authService.isBusinessIdAvailable(query.country, query.businessIdNumber) };
   }
 
   @Public()

@@ -9,6 +9,8 @@ import { JwtRefreshStrategy } from "./strategies/jwt-refresh.strategy";
 import { GoogleStrategy } from "./strategies/google.strategy";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { RolesGuard } from "./guards/roles.guard";
+import { AdminPermissionGuard } from "./guards/admin-permission.guard";
+import { AuthUserCacheService } from "./auth-user-cache.service";
 import { GeocodingModule } from "../geocoding/geocoding.module";
 
 @Module({
@@ -25,10 +27,17 @@ import { GeocodingModule } from "../geocoding/geocoding.module";
     JwtAccessStrategy,
     JwtRefreshStrategy,
     GoogleStrategy,
+    AuthUserCacheService,
     // Guards globaux : toute route est protégée par défaut (voir @Public()),
-    // et RolesGuard applique les restrictions @Roles(...) le cas échéant.
+    // RolesGuard applique les restrictions @Roles(...), puis AdminPermissionGuard
+    // affine le périmètre à l'intérieur du rôle ADMIN (voir @RequireAdminPermission).
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_GUARD, useClass: AdminPermissionGuard },
   ],
+  // Exporté pour que les services qui mutent role/suspended/adminLevel
+  // (ex: AdminService) puissent invalider une entrée immédiatement plutôt
+  // que d'attendre le TTL — voir AuthUserCacheService.
+  exports: [AuthUserCacheService],
 })
 export class AuthModule {}

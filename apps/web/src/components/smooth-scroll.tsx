@@ -1,7 +1,36 @@
 "use client";
 
-import { ReactLenis } from "lenis/react";
+import { useEffect } from "react";
+import { ReactLenis, useLenis } from "lenis/react";
 import { useReducedMotion } from "framer-motion";
+
+/**
+ * Lenis anime le scroll lui-même (transform + rAF) plutôt que de laisser le
+ * navigateur sauter nativement — un lien d'ancre (#faq, venant du header ou
+ * d'un clic sur place) doit donc passer par `lenis.scrollTo`, sinon Lenis
+ * ramène la page à sa position avant même que le saut natif soit visible.
+ * Gère les deux cas : arrivée sur la page avec un hash déjà dans l'URL
+ * (navigation depuis une autre page) et clic sur une ancre pendant qu'on y
+ * est déjà (événement `hashchange`).
+ */
+function HashScrollSync() {
+  const lenis = useLenis();
+
+  useEffect(() => {
+    if (!lenis) return;
+    const scrollToHash = () => {
+      const { hash } = window.location;
+      if (!hash) return;
+      const target = document.querySelector(hash);
+      if (target) lenis.scrollTo(target as HTMLElement, { offset: -16 });
+    };
+    scrollToHash();
+    window.addEventListener("hashchange", scrollToHash);
+    return () => window.removeEventListener("hashchange", scrollToHash);
+  }, [lenis]);
+
+  return null;
+}
 
 /**
  * Défilement fluide avec inertie sur toute la page — remplace le
@@ -17,13 +46,16 @@ export function SmoothScroll() {
   if (reduceMotion) return null;
 
   return (
-    <ReactLenis
-      root
-      options={{
-        duration: 1.4,
-        easing: (t: number) => 1 - Math.pow(1 - t, 3),
-        smoothWheel: true,
-      }}
-    />
+    <>
+      <ReactLenis
+        root
+        options={{
+          duration: 1.4,
+          easing: (t: number) => 1 - Math.pow(1 - t, 3),
+          smoothWheel: true,
+        }}
+      />
+      <HashScrollSync />
+    </>
   );
 }

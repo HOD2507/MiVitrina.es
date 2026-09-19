@@ -28,7 +28,7 @@ export function ResendVerificationButton() {
   }
 
   return (
-    <Button size="sm" variant="outline" disabled={submitting || sent} onClick={handleClick} className="mt-2">
+    <Button size="sm" variant="outline" disabled={submitting || sent} onClick={handleClick}>
       {submitting && <Loader2 className="size-3.5 animate-spin" />}
       {sent ? t("sentLabel") : t("resend")}
     </Button>
