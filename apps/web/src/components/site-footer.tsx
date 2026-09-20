@@ -14,7 +14,7 @@ export async function SiteFooter({ className }: { className?: string } = {}) {
       <div className="mx-auto max-w-6xl px-4 py-14">
         <div className="grid gap-10 sm:grid-cols-[1.4fr_1fr_1fr]">
           <div>
-            <Link href="/" className="flex items-center gap-2.5">
+            <Link href="/" className="flex min-h-11 items-center gap-2.5">
               <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
                 <LogoMark className="size-4.5" />
               </span>
@@ -29,19 +29,19 @@ export async function SiteFooter({ className }: { className?: string } = {}) {
 
           <div>
             <p className="mb-3 text-sm font-semibold">{t("productHeading")}</p>
-            <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
+            <ul className="flex flex-col gap-2 text-sm text-muted-foreground max-lg:gap-0">
               <li>
-                <Link href="/recherche" className="transition-colors hover:text-foreground">
+                <Link href="/recherche" className="transition-colors hover:text-foreground max-lg:flex max-lg:min-h-11 max-lg:items-center">
                   {tNav("search")}
                 </Link>
               </li>
               <li>
-                <Link href="/register" className="transition-colors hover:text-foreground">
+                <Link href="/register" className="transition-colors hover:text-foreground max-lg:flex max-lg:min-h-11 max-lg:items-center">
                   {tNav("register")}
                 </Link>
               </li>
               <li>
-                <Link href="/login" className="transition-colors hover:text-foreground">
+                <Link href="/login" className="transition-colors hover:text-foreground max-lg:flex max-lg:min-h-11 max-lg:items-center">
                   {tNav("login")}
                 </Link>
               </li>

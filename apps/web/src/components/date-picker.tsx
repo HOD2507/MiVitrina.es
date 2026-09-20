@@ -161,7 +161,7 @@ export function DatePicker({ value, onChange, minDate, id, blockedRanges = [], c
         id={id}
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-input bg-transparent px-3 text-left text-base transition-colors outline-none hover:border-ring/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+        className="flex h-10 max-lg:h-11 w-full items-center justify-between gap-2 rounded-lg border border-input bg-transparent px-3 text-left text-base transition-colors outline-none hover:border-ring/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
       >
         <span className="inline-block first-letter:uppercase">{DATE_FORMATTER.format(selected)}</span>
         <CalendarDays className="size-4 shrink-0 text-muted-foreground" />

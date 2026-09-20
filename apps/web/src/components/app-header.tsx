@@ -19,9 +19,12 @@ export async function AppHeader() {
           <span className="font-heading text-[1.2rem] font-semibold tracking-tight">MiVitrina</span>
         </Link>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="ghost" className="h-11 lg:h-7" render={<Link href="/messages" />}>
+          {/* Sous 384px (iPhone SE/mini 375, Android 360, 320), logo + « Mensajes » + langue dépassent l'écran
+              maintenant que les boutons font 44px de haut : on ne garde que l'icône (44×44). Le texte reste
+              dans le DOM (`sr-only`) : c'est le nom accessible du bouton. */}
+          <Button size="sm" variant="ghost" className="max-[24rem]:w-11 max-[24rem]:px-0" render={<Link href="/messages" />}>
             <MessageCircle className="size-4" />
-            {t("messages")}
+            <span className="max-[24rem]:sr-only">{t("messages")}</span>
           </Button>
           <LocaleSwitcher />
         </div>

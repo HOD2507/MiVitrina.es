@@ -43,8 +43,6 @@ type StatusFilter = "ALL" | "SUSPENDED" | VerificationStatus;
 type DialogKind = "suspend" | "reactivate" | "delete";
 type DialogState = { type: DialogKind; user: AdminUserListItem } | null;
 
-/** Boutons d'action en icône : 44×44px (cible tactile minimale) sous `lg`, compacts (28px) sur ordinateur. */
-const TOUCH_ICON_BUTTON = "size-11 lg:size-7";
 
 export function UsersClient({ initialUsers }: { initialUsers: AdminUserListItem[] }) {
   const t = useTranslations("Admin.users");
@@ -222,21 +220,21 @@ export function UsersClient({ initialUsers }: { initialUsers: AdminUserListItem[
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
-                          <Button size="icon-sm" variant="ghost" className={TOUCH_ICON_BUTTON} aria-label={t("viewDetail")} render={<Link href={`/admin/users/${u.id}`} />}>
+                          <Button size="icon-sm" variant="ghost" aria-label={t("viewDetail")} render={<Link href={`/admin/users/${u.id}`} />}>
                             <Eye className="size-4" />
                           </Button>
                           {u.suspended ? (
                             <Button
                               size="icon-sm"
                               variant="ghost"
-                              className={TOUCH_ICON_BUTTON}
+                             
                               aria-label={t("reactivate")}
                               onClick={() => openDialog("reactivate", u)}
                             >
                               <RotateCcw className="size-4" />
                             </Button>
                           ) : (
-                            <Button size="icon-sm" variant="ghost" className={TOUCH_ICON_BUTTON} aria-label={t("suspend")} onClick={() => openDialog("suspend", u)}>
+                            <Button size="icon-sm" variant="ghost" aria-label={t("suspend")} onClick={() => openDialog("suspend", u)}>
                               <Ban className="size-4" />
                             </Button>
                           )}
@@ -244,7 +242,7 @@ export function UsersClient({ initialUsers }: { initialUsers: AdminUserListItem[
                             size="icon-sm"
                             variant="ghost"
                             aria-label={t("delete")}
-                            className={`${TOUCH_ICON_BUTTON} text-destructive hover:bg-destructive/10 hover:text-destructive`}
+                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                             onClick={() => openDialog("delete", u)}
                           >
                             <Trash2 className="size-4" />

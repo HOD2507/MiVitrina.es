@@ -18,7 +18,9 @@ export function BackLink({ href, label, className }: { href: string; label: stri
     <Link
       href={href}
       className={cn(
-        "group inline-flex w-fit items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary/70",
+        // Sous `lg` : py-3 + -my-3 = zone tactile de 44px de haut SANS changer la hauteur occupée dans la page
+        // (le texte reste à sa place, seul le cadre cliquable s'agrandit).
+        "group inline-flex w-fit items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary/70 max-lg:-my-3 max-lg:py-3",
         className,
       )}
     >

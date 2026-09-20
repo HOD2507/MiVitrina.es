@@ -63,7 +63,7 @@ export default function ForgotPasswordPage() {
 
         <Link
           href="/login"
-          className="mt-4 block text-center text-sm text-muted-foreground hover:text-foreground"
+          className="mt-4 block text-center text-sm text-muted-foreground hover:text-foreground max-lg:flex max-lg:min-h-11 max-lg:items-center max-lg:justify-center"
         >
           {t("backToLogin")}
         </Link>
