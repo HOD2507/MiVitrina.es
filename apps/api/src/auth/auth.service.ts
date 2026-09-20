@@ -137,6 +137,7 @@ export class AuthService {
           data: {
             userId: created.id,
             country: dto.country,
+            displayName: dto.displayName,
             companyName: dto.companyName,
           },
         });
@@ -235,8 +236,10 @@ export class AuthService {
             emailVerified: true,
           },
         });
+        // Nom public initial = prénom Google (jamais l'email) ; modifiable
+        // dans Ajustes. Sans prénom, reste null → libellé générique affiché.
         await tx.annonceurProfile.create({
-          data: { userId: created.id, country: Country.FR },
+          data: { userId: created.id, country: Country.FR, displayName: profile.firstName?.trim() || undefined },
         });
         return created;
       });
@@ -338,8 +341,20 @@ export class AuthService {
     return this.toSafeUserWithAvatar(user);
   }
 
-  /** Page "Ajustes" — nom et téléphone de la personne qui gère le compte. */
+  /**
+   * Page "Ajustes" — nom et téléphone de la personne qui gère le compte
+   * (privés) et, pour un annonceur, son nom public. `updateMany` plutôt
+   * qu'un `update` imbriqué : sans profil annonceur (commerçant, admin) il
+   * ne fait simplement rien, alors qu'un update imbriqué lèverait une erreur.
+   */
   async updateAccount(userId: string, dto: UpdateAccountDto) {
+    if (dto.displayName !== undefined) {
+      await this.prisma.annonceurProfile.updateMany({
+        where: { userId },
+        data: { displayName: dto.displayName },
+      });
+    }
+
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: { name: dto.name, phone: dto.phone },

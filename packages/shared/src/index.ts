@@ -279,3 +279,53 @@ export const DEFAULT_COMMISSION_RATE = 0.15;
 
 /** Délai (en heures) avant le RDV en-deçà duquel une annulation n'est plus gratuite. */
 export const DEFAULT_FREE_CANCELLATION_HOURS = 48;
+
+// ---------------------------------------------------------------------------
+// Identité publique d'un annonceur
+// ---------------------------------------------------------------------------
+
+/** Libellé de repli quand un annonceur n'a ni nom public ni raison sociale. */
+export const ANNONCEUR_FALLBACK_NAME: Record<Locale, string> = {
+  ES: "Anunciante",
+  EN: "Advertiser",
+};
+
+/** Bornes de longueur d'un nom public d'annonceur (validation API + attributs du formulaire). */
+export const ANNONCEUR_DISPLAY_NAME_MIN_LENGTH = 2;
+export const ANNONCEUR_DISPLAY_NAME_MAX_LENGTH = 50;
+
+/**
+ * Un nom public est valide s'il fait 2 à 50 caractères (espaces autour
+ * ignorés) et ne contient pas de "@" : sans cette dernière règle, on
+ * pourrait y coller son email, ce qui l'afficherait en public.
+ * La même règle est appliquée côté API (RegisterDto / UpdateAccountDto).
+ */
+export function isValidAnnonceurDisplayName(value: string): boolean {
+  const name = value.trim();
+  return (
+    name.length >= ANNONCEUR_DISPLAY_NAME_MIN_LENGTH &&
+    name.length <= ANNONCEUR_DISPLAY_NAME_MAX_LENGTH &&
+    !name.includes("@")
+  );
+}
+
+/**
+ * Nom sous lequel un annonceur est affiché aux AUTRES utilisateurs
+ * (commerçants, liste de chat...) : nom public, sinon raison sociale,
+ * sinon un libellé générique. Ne retombe volontairement JAMAIS sur l'email
+ * (ni sur sa partie avant le @, qui en révèle l'essentiel) ni sur le nom
+ * privé du compte (`User.name`) : l'email est une donnée interne, pas une
+ * identité publique. À utiliser partout où un annonceur est nommé, côté
+ * API comme côté web, pour que la règle reste identique.
+ *
+ * `locale` accepte "ES"/"EN" (API), "es"/"en" (web) ou un tag BCP-47
+ * ("en-GB", "es-ES") ; toute autre valeur retombe sur l'espagnol, langue
+ * par défaut de la plateforme.
+ */
+export function getAnnonceurDisplayName(
+  profile: { displayName?: string | null; companyName?: string | null } | null | undefined,
+  locale: string = Locale.ES,
+): string {
+  const key: Locale = locale.toUpperCase().startsWith(Locale.EN) ? Locale.EN : Locale.ES;
+  return profile?.displayName?.trim() || profile?.companyName?.trim() || ANNONCEUR_FALLBACK_NAME[key];
+}

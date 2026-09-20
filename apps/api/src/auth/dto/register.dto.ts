@@ -1,5 +1,20 @@
-import { Country, Locale, UserRole } from "@mivitrina/shared";
-import { IsEmail, IsEnum, IsIn, IsOptional, IsString, Length, MaxLength, MinLength, ValidateIf } from "class-validator";
+import { Transform } from "class-transformer";
+import { ANNONCEUR_DISPLAY_NAME_MAX_LENGTH, ANNONCEUR_DISPLAY_NAME_MIN_LENGTH, Country, Locale, UserRole } from "@mivitrina/shared";
+import {
+  IsEmail,
+  IsEnum,
+  IsIn,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+  MaxLength,
+  MinLength,
+  ValidateIf,
+} from "class-validator";
+
+/** Refuse un "@" : évite qu'on colle son email dans le champ nom public (ce serait afficher l'email en public). */
+export const NO_AT_SIGN = /^[^@]*$/;
 
 /** Rôles ouverts à l'inscription publique — ADMIN en est volontairement exclu. */
 export type RegisterableRole = typeof UserRole.ANNONCEUR | typeof UserRole.COMMERCANT;
@@ -54,7 +69,19 @@ export class RegisterDto {
   @IsString()
   postalCode?: string;
 
-  // --- Champ optionnel pour un annonceur ---
+  // --- Champs pour un annonceur ---
+  /**
+   * Nom public : le SEUL identifiant affiché aux autres utilisateurs
+   * (voir getAnnonceurDisplayName) — l'email reste interne. Obligatoire.
+   */
+  @ValidateIf((dto: RegisterDto) => dto.role === UserRole.ANNONCEUR)
+  @Transform(({ value }) => (typeof value === "string" ? value.trim() : value))
+  @IsString()
+  @MinLength(ANNONCEUR_DISPLAY_NAME_MIN_LENGTH, { message: "Le nom public doit contenir au moins 2 caractères." })
+  @MaxLength(ANNONCEUR_DISPLAY_NAME_MAX_LENGTH)
+  @Matches(NO_AT_SIGN, { message: "Le nom public ne peut pas contenir de @ (n'utilise pas ton email)." })
+  displayName?: string;
+
   @ValidateIf((dto: RegisterDto) => dto.role === UserRole.ANNONCEUR)
   @IsOptional()
   @IsString()

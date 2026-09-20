@@ -25,6 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/empty-state";
+import { AdvertiserIdentity } from "@/components/admin-advertiser-identity";
 import { Reveal } from "@/components/reveal";
 
 const STATUS_VARIANT: Record<ReservationStatus, "default" | "secondary" | "destructive" | "outline"> = {
@@ -183,8 +184,8 @@ export function AdminReservationsClient({ initialReservations }: { initialReserv
                     return (
                       <tr key={r.id} className="transition-colors hover:bg-muted/40">
                         <td className="px-4 py-3 font-medium">{r.space.commercantProfile.businessName}</td>
-                        <td className="px-4 py-3 text-muted-foreground">
-                          {r.annonceurProfile.companyName || r.annonceurProfile.user.email}
+                        <td className="px-4 py-3">
+                          <AdvertiserIdentity profile={r.annonceurProfile} email={r.annonceurProfile.user.email} />
                         </td>
                         <td className="px-4 py-3 font-medium tabular-nums">
                           {r.transaction ? `${Number(r.transaction.amount).toFixed(2)} €` : t("noPaymentYet")}

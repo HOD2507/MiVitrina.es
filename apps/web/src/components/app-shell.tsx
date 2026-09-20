@@ -1,9 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { LayoutDashboard, Store, CalendarCheck, MessageCircle, Search, Settings } from "lucide-react";
-import { UserRole } from "@mivitrina/shared";
+import { getAnnonceurDisplayName, UserRole } from "@mivitrina/shared";
 import type { AuthUser } from "@/lib/types";
 import { LogoutButton } from "@/components/logout-button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,7 @@ import { SidebarShell, type NavItem } from "@/components/sidebar-shell";
  */
 export function AppShell({ user, children }: { user: AuthUser; children: ReactNode }) {
   const t = useTranslations("AppShell");
+  const locale = useLocale();
 
   const COMMERCANT_NAV: NavItem[] = [
     { href: "/dashboard", label: t("dashboard"), icon: LayoutDashboard },
@@ -40,7 +41,10 @@ export function AppShell({ user, children }: { user: AuthUser; children: ReactNo
   };
 
   const nav = user.role === UserRole.COMMERCANT ? COMMERCANT_NAV : ANNONCEUR_NAV;
-  const displayName = user.commercantProfile?.businessName || user.annonceurProfile?.companyName || user.email;
+  const displayName =
+    user.role === UserRole.ANNONCEUR
+      ? getAnnonceurDisplayName(user.annonceurProfile, locale)
+      : user.commercantProfile?.businessName || user.email;
 
   const footer = (
     <div className="rounded-lg bg-muted/60 p-3">

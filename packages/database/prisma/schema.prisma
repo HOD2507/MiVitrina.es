@@ -254,7 +254,16 @@ model AnnonceurProfile {
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  /// Raison sociale optionnelle (un particulier peut aussi être annonceur).
+  /// Nom PUBLIC de l'annonceur : c'est le seul identifiant affiché aux autres
+  /// utilisateurs (commerçants, chat...) — jamais l'email, qui reste une donnée
+  /// interne (connexion, notifications). Obligatoire à l'inscription par email ;
+  /// nullable en base pour les comptes antérieurs à ce champ (ou créés via Google
+  /// sans prénom) : l'app retombe alors sur companyName puis sur un libellé
+  /// générique (voir getAnnonceurDisplayName dans @mivitrina/shared).
+  displayName String?
+
+  /// Raison sociale optionnelle (un particulier peut aussi être annonceur) —
+  /// donnée de facturation, distincte du nom public ci-dessus.
   companyName String?
   country     Country
 

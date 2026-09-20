@@ -4,7 +4,15 @@ import { Suspense, useRef, useState, type FormEvent, type KeyboardEvent } from "
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
-import { UserRole, Country, Locale, type SupportedLocale } from "@mivitrina/shared";
+import {
+  ANNONCEUR_DISPLAY_NAME_MAX_LENGTH,
+  ANNONCEUR_DISPLAY_NAME_MIN_LENGTH,
+  UserRole,
+  Country,
+  Locale,
+  isValidAnnonceurDisplayName,
+  type SupportedLocale,
+} from "@mivitrina/shared";
 import { api, ApiError } from "@/lib/api-client";
 import { useAuthProviders } from "@/lib/use-auth-providers";
 import type { AuthUser } from "@/lib/types";
@@ -102,6 +110,8 @@ function RegisterForm() {
   const [city, setCity] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [companyName, setCompanyName] = useState("");
+  // Nombre público (obligatorio para un anunciante) : lo único que ven los comerciantes, nunca el email.
+  const [displayName, setDisplayName] = useState("");
   // "Razón social" n'a de sens que pour une entreprise — un particulier
   // peut aussi être annonceur (voir AnnonceurProfile.companyName, optionnel).
   const [annonceurIsCompany, setAnnonceurIsCompany] = useState(false);
@@ -227,6 +237,11 @@ function RegisterForm() {
       return;
     }
 
+    if (role === UserRole.ANNONCEUR && !isValidAnnonceurDisplayName(displayName)) {
+      setError(t("displayNameInvalid"));
+      return;
+    }
+
     setSubmitting(true);
     try {
       await api.post<{ user: AuthUser }>("/auth/register", {
@@ -237,7 +252,7 @@ function RegisterForm() {
         locale: preferredLocale,
         ...(role === UserRole.COMMERCANT
           ? { businessName, businessIdNumber, addressLine1, addressLine2: addressLine2 || undefined, city, postalCode }
-          : { companyName: annonceurIsCompany ? companyName : undefined }),
+          : { displayName: displayName.trim(), companyName: annonceurIsCompany ? companyName : undefined }),
       });
       router.push("/dashboard");
       router.refresh();
@@ -492,6 +507,22 @@ function RegisterForm() {
 
         {role === UserRole.ANNONCEUR && (!providers?.googleEnabled || showEmailForm) && (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="displayName">{t("displayName")}</Label>
+              <Input
+                id="displayName"
+                required
+                autoComplete="nickname"
+                minLength={ANNONCEUR_DISPLAY_NAME_MIN_LENGTH}
+                maxLength={ANNONCEUR_DISPLAY_NAME_MAX_LENGTH}
+                pattern="[^@]*"
+                title={t("displayNameInvalid")}
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">{t("displayNameHint")}</p>
+            </div>
+
             <EmailField id="email" label={t("email")} required checkAvailability value={email} onChange={setEmail} />
 
             <PasswordField

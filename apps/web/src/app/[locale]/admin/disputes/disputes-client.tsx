@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/empty-state";
+import { AdvertiserIdentity } from "@/components/admin-advertiser-identity";
 import { Reveal } from "@/components/reveal";
 
 export function DisputesClient({ initialDisputes }: { initialDisputes: AdminDispute[] }) {
@@ -93,7 +94,12 @@ export function DisputesClient({ initialDisputes }: { initialDisputes: AdminDisp
                   <div>
                     <CardTitle className="flex items-center gap-2 text-lg">
                       <ShieldAlert className="size-4.5 text-destructive" />
-                      {d.reservation.space.commercantProfile.businessName} ↔ {d.reservation.annonceurProfile.user.email}
+                      {d.reservation.space.commercantProfile.businessName} ↔{" "}
+                      <AdvertiserIdentity
+                        layout="inline"
+                        profile={d.reservation.annonceurProfile}
+                        email={d.reservation.annonceurProfile.user.email}
+                      />
                     </CardTitle>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {t("openedBy", {

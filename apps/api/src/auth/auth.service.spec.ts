@@ -64,6 +64,7 @@ describe("AuthService", () => {
       password: "MotDePasse123",
       role: UserRole.ANNONCEUR,
       country: "FR",
+      displayName: "Hani",
     } as RegisterDto;
 
     it("refuse un email déjà utilisé", async () => {
@@ -94,6 +95,11 @@ describe("AuthService", () => {
       const createdPasswordHash = prisma.user.create.mock.calls[0][0].data.passwordHash;
       expect(createdPasswordHash).not.toBe(baseDto.password);
       expect(await bcrypt.compare(baseDto.password, createdPasswordHash)).toBe(true);
+
+      // El nombre público viaja al perfil del anunciante (es lo que verán los comerciantes).
+      expect(prisma.annonceurProfile.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ displayName: "Hani" }) }),
+      );
 
       expect(user).not.toHaveProperty("passwordHash");
       expect(tokens.accessToken).toEqual(expect.any(String));

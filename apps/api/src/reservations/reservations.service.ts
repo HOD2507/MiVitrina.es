@@ -279,7 +279,14 @@ export class ReservationsService {
         space: true,
         pricingOption: true,
         transaction: true,
-        annonceurProfile: { include: { user: { select: { email: true, name: true, avatarUrl: true } } } },
+        // `select` (et non `include`) : le commerçant ne reçoit que de quoi
+        // nommer l'annonceur publiquement (nom public, raison sociale, photo).
+        // Ni son email (donnée interne — sinon la conversation pourrait
+        // sortir de la plateforme) ni son profil complet (adresse de
+        // facturation, id client Stripe...) ne doivent quitter l'API.
+        annonceurProfile: {
+          select: { displayName: true, companyName: true, user: { select: { avatarUrl: true } } },
+        },
       },
     });
 

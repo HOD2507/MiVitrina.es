@@ -1,6 +1,6 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
-import { UserRole, VerificationStatus } from "@mivitrina/shared";
+import { getAnnonceurDisplayName, UserRole, VerificationStatus } from "@mivitrina/shared";
 import { serverApiGet } from "@/lib/api-server";
 import { getDateLocale } from "@/lib/date-locale";
 import type { AuthUser, StripeStatus, CommercantStats, AnnonceurStats, Reservation } from "@/lib/types";
@@ -185,7 +185,7 @@ async function AnnonceurDashboard({
         <div>
           <p className="text-sm font-medium text-muted-foreground">{t("greetingPrefix")}</p>
           <h1 className="mt-1 font-heading text-4xl font-extrabold tracking-tight">
-            {user.annonceurProfile?.companyName ?? user.email}
+            {getAnnonceurDisplayName(user.annonceurProfile, dateLocale)}
           </h1>
         </div>
       </Reveal>

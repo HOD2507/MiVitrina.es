@@ -149,6 +149,7 @@ export class AdminService {
         { email: { contains: s, mode: "insensitive" } },
         { name: { contains: s, mode: "insensitive" } },
         { commercantProfile: { is: { businessName: { contains: s, mode: "insensitive" } } } },
+        { annonceurProfile: { is: { displayName: { contains: s, mode: "insensitive" } } } },
         { annonceurProfile: { is: { companyName: { contains: s, mode: "insensitive" } } } },
       ];
     }
@@ -159,7 +160,7 @@ export class AdminService {
       take: 200,
       include: {
         commercantProfile: { select: { businessName: true, verificationStatus: true } },
-        annonceurProfile: { select: { companyName: true } },
+        annonceurProfile: { select: { displayName: true, companyName: true } },
       },
     });
 
@@ -171,7 +172,11 @@ export class AdminService {
       createdAt: u.createdAt,
       suspended: u.suspended,
       emailVerified: u.emailVerified,
-      displayName: u.commercantProfile?.businessName ?? u.annonceurProfile?.companyName ?? null,
+      // Nom sous lequel le compte est connu sur la plateforme : nom du commerce,
+      // ou nom PUBLIC de l'annonceur (celui que voient les commerçants), à défaut
+      // sa raison sociale. L'email reste un champ à part (`email`) : l'admin voit les deux.
+      displayName:
+        u.commercantProfile?.businessName ?? u.annonceurProfile?.displayName ?? u.annonceurProfile?.companyName ?? null,
       verificationStatus: u.commercantProfile?.verificationStatus ?? null,
     }));
   }

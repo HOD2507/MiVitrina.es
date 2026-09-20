@@ -47,6 +47,8 @@ export interface CommercantProfileSummary {
 
 export interface AnnonceurProfileSummary {
   id: string;
+  /** Nom public (seul identifiant montré aux autres utilisateurs) — null pour les comptes antérieurs au champ. */
+  displayName: string | null;
   companyName: string | null;
   country: Country;
 }
@@ -165,10 +167,16 @@ export interface Reservation {
   };
   pricingOption: PricingOption;
   transaction: ReservationTransaction;
+  /**
+   * Ce que le commerçant sait d'un annonceur (GET /reservations/received) :
+   * de quoi le nommer publiquement (voir getAnnonceurDisplayName) et sa
+   * photo — jamais son email ni son profil complet. `avatarUrl` : URL de
+   * lecture signée, null si l'annonceur n'en a pas ajouté.
+   */
   annonceurProfile?: {
+    displayName: string | null;
     companyName: string | null;
-    /** `avatarUrl` : URL de lecture signée (photo de profil), null si l'annonceur n'en a pas ajouté. */
-    user: { email: string; name: string | null; avatarUrl: string | null };
+    user: { avatarUrl: string | null };
   };
 }
 
@@ -238,7 +246,7 @@ export interface AdminDispute {
     id: string;
     status: ReservationStatus;
     space: { name: string; commercantProfile: { businessName: string } };
-    annonceurProfile: { user: { email: string } };
+    annonceurProfile: { displayName: string | null; companyName: string | null; user: { email: string } };
     transaction: { amount: string; status: TransactionStatus; stripePaymentIntentId: string | null };
   };
 }
@@ -284,6 +292,8 @@ export interface AdminUserDetail {
   } | null;
   annonceurProfile: {
     id: string;
+    /** Nom public — celui que voient les commerçants ; null pour les comptes antérieurs au champ. */
+    displayName: string | null;
     companyName: string | null;
   } | null;
   disputesRaised: { id: string; reason: string; status: DisputeStatus; createdAt: string }[];
@@ -294,7 +304,7 @@ export interface AdminUserDetail {
     startDate: string;
     endDate: string;
     space: { name: string } | { commercantProfile: { businessName: string } };
-    annonceurProfile?: { user: { email: string }; companyName: string | null };
+    annonceurProfile?: { user: { email: string }; displayName: string | null; companyName: string | null };
     transaction: { amount: string; status: TransactionStatus } | null;
   }[];
 }
@@ -307,7 +317,7 @@ export interface AdminReservationListItem {
   endDate: string;
   createdAt: string;
   space: { name: string; commercantProfile: { businessName: string } };
-  annonceurProfile: { companyName: string | null; user: { email: string } };
+  annonceurProfile: { displayName: string | null; companyName: string | null; user: { email: string } };
   transaction: { amount: string; commissionAmount: string; status: TransactionStatus; refundedAmount: string; stripePaymentIntentId: string | null } | null;
 }
 

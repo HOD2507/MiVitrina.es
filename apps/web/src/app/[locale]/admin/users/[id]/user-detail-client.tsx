@@ -63,7 +63,14 @@ export function UserDetailClient({ initialUser }: { initialUser: AdminUserDetail
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const displayName = user.commercantProfile?.businessName ?? user.annonceurProfile?.companyName ?? user.name ?? user.email;
+  // Título: nombre del comercio o nombre PÚBLICO del anunciante (el que ven los comerciantes);
+  // el email va siempre debajo, así que el admin ve los dos a la vez.
+  const displayName =
+    user.commercantProfile?.businessName ??
+    user.annonceurProfile?.displayName ??
+    user.annonceurProfile?.companyName ??
+    user.name ??
+    user.email;
 
   async function handleSuspendToggle(suspended: boolean) {
     setSubmitting(true);
@@ -169,6 +176,7 @@ export function UserDetailClient({ initialUser }: { initialUser: AdminUserDetail
               </Badge>
             )}
           </div>
+          {displayName !== user.email && <p className="mt-1.5 text-sm text-muted-foreground">{user.email}</p>}
         </div>
       </Reveal>
 
@@ -201,6 +209,9 @@ export function UserDetailClient({ initialUser }: { initialUser: AdminUserDetail
               <CardTitle className="text-lg">{t("accountInfoTitle")}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col divide-y divide-border/70">
+              {user.annonceurProfile && (
+                <InfoRow label={t("publicNameLabel")} value={user.annonceurProfile.displayName || t("notProvided")} />
+              )}
               <InfoRow label={t("nameLabel")} value={user.name || t("notProvided")} />
               <InfoRow label={t("emailLabel")} value={user.email} />
               <InfoRow label={t("phoneLabel")} value={user.phone || t("notProvided")} />

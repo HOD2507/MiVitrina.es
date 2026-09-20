@@ -7,7 +7,7 @@ import { CalendarDays, CreditCard, Loader2, Lock, MapPin, MessageCircle, Store }
 import { useRouter } from "@/i18n/navigation";
 import { api, ApiError } from "@/lib/api-client";
 import type { Reservation } from "@/lib/types";
-import { ReservationStatus, TransactionStatus } from "@mivitrina/shared";
+import { getAnnonceurDisplayName, ReservationStatus, TransactionStatus } from "@mivitrina/shared";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -69,7 +69,8 @@ export function ReservationCard({ reservation, viewer, onUpdated }: ReservationC
   };
 
   const advertiser = reservation.annonceurProfile;
-  const advertiserName = advertiser?.companyName || advertiser?.user.name || advertiser?.user.email;
+  // Nombre público del anunciante — nunca su email (dato interno, ni siquiera llega del API).
+  const advertiserName = getAnnonceurDisplayName(advertiser, locale);
 
   const statusInfo = STATUS_LABELS[reservation.status];
   const paymentBadge = PAYMENT_BADGE[reservation.transaction.status];

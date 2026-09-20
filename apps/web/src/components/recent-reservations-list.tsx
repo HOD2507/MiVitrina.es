@@ -3,7 +3,7 @@ import type { LucideIcon } from "lucide-react";
 import { CalendarDays, Inbox } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import type { Reservation } from "@/lib/types";
-import type { ReservationStatus } from "@mivitrina/shared";
+import { getAnnonceurDisplayName, type ReservationStatus } from "@mivitrina/shared";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -72,10 +72,11 @@ export function RecentReservationsList({
           <div className="flex flex-col divide-y divide-border">
             {items.map((r) => {
               const statusInfo = statusLabels[r.status];
+              // Nombre público del anunciante — nunca su email (ni siquiera llega del API).
               const name =
                 viewer === "annonceur"
                   ? r.space.commercantProfile?.businessName
-                  : r.annonceurProfile?.companyName || r.annonceurProfile?.user.name || r.annonceurProfile?.user.email;
+                  : getAnnonceurDisplayName(r.annonceurProfile, dateLocale);
               return (
                 <div
                   key={r.id}
