@@ -60,6 +60,12 @@ export class StripeService {
     successUrl: string;
     cancelUrl: string;
     customerEmail?: string;
+    /** Textes affichés sur la page Stripe — localisés côté appelant (voir ReservationsService). */
+    productName: string;
+    productDescription?: string;
+    /** Message rassurant sous le bouton "Payer" (ex: remboursement si refus). */
+    submitMessage?: string;
+    locale?: "es" | "en";
   }) {
     const session = await this.client.checkout.sessions.create({
       mode: "payment",
@@ -69,12 +75,17 @@ export class StripeService {
           price_data: {
             currency: "eur",
             unit_amount: params.amountCents,
-            product_data: { name: "Location d'espace publicitaire — MiVitrina" },
+            product_data: {
+              name: params.productName,
+              ...(params.productDescription ? { description: params.productDescription } : {}),
+            },
           },
           quantity: 1,
         },
       ],
       customer_email: params.customerEmail,
+      ...(params.locale ? { locale: params.locale } : {}),
+      ...(params.submitMessage ? { custom_text: { submit: { message: params.submitMessage } } } : {}),
       metadata: { reservationId: params.reservationId },
       success_url: params.successUrl,
       cancel_url: params.cancelUrl,

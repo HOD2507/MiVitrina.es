@@ -165,7 +165,11 @@ export interface Reservation {
   };
   pricingOption: PricingOption;
   transaction: ReservationTransaction;
-  annonceurProfile?: { companyName: string | null; user: { email: string } };
+  annonceurProfile?: {
+    companyName: string | null;
+    /** `avatarUrl` : URL de lecture signée (photo de profil), null si l'annonceur n'en a pas ajouté. */
+    user: { email: string; name: string | null; avatarUrl: string | null };
+  };
 }
 
 /** Résultat de GET /chat/threads. */

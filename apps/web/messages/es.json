@@ -9,7 +9,8 @@
     "faq": "FAQ",
     "search": "Comercios cerca de ti",
     "login": "Iniciar sesión",
-    "register": "Regístrate"
+    "register": "Regístrate",
+    "myPanel": "Mi panel"
   },
   "Footer": {
     "tagline": "Alquilar un escaparate nunca ha sido tan sencillo.",
@@ -406,7 +407,20 @@
     "reportProblemDialogDesc": "Explica qué no va bien con esta foto — se abrirá una disputa que revisará el equipo de MiVitrina.",
     "reportProblemPlaceholder": "Ej: el cartel no se ve en la foto, no es el escaparate correcto...",
     "openDispute": "Abrir la disputa",
-    "disputeOpenedToast": "Disputa abierta — nuestro equipo la revisará."
+    "disputeOpenedToast": "Disputa abierta — nuestro equipo la revisará.",
+    "bookEyebrow": "Nueva reserva",
+    "stepDatesTitle": "Elige las fechas",
+    "stepPosterTitle": "Sube tu cartel",
+    "posterPrompt": "Elige la imagen de tu cartel",
+    "posterChange": "Toca para cambiarla",
+    "summaryTitle": "Resumen",
+    "summaryDuration": "Duración",
+    "summaryPeriod": "Periodo",
+    "summaryTotal": "Total",
+    "secureNote": "Pagarás de forma segura con Stripe en el paso siguiente, desde «Mis reservas».",
+    "refundNote": "Si el comerciante rechaza tu solicitud, te reembolsamos el importe completo automáticamente.",
+    "payPanelTitle": "Pago pendiente",
+    "payPanelDesc": "Pago seguro con Stripe. Si el comerciante rechaza tu solicitud, te reembolsamos automáticamente."
   },
   "Ajustes": {
     "title": "Ajustes",
@@ -424,7 +438,16 @@
     "saveSuccess": "Información guardada.",
     "passwordTitle": "Contraseña",
     "passwordDesc": "Cambia tu contraseña de acceso.",
-    "changePassword": "Cambiar contraseña"
+    "changePassword": "Cambiar contraseña",
+    "avatarTitle": "Foto de perfil",
+    "avatarDesc": "Es la foto que verá el comerciante cuando le envíes una solicitud de reserva.",
+    "avatarUpload": "Subir foto",
+    "avatarChange": "Cambiar foto",
+    "avatarRemove": "Quitar",
+    "avatarHint": "JPG, PNG o WEBP · máx. 5 MB",
+    "avatarSaved": "Foto de perfil actualizada.",
+    "avatarRemoved": "Foto de perfil eliminada.",
+    "avatarTooLarge": "La foto pesa más de 5 MB."
   },
   "AppShell": {
     "dashboard": "Panel",

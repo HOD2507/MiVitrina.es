@@ -9,7 +9,8 @@
     "faq": "FAQ",
     "search": "Shops near you",
     "login": "Log in",
-    "register": "Sign up"
+    "register": "Sign up",
+    "myPanel": "My dashboard"
   },
   "Footer": {
     "tagline": "Renting out a shop window has never been this simple.",
@@ -406,7 +407,20 @@
     "reportProblemDialogDesc": "Explain what's wrong with this photo — a dispute will be opened and reviewed by the MiVitrina team.",
     "reportProblemPlaceholder": "E.g. the poster isn't visible in the photo, wrong shop window...",
     "openDispute": "Open the dispute",
-    "disputeOpenedToast": "Dispute opened — our team will review it."
+    "disputeOpenedToast": "Dispute opened — our team will review it.",
+    "bookEyebrow": "New booking",
+    "stepDatesTitle": "Pick your dates",
+    "stepPosterTitle": "Upload your poster",
+    "posterPrompt": "Choose your poster image",
+    "posterChange": "Tap to change it",
+    "summaryTitle": "Summary",
+    "summaryDuration": "Duration",
+    "summaryPeriod": "Period",
+    "summaryTotal": "Total",
+    "secureNote": "You'll pay securely with Stripe in the next step, from \"My bookings\".",
+    "refundNote": "If the shop owner declines your request, you are automatically refunded in full.",
+    "payPanelTitle": "Payment pending",
+    "payPanelDesc": "Secure payment with Stripe. If the shop owner declines your request, you are refunded automatically."
   },
   "Ajustes": {
     "title": "Settings",
@@ -424,7 +438,16 @@
     "saveSuccess": "Information saved.",
     "passwordTitle": "Password",
     "passwordDesc": "Change your login password.",
-    "changePassword": "Change password"
+    "changePassword": "Change password",
+    "avatarTitle": "Profile photo",
+    "avatarDesc": "This is the photo the shop owner will see when you send a booking request.",
+    "avatarUpload": "Upload photo",
+    "avatarChange": "Change photo",
+    "avatarRemove": "Remove",
+    "avatarHint": "JPG, PNG or WEBP · max 5 MB",
+    "avatarSaved": "Profile photo updated.",
+    "avatarRemoved": "Profile photo removed.",
+    "avatarTooLarge": "The photo is larger than 5 MB."
   },
   "AppShell": {
     "dashboard": "Dashboard",

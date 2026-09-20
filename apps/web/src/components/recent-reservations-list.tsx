@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
+import { UserAvatar } from "@/components/user-avatar";
 
 interface RecentReservationsListProps {
   title: string;
@@ -74,13 +75,16 @@ export function RecentReservationsList({
               const name =
                 viewer === "annonceur"
                   ? r.space.commercantProfile?.businessName
-                  : r.annonceurProfile?.companyName || r.annonceurProfile?.user.email;
+                  : r.annonceurProfile?.companyName || r.annonceurProfile?.user.name || r.annonceurProfile?.user.email;
               return (
                 <div
                   key={r.id}
                   className="-mx-(--card-spacing) flex items-center justify-between gap-3 px-(--card-spacing) py-3 transition-colors hover:bg-muted/50"
                 >
-                  <div className="min-w-0">
+                  {viewer === "commercant" && (
+                    <UserAvatar src={r.annonceurProfile?.user.avatarUrl} name={name ?? ""} size="sm" />
+                  )}
+                  <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{name}</p>
                     <p className="flex items-center gap-1 text-xs text-muted-foreground">
                       <CalendarDays className="size-3" />

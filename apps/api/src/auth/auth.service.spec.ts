@@ -6,6 +6,7 @@ import { UserRole } from "@mivitrina/shared";
 import { AuthService } from "./auth.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { MailService } from "../mail/mail.service";
+import { StorageService } from "../storage/storage.service";
 import { GeocodingService } from "../geocoding/geocoding.service";
 import { RegisterDto } from "./dto/register.dto";
 
@@ -53,6 +54,7 @@ describe("AuthService", () => {
       config,
       mail as unknown as MailService,
       geocoding as unknown as GeocodingService,
+      {} as unknown as StorageService, // aucun test actuel ne touche à l'avatar
     );
   });
 

@@ -163,7 +163,7 @@ export function DatePicker({ value, onChange, minDate, id, blockedRanges = [], c
         onClick={() => setOpen((o) => !o)}
         className="flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-input bg-transparent px-3 text-left text-base transition-colors outline-none hover:border-ring/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
       >
-        <span className="capitalize">{DATE_FORMATTER.format(selected)}</span>
+        <span className="inline-block first-letter:uppercase">{DATE_FORMATTER.format(selected)}</span>
         <CalendarDays className="size-4 shrink-0 text-muted-foreground" />
       </button>
 
@@ -183,7 +183,7 @@ export function DatePicker({ value, onChange, minDate, id, blockedRanges = [], c
               >
                 <ChevronLeft className="size-4" />
               </button>
-              <p className="text-sm font-medium capitalize">
+              <p className="text-sm font-medium first-letter:uppercase">
                 {MONTH_FORMATTER.format(new Date(Date.UTC(viewYear, viewMonth, 1)))}
               </p>
               <button

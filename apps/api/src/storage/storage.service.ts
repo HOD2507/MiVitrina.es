@@ -17,6 +17,7 @@ export enum UploadPurpose {
   POSTER = "poster",
   INSTALL_PHOTO = "install-photo",
   REMOVAL_PHOTO = "removal-photo",
+  AVATAR = "avatar",
 }
 
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -31,6 +32,7 @@ const PURPOSE_RULES: Record<UploadPurpose, { allowedContentTypes: string[]; maxS
   [UploadPurpose.POSTER]: { allowedContentTypes: IMAGE_TYPES, maxSizeBytes: 15 * 1024 * 1024 },
   [UploadPurpose.INSTALL_PHOTO]: { allowedContentTypes: IMAGE_TYPES, maxSizeBytes: 8 * 1024 * 1024 },
   [UploadPurpose.REMOVAL_PHOTO]: { allowedContentTypes: IMAGE_TYPES, maxSizeBytes: 8 * 1024 * 1024 },
+  [UploadPurpose.AVATAR]: { allowedContentTypes: IMAGE_TYPES, maxSizeBytes: 5 * 1024 * 1024 },
 };
 
 const EXTENSION_BY_CONTENT_TYPE: Record<string, string> = {

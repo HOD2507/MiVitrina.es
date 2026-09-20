@@ -8,6 +8,7 @@ import type { GoogleProfile } from "./strategies/google.strategy";
 import { PrismaService } from "../prisma/prisma.service";
 import { MailService } from "../mail/mail.service";
 import { GeocodingService, buildGeocodingAddress } from "../geocoding/geocoding.service";
+import { StorageService, UploadPurpose } from "../storage/storage.service";
 import { isEmailDomainDeliverable } from "./email-domain.util";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
@@ -66,6 +67,7 @@ export class AuthService {
     private readonly config: ConfigService,
     private readonly mail: MailService,
     private readonly geocoding: GeocodingService,
+    private readonly storage: StorageService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -197,7 +199,7 @@ export class AuthService {
     await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
 
     const tokens = await this.issueTokens(user.id, user.email, user.role, user.tokenVersion);
-    return { user: this.toSafeUser(user), tokens };
+    return { user: await this.toSafeUserWithAvatar(user), tokens };
   }
 
   /**
@@ -245,7 +247,7 @@ export class AuthService {
     await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
 
     const tokens = await this.issueTokens(user.id, user.email, user.role, user.tokenVersion);
-    return { user: this.toSafeUser(user), tokens };
+    return { user: await this.toSafeUserWithAvatar(user), tokens };
   }
 
   /** Émet un nouveau couple de tokens à partir d'un refresh token valide (voir JwtRefreshStrategy). */
@@ -333,7 +335,7 @@ export class AuthService {
       where: { id: userId },
       include: { commercantProfile: true, annonceurProfile: true },
     });
-    return this.toSafeUser(user);
+    return this.toSafeUserWithAvatar(user);
   }
 
   /** Page "Ajustes" — nom et téléphone de la personne qui gère le compte. */
@@ -343,7 +345,36 @@ export class AuthService {
       data: { name: dto.name, phone: dto.phone },
       include: { commercantProfile: true, annonceurProfile: true },
     });
-    return this.toSafeUser(updated);
+    return this.toSafeUserWithAvatar(updated);
+  }
+
+  /**
+   * Photo de profil (visible par l'autre partie d'une réservation, ex:
+   * le commerçant qui reçoit une demande). Aucune modération préalable :
+   * elle s'affiche tout de suite — il n'existe pas de circuit de
+   * modération des profils (seules les affiches et les justificatifs
+   * commerçant sont validés). La clé doit venir d'un upload présigné de
+   * CET utilisateur (préfixe `avatar/<userId>/`), comme pour les affiches.
+   */
+  async setAvatar(userId: string, key: string) {
+    if (!key.startsWith(`${UploadPurpose.AVATAR}/${userId}/`)) {
+      throw new BadRequestException("Fichier invalide.");
+    }
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl: this.storage.getFileUrl(key) },
+      include: { commercantProfile: true, annonceurProfile: true },
+    });
+    return this.toSafeUserWithAvatar(updated);
+  }
+
+  async removeAvatar(userId: string) {
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl: null },
+      include: { commercantProfile: true, annonceurProfile: true },
+    });
+    return this.toSafeUserWithAvatar(updated);
   }
 
   /**
@@ -431,5 +462,18 @@ export class AuthService {
   private toSafeUser<T extends { passwordHash: string; tokenVersion: number }>(user: T) {
     const { passwordHash, tokenVersion, ...safe } = user;
     return safe;
+  }
+
+  /**
+   * Comme `toSafeUser`, mais remplace le localisateur S3 stocké en base
+   * (non lisible : le bucket est privé) par une URL de lecture signée.
+   */
+  private async toSafeUserWithAvatar<T extends { passwordHash: string; tokenVersion: number; avatarUrl: string | null }>(
+    user: T,
+  ) {
+    const safe = this.toSafeUser(user);
+    if (!safe.avatarUrl) return safe;
+    const avatarUrl = await this.storage.getPresignedReadUrl(this.storage.getKeyFromFileUrl(safe.avatarUrl), 3600);
+    return { ...safe, avatarUrl };
   }
 }

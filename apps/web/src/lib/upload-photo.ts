@@ -15,7 +15,7 @@ const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
  */
 export async function uploadPhoto(
   file: File,
-  purpose: "showcase-photo" | "space-photo" | "poster" | "install-photo" | "removal-photo",
+  purpose: "showcase-photo" | "space-photo" | "poster" | "install-photo" | "removal-photo" | "avatar",
 ): Promise<{ key: string }> {
   if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
     throw new Error("Format non supporté (JPG, PNG ou WEBP uniquement).");

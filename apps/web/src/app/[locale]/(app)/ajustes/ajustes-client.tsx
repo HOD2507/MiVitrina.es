@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { KeyRound, User, Phone, Mail } from "lucide-react";
+import { AvatarUploader } from "./avatar-uploader";
 
 const ROLE_LABEL_KEY: Record<string, string> = {
   [UserRole.COMMERCANT]: "roleCommercant",
@@ -40,8 +41,23 @@ export function AjustesClient({ user }: { user: AuthUser }) {
     }
   }
 
+  const displayName = user.name || user.annonceurProfile?.companyName || user.email;
+
   return (
     <div className="flex flex-col gap-6">
+      {/* La foto solo tiene sentido para el anunciante: es lo que ve el comerciante en sus solicitudes. */}
+      {user.role === UserRole.ANNONCEUR && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">{t("avatarTitle")}</CardTitle>
+            <CardDescription>{t("avatarDesc")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AvatarUploader user={user} displayName={displayName} />
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">{t("accountTitle")}</CardTitle>

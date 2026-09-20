@@ -138,7 +138,11 @@ export class ReservationsService {
   private async getOwnReservationOrThrow(userId: string, reservationId: string) {
     const reservation = await this.prisma.reservation.findUnique({
       where: { id: reservationId },
-      include: { annonceurProfile: { include: { user: true } }, transaction: true },
+      include: {
+        annonceurProfile: { include: { user: true } },
+        space: { include: { commercantProfile: true } },
+        transaction: true,
+      },
     });
     if (!reservation || reservation.annonceurProfile.userId !== userId) {
       throw new NotFoundException("Réservation introuvable.");
@@ -193,12 +197,28 @@ export class ReservationsService {
       throw new BadRequestException("Cette réservation est déjà payée.");
     }
 
+    // La page Stripe est hébergée par Stripe (on n'en contrôle pas la mise en
+    // page), mais on maîtrise ce qu'elle dit : nom du produit, détail de la
+    // réservation et message de réassurance, dans la langue de l'annonceur.
+    const isEnglish = reservation.annonceurProfile.user.locale === "EN";
+    const dateFmt = new Intl.DateTimeFormat(isEnglish ? "en-GB" : "es-ES", { dateStyle: "medium", timeZone: "UTC" });
+    const businessName = reservation.space.commercantProfile.businessName;
+    const period = `${dateFmt.format(reservation.startDate)} → ${dateFmt.format(reservation.endDate)}`;
+
     const session = await this.stripe.createCheckoutSession({
       amountCents: toCents(reservation.transaction!.amount),
       reservationId,
       customerEmail: reservation.annonceurProfile.user.email,
       successUrl: `${webAppUrl}/mes-reservations?payment=success`,
       cancelUrl: `${webAppUrl}/mes-reservations?payment=cancelled`,
+      locale: isEnglish ? "en" : "es",
+      productName: isEnglish
+        ? `Shop-window ad space — ${businessName}`
+        : `Espacio publicitario en escaparate — ${businessName}`,
+      productDescription: `${reservation.space.name} · ${period}`,
+      submitMessage: isEnglish
+        ? "If the shop owner declines your request, you are automatically refunded in full."
+        : "Si el comerciante rechaza tu solicitud, te reembolsamos el importe completo automáticamente.",
     });
 
     return { url: session.url };
@@ -259,11 +279,21 @@ export class ReservationsService {
         space: true,
         pricingOption: true,
         transaction: true,
-        annonceurProfile: { include: { user: { select: { email: true } } } },
+        annonceurProfile: { include: { user: { select: { email: true, name: true, avatarUrl: true } } } },
       },
     });
 
-    return Promise.all(reservations.map((r) => this.withPresignedPoster(r)));
+    return Promise.all(
+      reservations.map(async (r) => {
+        const withFiles = await this.withPresignedPoster(r);
+        // Photo de l'annonceur : lisible seulement via URL signée (bucket privé).
+        const avatarUrl = await this.presignIfPresent(r.annonceurProfile.user.avatarUrl);
+        return {
+          ...withFiles,
+          annonceurProfile: { ...r.annonceurProfile, user: { ...r.annonceurProfile.user, avatarUrl } },
+        };
+      }),
+    );
   }
 
   async respond(userId: string, reservationId: string, dto: RespondReservationDto) {

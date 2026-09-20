@@ -4,6 +4,7 @@ import { MapPin } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { serverApiGet } from "@/lib/api-server";
+import { getAnnonceurPanelHref } from "@/lib/get-annonceur-panel-href";
 import type { PublicCommerceProfile } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,12 +36,13 @@ export default async function CommerceDetailPage({ params }: { params: Promise<{
     notFound();
   }
 
+  const panelHref = await getAnnonceurPanelHref();
   const profile = commerce as PublicCommerceProfile;
   const allPhotos = [...profile.showcasePhotos, ...profile.spaces.flatMap((s) => s.photos)];
 
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader />
+      <SiteHeader panelHref={panelHref} />
 
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8">
         <BackLink href="/recherche" label={t("backToResults")} className="mb-4" />

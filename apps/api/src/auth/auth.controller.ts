@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, Query, Req, Res, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Patch, Post, Query, Req, Res, UseGuards } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Request, Response } from "express";
 import { UserRole } from "@mivitrina/shared";
@@ -10,6 +10,7 @@ import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { CheckEmailQueryDto } from "./dto/check-email-query.dto";
 import { CheckBusinessIdQueryDto } from "./dto/check-business-id-query.dto";
 import { UpdateAccountDto } from "./dto/update-account.dto";
+import { SetAvatarDto } from "./dto/set-avatar.dto";
 import { Public } from "./decorators/public.decorator";
 import { CurrentUser, AuthenticatedUser } from "./decorators/current-user.decorator";
 import { JwtRefreshGuard } from "./guards/jwt-refresh.guard";
@@ -68,6 +69,17 @@ export class AuthController {
   @Patch("me")
   async updateAccount(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpdateAccountDto) {
     return this.authService.updateAccount(user.id, dto);
+  }
+
+  /** Enregistre la photo de profil après un upload présigné (purpose = "avatar"). */
+  @Post("me/avatar")
+  async setAvatar(@CurrentUser() user: AuthenticatedUser, @Body() dto: SetAvatarDto) {
+    return this.authService.setAvatar(user.id, dto.key);
+  }
+
+  @Delete("me/avatar")
+  async removeAvatar(@CurrentUser() user: AuthenticatedUser) {
+    return this.authService.removeAvatar(user.id);
   }
 
   /** Indique au front si le bouton "Continuer avec Google" doit être affiché. */

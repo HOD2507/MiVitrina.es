@@ -12,6 +12,7 @@ import { RolesGuard } from "./guards/roles.guard";
 import { AdminPermissionGuard } from "./guards/admin-permission.guard";
 import { AuthUserCacheService } from "./auth-user-cache.service";
 import { GeocodingModule } from "../geocoding/geocoding.module";
+import { StorageModule } from "../storage/storage.module";
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { GeocodingModule } from "../geocoding/geocoding.module";
     // précise explicitement son secret et sa durée de vie (voir AuthService).
     JwtModule.register({}),
     GeocodingModule,
+    StorageModule,
   ],
   controllers: [AuthController],
   providers: [

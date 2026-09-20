@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { useLocale, useTranslations } from "next-intl";
-import { CalendarDays, CreditCard, Loader2, MapPin, MessageCircle, Store } from "lucide-react";
+import { CalendarDays, CreditCard, Loader2, Lock, MapPin, MessageCircle, Store } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
 import { api, ApiError } from "@/lib/api-client";
 import type { Reservation } from "@/lib/types";
@@ -23,6 +23,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { PhotoStepSection } from "@/components/photo-step-section";
 import { getDateLocale } from "@/lib/date-locale";
+import { UserAvatar } from "@/components/user-avatar";
 
 interface ReservationCardProps {
   reservation: Reservation;
@@ -66,6 +67,9 @@ export function ReservationCard({ reservation, viewer, onUpdated }: ReservationC
     REFUNDED: { label: t("paymentRefunded"), variant: "secondary" },
     PARTIALLY_REFUNDED: { label: t("paymentPartiallyRefunded"), variant: "secondary" },
   };
+
+  const advertiser = reservation.annonceurProfile;
+  const advertiserName = advertiser?.companyName || advertiser?.user.name || advertiser?.user.email;
 
   const statusInfo = STATUS_LABELS[reservation.status];
   const paymentBadge = PAYMENT_BADGE[reservation.transaction.status];
@@ -144,22 +148,25 @@ export function ReservationCard({ reservation, viewer, onUpdated }: ReservationC
   return (
     <Card interactive className="cursor-default">
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
-        <div>
-          <CardTitle className="text-lg">
-            {viewer === "annonceur" ? reservation.space.commercantProfile?.businessName : reservation.space.name}
-          </CardTitle>
-          <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-            {viewer === "annonceur" ? (
-              <>
-                <MapPin className="size-3.5" /> {reservation.space.name}
-              </>
-            ) : (
-              <>
+        <div className="flex min-w-0 items-start gap-3">
+          {/* El comerciante ve quién le hace la solicitud: foto del anunciante (o iniciales). */}
+          {viewer === "commercant" && (
+            <UserAvatar src={advertiser?.user.avatarUrl} name={advertiserName ?? ""} size="md" />
+          )}
+          <div className="min-w-0">
+            {/* Comerciante: quien pide (con su foto al lado) es el título, el espacio va debajo. */}
+            <CardTitle className="text-lg">
+              {viewer === "annonceur" ? reservation.space.commercantProfile?.businessName : advertiserName}
+            </CardTitle>
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+              {viewer === "annonceur" ? (
+                <MapPin className="size-3.5" />
+              ) : (
                 <Store className="size-3.5" />
-                {reservation.annonceurProfile?.companyName || reservation.annonceurProfile?.user.email}
-              </>
-            )}
-          </p>
+              )}
+              {reservation.space.name}
+            </p>
+          </div>
         </div>
         <div className="flex flex-col items-end gap-1.5">
           <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
@@ -206,10 +213,19 @@ export function ReservationCard({ reservation, viewer, onUpdated }: ReservationC
         </Button>
 
         {canPay && (
-          <Button size="sm" disabled={paying} onClick={handlePay} className="self-start">
-            {paying ? <Loader2 className="size-3.5 animate-spin" /> : <CreditCard className="size-3.5" />}
-            {t("pay", { amount: Number(reservation.transaction.amount).toFixed(2) })}
-          </Button>
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/25 bg-accent/60 p-4">
+            <div className="min-w-0 flex-1 basis-56">
+              <p className="flex items-center gap-1.5 text-sm font-medium">
+                <Lock className="size-3.5 text-primary" />
+                {t("payPanelTitle")}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{t("payPanelDesc")}</p>
+            </div>
+            <Button size="lg" disabled={paying} onClick={handlePay}>
+              {paying ? <Loader2 className="size-4 animate-spin" /> : <CreditCard className="size-4" />}
+              {t("pay", { amount: Number(reservation.transaction.amount).toFixed(2) })}
+            </Button>
+          </div>
         )}
 
         {canRespond && reservation.transaction.status !== TransactionStatus.PAID && (
