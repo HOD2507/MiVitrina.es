@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
+import { BackLink } from "@/components/back-link";
 import { BottomSheet } from "@/components/bottom-sheet";
 import type { MapMarker } from "@/components/commerce-map";
 
@@ -32,9 +33,19 @@ const CommerceMap = dynamic(() => import("@/components/commerce-map").then((m) =
 const DEFAULT_CENTER = { lat: 40.4168, lng: -3.7038 }; // Madrid, par défaut si géolocalisation refusée/indisponible
 const RADIUS_OPTIONS = [1, 5, 10, 25, 50, 100];
 
-export function RechercheClient() {
+interface RechercheClientProps {
+  /** Si défini (annonceur connecté) : destination du lien "← Mi panel" affiché près du titre. */
+  panelHref?: string | null;
+}
+
+export function RechercheClient({ panelHref }: RechercheClientProps = {}) {
   const t = useTranslations("Recherche");
+  const tNav = useTranslations("Nav");
+  // `center` = centre de la RECHERCHE : Madrid par défaut, ou la ville tapée par l'utilisateur.
+  // `userPosition` = où se trouve réellement l'utilisateur (géolocalisation navigateur), ou
+  // null si refusée/indisponible — c'est elle, et seulement elle, que marque le point bleu.
   const [center, setCenter] = useState(DEFAULT_CENTER);
+  const [userPosition, setUserPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [radiusKm, setRadiusKm] = useState(10);
   const [results, setResults] = useState<NearbyCommerce[]>([]);
   const [loading, setLoading] = useState(false);
@@ -66,6 +77,7 @@ export function RechercheClient() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const point = { lat: position.coords.latitude, lng: position.coords.longitude };
+        setUserPosition(point);
         setCenter(point);
         setLocating(false);
         runSearch(point, radiusKm);
@@ -103,6 +115,8 @@ export function RechercheClient() {
       setSearchingCity(false);
     }
   }
+
+  const panelLink = panelHref ? <BackLink href={panelHref} label={tNav("myPanel")} /> : null;
 
   const markers: MapMarker[] = results.map((r) => ({
     id: r.id,
@@ -191,13 +205,21 @@ export function RechercheClient() {
       {/* Desktop / tablette : carte et liste côte à côte, comme avant. */}
       <div className="mx-auto hidden max-w-6xl px-4 py-8 lg:block">
         <div className="mb-6 flex flex-col gap-4">
-          <h1 className="text-2xl font-medium">{t("title")}</h1>
+          <div className="flex flex-col gap-2">
+            {panelLink}
+            <h1 className="text-2xl font-medium">{t("title")}</h1>
+          </div>
           {searchBar}
         </div>
 
         <div className="grid gap-6 lg:grid-cols-5">
           <div className="h-[600px] overflow-hidden rounded-lg border border-border lg:col-span-3">
-            <CommerceMap center={center} markers={markers} />
+            <CommerceMap
+              center={center}
+              markers={markers}
+              userPosition={userPosition}
+              userPositionLabel={t("yourLocation")}
+            />
           </div>
           <div className="flex flex-col gap-3 lg:col-span-2">
             {statusLine}
@@ -208,9 +230,19 @@ export function RechercheClient() {
 
       {/* Mobile : carte plein écran + feuille coulissante, comme une app de cartographie. */}
       <div className="fixed inset-x-0 top-18 bottom-0 lg:hidden">
-        <CommerceMap center={center} markers={markers} />
-        {/* z-[1001] : les contrôles Leaflet (+/- zoom) utilisent eux-mêmes un z-index ~1000. */}
-        <div className="absolute inset-x-3 top-3 z-[1001] rounded-xl bg-card p-3 shadow-lg">{searchBar}</div>
+        <CommerceMap
+          center={center}
+          markers={markers}
+          userPosition={userPosition}
+          userPositionLabel={t("yourLocation")}
+        />
+        {/* z-[1001] : les contrôles Leaflet (+/- zoom) utilisent eux-mêmes un z-index ~1000.
+            Pas de titre en mobile (la carte prend tout l'écran) : le lien "← Mi panel" va donc
+            en tête de ce panneau flottant. */}
+        <div className="absolute inset-x-3 top-3 z-[1001] flex flex-col gap-2 rounded-xl bg-card p-3 shadow-lg">
+          {panelLink}
+          {searchBar}
+        </div>
       </div>
       <div className="lg:hidden">
         <BottomSheet

@@ -2,14 +2,15 @@ import { getTranslations } from "next-intl/server";
 import { MapPin } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { LogoMark } from "@/components/logo-mark";
+import { cn } from "cn";
 
-export async function SiteFooter() {
+export async function SiteFooter({ className }: { className?: string } = {}) {
   const t = await getTranslations("Footer");
   const tNav = await getTranslations("Nav");
   const year = new Date().getFullYear();
 
   return (
-    <footer className="relative overflow-hidden border-t border-border/60 bg-card">
+    <footer className={cn("relative overflow-hidden border-t border-border/60 bg-card", className)}>
       <div className="mx-auto max-w-6xl px-4 py-14">
         <div className="grid gap-10 sm:grid-cols-[1.4fr_1fr_1fr]">
           <div>

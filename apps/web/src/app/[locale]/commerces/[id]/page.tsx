@@ -16,6 +16,7 @@ export default async function CommerceDetailPage({ params }: { params: Promise<{
   const { id } = await params;
   const t = await getTranslations("Vitrine");
   const tPricing = await getTranslations("Pricing");
+  const tNav = await getTranslations("Nav");
   const DURATION_LABELS: Record<string, string> = {
     SEMAINE: tPricing("weekly"),
     MOIS: tPricing("monthly"),
@@ -42,10 +43,15 @@ export default async function CommerceDetailPage({ params }: { params: Promise<{
 
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader panelHref={panelHref} />
+      <SiteHeader hideAuthLinks={Boolean(panelHref)} />
 
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8">
-        <BackLink href="/recherche" label={t("backToResults")} className="mb-4" />
+        {/* "← Mi panel" va junto a "← Volver a resultados" (no en la barra superior); flex-wrap: en
+            pantallas estrechas pasa a la línea siguiente en vez de desbordar. */}
+        <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2">
+          <BackLink href="/recherche" label={t("backToResults")} />
+          {panelHref && <BackLink href={panelHref} label={tNav("myPanel")} />}
+        </div>
 
         <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
           <div>

@@ -9,11 +9,15 @@ export default async function RecherchePage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader panelHref={panelHref} />
+      <SiteHeader hideAuthLinks={Boolean(panelHref)} />
       <main className="flex-1">
-        <RechercheClient />
+        {/* "← Mi panel" vive junto al título de la búsqueda, no en la barra superior. */}
+        <RechercheClient panelHref={panelHref} />
       </main>
-      <SiteFooter />
+      {/* En móvil esta página es una pantalla de mapa a pantalla completa (mapa `fixed` + hoja
+          inferior). El footer, `relative` y con fondo, se pintaba ENCIMA del mapa y lo tapaba:
+          solo se muestra desde `lg`, donde el mapa está en el flujo normal de la página. */}
+      <SiteFooter className="hidden lg:block" />
     </div>
   );
 }

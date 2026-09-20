@@ -17,6 +17,26 @@ L.Icon.Default.mergeOptions({
   shadowUrl: (markerShadow as unknown as { src: string }).src,
 });
 
+/**
+ * Marqueur "Vous êtes ici", façon Google Maps : point bleu à liseré blanc
+ * entouré d'un halo translucide — volontairement très différent du pin en
+ * forme de goutte des commerces, pour qu'on ne confonde jamais "où je suis"
+ * et "où sont les commerces". Styles en ligne (et non des classes Tailwind)
+ * car ce HTML est injecté par Leaflet hors du rendu React : rien ne dépend
+ * ainsi du scan des classes ni d'une feuille de style globale.
+ * `className: ""` retire le style par défaut de divIcon (fond blanc + bordure).
+ */
+const USER_LOCATION_ICON = L.divIcon({
+  className: "",
+  html:
+    '<span style="position:relative;display:flex;width:100%;height:100%;align-items:center;justify-content:center">' +
+    '<span style="position:absolute;width:44px;height:44px;border-radius:9999px;background:rgba(66,133,244,.2);border:1px solid rgba(66,133,244,.35)"></span>' +
+    '<span style="position:relative;width:18px;height:18px;border-radius:9999px;background:#4285f4;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></span>' +
+    "</span>",
+  iconSize: [44, 44],
+  iconAnchor: [22, 22], // le centre du point = la position exacte (un pin, lui, s'ancre par sa pointe)
+});
+
 export interface MapMarker {
   id: string;
   latitude: number;
@@ -26,8 +46,13 @@ export interface MapMarker {
 }
 
 interface CommerceMapProps {
+  /** Centre de la vue (et de la recherche) : peut être Madrid par défaut ou une ville tapée, pas forcément l'utilisateur. */
   center: { lat: number; lng: number };
   markers: MapMarker[];
+  /** Position réelle de l'utilisateur (géolocalisation) ; null/absente = inconnue, aucun point bleu n'est affiché. */
+  userPosition?: { lat: number; lng: number } | null;
+  /** Libellé traduit du point bleu (popup + texte alternatif). */
+  userPositionLabel?: string;
   className?: string;
 }
 
@@ -40,7 +65,7 @@ function Recenter({ center }: { center: { lat: number; lng: number } }) {
   return null;
 }
 
-export function CommerceMap({ center, markers, className }: CommerceMapProps) {
+export function CommerceMap({ center, markers, userPosition, userPositionLabel, className }: CommerceMapProps) {
   return (
     <MapContainer
       center={[center.lat, center.lng]}
@@ -54,9 +79,20 @@ export function CommerceMap({ center, markers, className }: CommerceMapProps) {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <Recenter center={center} />
-      <Marker position={[center.lat, center.lng]}>
-        <Popup>Votre position</Popup>
-      </Marker>
+      {userPosition && (
+        <Marker
+          position={[userPosition.lat, userPosition.lng]}
+          icon={USER_LOCATION_ICON}
+          // Au-dessus des pins : un commerce situé au même endroit ne doit pas cacher le point.
+          zIndexOffset={1000}
+          // `title` (et non seulement `alt`) : Leaflet ne reflète `alt` que sur un <img>, or ce
+          // marqueur est un <div> — sans `title` il serait focalisable mais sans nom accessible.
+          title={userPositionLabel}
+          alt={userPositionLabel}
+        >
+          {userPositionLabel && <Popup>{userPositionLabel}</Popup>}
+        </Marker>
+      )}
       {markers.map((marker) => (
         <Marker
           key={marker.id}

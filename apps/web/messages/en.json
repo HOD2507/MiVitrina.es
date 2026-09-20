@@ -481,6 +481,7 @@
   },
   "Recherche": {
     "loadingMap": "Loading map...",
+    "yourLocation": "Your location",
     "title": "Find a shop near you",
     "placeholderCity": "City or address (e.g. Madrid, Barcelona...)",
     "radiusLabel": "Radius: {km} km",

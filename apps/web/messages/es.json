@@ -481,6 +481,7 @@
   },
   "Recherche": {
     "loadingMap": "Cargando el mapa...",
+    "yourLocation": "Tu ubicación",
     "title": "Encuentra un comercio cerca de ti",
     "placeholderCity": "Ciudad o dirección (ej: Madrid, Barcelona...)",
     "radiusLabel": "Radio: {km} km",

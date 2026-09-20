@@ -1,4 +1,3 @@
-import { ArrowLeft } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
@@ -7,36 +6,25 @@ import { LogoMark } from "@/components/logo-mark";
 
 interface SiteHeaderProps {
   /**
-   * Si défini (annonceur connecté), affiche "← Mi panel" juste après le
-   * logo et remplace les boutons connexion/inscription, devenus inutiles.
+   * Masque connexion/inscription : pour les pages où le visiteur est déjà connecté
+   * (ex: annonceur) et n'a pas à revoir ces deux boutons. Le lien "← Mi panel" n'est PAS
+   * dans l'en-tête : chaque page le place près de son propre titre / lien de retour.
    */
-  panelHref?: string | null;
+  hideAuthLinks?: boolean;
 }
 
-export async function SiteHeader({ panelHref }: SiteHeaderProps = {}) {
+export async function SiteHeader({ hideAuthLinks }: SiteHeaderProps = {}) {
   const t = await getTranslations("Nav");
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/75 backdrop-blur-md">
       <div className="mx-auto flex h-18 max-w-6xl items-center justify-between px-4">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2.5">
-            <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <LogoMark className="size-5" />
-            </span>
-            <span className="font-heading text-[1.2rem] font-semibold tracking-tight">MiVitrina</span>
-          </Link>
-
-          {panelHref && (
-            <Link
-              href={panelHref}
-              className="group inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-sm font-medium text-primary shadow-sm transition-colors hover:bg-accent"
-            >
-              <ArrowLeft className="size-4 transition-transform duration-200 group-hover:-translate-x-0.5" />
-              {t("myPanel")}
-            </Link>
-          )}
-        </div>
+        <Link href="/" className="flex items-center gap-2.5">
+          <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <LogoMark className="size-5" />
+          </span>
+          <span className="font-heading text-[1.2rem] font-semibold tracking-tight">MiVitrina</span>
+        </Link>
 
         {/* Liens vers les sections de la page d'accueil — depuis n'importe
             quelle page publique (login, recherche...), ça ramène à l'accueil
@@ -58,7 +46,7 @@ export async function SiteHeader({ panelHref }: SiteHeaderProps = {}) {
             {t("search")}
           </Button>
           <LocaleSwitcher />
-          {!panelHref && (
+          {!hideAuthLinks && (
             <>
               <span className="mx-1 hidden h-5 w-px bg-border sm:inline-block" aria-hidden />
               <Button variant="ghost" size="sm" className="px-2 sm:px-3" render={<Link href="/login" />}>
