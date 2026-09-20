@@ -327,4 +327,17 @@
       transform: translate(-4%, -3%) scale(1.03);
     }
   }
+
+  /* Ombres de défilement horizontal (technique « scroll shadows » de Lea Verou), 100 % CSS : une ombre
+     apparaît sur le bord où il reste du contenu à faire défiler et disparaît quand on l'atteint. Les deux
+     premiers dégradés (`local`, ils suivent le contenu) recouvrent l'ombre dès qu'on est au bord ; les deux
+     suivants (`scroll`, fixes) sont les ombres. La couleur de recouvrement doit être le fond du conteneur :
+     ici `--card` (les tableaux d'admin sont dans une Card). À poser sur l'élément qui a `overflow-x-auto`. */
+  .scroll-shadows-x {
+    background:
+      linear-gradient(to right, var(--card) 30%, transparent) 0 0 / 2.5rem 100% no-repeat local,
+      linear-gradient(to left, var(--card) 30%, transparent) 100% 0 / 2.5rem 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, oklch(0 0 0 / 0.28), transparent) 0 0 / 0.9rem 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, oklch(0 0 0 / 0.28), transparent) 100% 0 / 0.9rem 100% no-repeat scroll;
+  }
 }

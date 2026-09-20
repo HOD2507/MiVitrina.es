@@ -62,7 +62,9 @@ export function SidebarShell({
             href={item.href}
             onClick={onNavigate}
             className={cn(
-              "relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              // Panneau mobile : lignes de 44px minimum (py-3) ; sidebar desktop : compacte (py-2).
+              "relative flex items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors",
+              scope === "mobile" ? "py-3" : "py-2",
               active ? "text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
@@ -114,7 +116,7 @@ export function SidebarShell({
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Barre mobile */}
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-border/60 bg-card px-4 md:hidden">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex min-h-11 items-center gap-2">
             <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <LogoMark className="size-4.5" />
             </span>
@@ -124,7 +126,7 @@ export function SidebarShell({
             type="button"
             aria-label={t("openMenuAria")}
             onClick={() => setMobileOpen(true)}
-            className="flex size-9 items-center justify-center rounded-lg text-foreground hover:bg-muted"
+            className="flex size-11 items-center justify-center rounded-lg text-foreground hover:bg-muted"
           >
             <Menu className="size-5" />
           </button>
@@ -141,7 +143,7 @@ export function SidebarShell({
                   type="button"
                   aria-label={t("closeMenuAria")}
                   onClick={() => setMobileOpen(false)}
-                  className="flex size-8 items-center justify-center rounded-lg hover:bg-muted"
+                  className="flex size-11 items-center justify-center rounded-lg hover:bg-muted"
                 >
                   <X className="size-4.5" />
                 </button>

@@ -37,6 +37,25 @@ const USER_LOCATION_ICON = L.divIcon({
   iconAnchor: [22, 22], // le centre du point = la position exacte (un pin, lui, s'ancre par sa pointe)
 });
 
+/**
+ * Pin d'un commerce : le même dessin que le marqueur Leaflet par défaut (25×41px), mais dans une zone
+ * cliquable de 44×48px — 25px de large est trop étroit pour le doigt (cible tactile minimale : 44px).
+ * L'élément interactif de Leaflet est le div de l'icône, pas l'image : c'est donc ce div qu'on agrandit.
+ * L'ancre est la pointe du pin (bas, centré) : la position géographique reste exacte. Ombre portée
+ * en CSS, l'ombre PNG de Leaflet n'existant pas pour une `divIcon`.
+ */
+const SHOP_PIN_ICON = L.divIcon({
+  className: "",
+  html:
+    '<span style="display:flex;width:44px;height:48px;align-items:flex-end;justify-content:center">' +
+    `<img src="${(markerIcon as unknown as { src: string }).src}" alt="" width="25" height="41" ` +
+    'style="display:block;pointer-events:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))" />' +
+    "</span>",
+  iconSize: [44, 48],
+  iconAnchor: [22, 48],
+  popupAnchor: [0, -44],
+});
+
 export interface MapMarker {
   id: string;
   latitude: number;
@@ -97,6 +116,9 @@ export function CommerceMap({ center, markers, userPosition, userPositionLabel, 
         <Marker
           key={marker.id}
           position={[marker.latitude, marker.longitude]}
+          icon={SHOP_PIN_ICON}
+          // `title` : nom accessible du marqueur (un div focalisable n'en avait aucun) + infobulle au survol.
+          title={marker.label}
           eventHandlers={marker.onClick ? { click: marker.onClick } : undefined}
         >
           <Popup>{marker.label}</Popup>

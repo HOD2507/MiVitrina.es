@@ -140,7 +140,9 @@ export function ReserverClient({
   const total = `${Number(price).toFixed(2)} €`;
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+    <form onSubmit={handleSubmit} // grid-cols-1 = minmax(0,1fr) : sans colonne explicite, la colonne `auto` prend la largeur du contenu le plus
+      // large et pouvait déborder de l'écran à 320px.
+      className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
       <div className="flex flex-col gap-6">
         {/* Étape 1 — dates */}
         <Card>

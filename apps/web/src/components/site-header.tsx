@@ -3,6 +3,7 @@ import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { LogoMark } from "@/components/logo-mark";
+import { SiteHeaderMobileMenu } from "@/components/site-header-mobile-menu";
 
 interface SiteHeaderProps {
   /**
@@ -19,7 +20,8 @@ export async function SiteHeader({ hideAuthLinks }: SiteHeaderProps = {}) {
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/75 backdrop-blur-md">
       <div className="mx-auto flex h-18 max-w-6xl items-center justify-between px-4">
-        <Link href="/" className="flex items-center gap-2.5">
+        {/* min-h-11 : zone tactile de 44px de haut sans changer le dessin (le logo reste à 32px). */}
+        <Link href="/" className="flex min-h-11 items-center gap-2.5">
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <LogoMark className="size-5" />
           </span>
@@ -41,22 +43,36 @@ export async function SiteHeader({ hideAuthLinks }: SiteHeaderProps = {}) {
           </Link>
         </nav>
 
-        <div className="flex items-center gap-1 sm:gap-2">
-          <Button variant="ghost" size="sm" className="hidden sm:inline-flex" render={<Link href="/recherche" />}>
+        {/* Escritorio (≥ lg) : sections en ligne au centre + actions à droite, comme avant. */}
+        <div className="hidden items-center gap-2 lg:flex">
+          <Button variant="ghost" size="sm" render={<Link href="/recherche" />}>
             {t("search")}
           </Button>
           <LocaleSwitcher />
           {!hideAuthLinks && (
             <>
-              <span className="mx-1 hidden h-5 w-px bg-border sm:inline-block" aria-hidden />
-              <Button variant="ghost" size="sm" className="px-2 sm:px-3" render={<Link href="/login" />}>
+              <span className="mx-1 h-5 w-px bg-border" aria-hidden />
+              <Button variant="ghost" size="sm" className="px-3" render={<Link href="/login" />}>
                 {t("login")}
               </Button>
-              <Button size="sm" className="rounded-full px-3.5 sm:px-4" render={<Link href="/register" />}>
+              <Button size="sm" className="rounded-full px-4" render={<Link href="/register" />}>
                 {t("register")}
               </Button>
             </>
           )}
+        </div>
+
+        {/* Mobile / tablette (< lg) : logo + « Regístrate » + ☰. Tout le reste (recherche, sections,
+            connexion, langue) est dans le menu. Avant, logo + langue + connexion + inscription
+            demandaient 408px : la page entière débordait sur la plupart des téléphones. Les cibles
+            font 44px de haut (h-11) ; l'espace sert ici à tenir jusqu'à 320px. */}
+        <div className="flex items-center gap-1.5 lg:hidden">
+          {!hideAuthLinks && (
+            <Button size="sm" className="h-11 rounded-full px-4 text-sm" render={<Link href="/register" />}>
+              {t("register")}
+            </Button>
+          )}
+          <SiteHeaderMobileMenu hideAuthLinks={hideAuthLinks} />
         </div>
       </div>
     </header>

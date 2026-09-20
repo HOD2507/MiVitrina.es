@@ -10,7 +10,9 @@
     "search": "Shops near you",
     "login": "Log in",
     "register": "Sign up",
-    "myPanel": "My dashboard"
+    "myPanel": "My dashboard",
+    "menuOpen": "Open the menu",
+    "language": "Language"
   },
   "Footer": {
     "tagline": "Renting out a shop window has never been this simple.",
@@ -339,7 +341,9 @@
     "noSpacesPublished": "This shop hasn't published any available space yet.",
     "noPricingPublished": "No rate published for this space yet.",
     "bookCta": "Book",
-    "backToResults": "Back to results"
+    "backToResults": "Back to results",
+    "contactCommerce": "Contact this shop",
+    "contactError": "Couldn't open the conversation."
   },
   "Reservations": {
     "pageTitle": "Booking requests",

@@ -12,14 +12,14 @@ export async function AppHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/75 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-        <Link href="/" className="flex items-center gap-2.5">
+        <Link href="/" className="flex min-h-11 items-center gap-2.5">
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <LogoMark className="size-5" />
           </span>
           <span className="font-heading text-[1.2rem] font-semibold tracking-tight">MiVitrina</span>
         </Link>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="ghost" render={<Link href="/messages" />}>
+          <Button size="sm" variant="ghost" className="h-11 lg:h-7" render={<Link href="/messages" />}>
             <MessageCircle className="size-4" />
             {t("messages")}
           </Button>

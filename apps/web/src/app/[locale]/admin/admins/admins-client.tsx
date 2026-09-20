@@ -162,7 +162,8 @@ export function AdminsClient({
       <Reveal>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="flex items-center gap-2.5 font-heading text-4xl font-extrabold tracking-tight">
+            {/* text-3xl sous `sm` : « Administradores » est un seul mot qu'on ne peut pas couper — à 36px il dépassait 320px. */}
+            <h1 className="flex items-center gap-2.5 font-heading text-3xl font-extrabold tracking-tight sm:text-4xl">
               <ShieldUser className="size-8 text-primary" />
               {t("title")}
             </h1>

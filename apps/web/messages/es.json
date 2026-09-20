@@ -10,7 +10,9 @@
     "search": "Comercios cerca de ti",
     "login": "Iniciar sesión",
     "register": "Regístrate",
-    "myPanel": "Mi panel"
+    "myPanel": "Mi panel",
+    "menuOpen": "Abrir el menú",
+    "language": "Idioma"
   },
   "Footer": {
     "tagline": "Alquilar un escaparate nunca ha sido tan sencillo.",
@@ -339,7 +341,9 @@
     "noSpacesPublished": "Este comercio aún no ha publicado ningún espacio disponible.",
     "noPricingPublished": "Ningún precio publicado para este espacio.",
     "bookCta": "Reservar",
-    "backToResults": "Volver a resultados"
+    "backToResults": "Volver a resultados",
+    "contactCommerce": "Contactar con este comercio",
+    "contactError": "No se pudo abrir la conversación."
   },
   "Reservations": {
     "pageTitle": "Solicitudes de reserva",

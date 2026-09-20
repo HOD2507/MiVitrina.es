@@ -43,6 +43,9 @@ type StatusFilter = "ALL" | "SUSPENDED" | VerificationStatus;
 type DialogKind = "suspend" | "reactivate" | "delete";
 type DialogState = { type: DialogKind; user: AdminUserListItem } | null;
 
+/** Boutons d'action en icône : 44×44px (cible tactile minimale) sous `lg`, compacts (28px) sur ordinateur. */
+const TOUCH_ICON_BUTTON = "size-11 lg:size-7";
+
 export function UsersClient({ initialUsers }: { initialUsers: AdminUserListItem[] }) {
   const t = useTranslations("Admin.users");
   const locale = useLocale();
@@ -182,7 +185,9 @@ export function UsersClient({ initialUsers }: { initialUsers: AdminUserListItem[
           {users.length === 0 ? (
             <EmptyState icon={Search} title={t("emptyTitle")} className="py-12" />
           ) : (
-            <div className="overflow-x-auto">
+            // `scroll-shadows-x` : ombre au bord dès qu'il reste des colonnes à faire défiler (mobile),
+            // voir globals.css — sans elle, Tipo/Estado/Acciones étaient cachées sans aucune indication.
+            <div className="scroll-shadows-x overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs text-muted-foreground">
@@ -197,8 +202,15 @@ export function UsersClient({ initialUsers }: { initialUsers: AdminUserListItem[
                 <tbody className="divide-y divide-border">
                   {users.map((u) => (
                     <tr key={u.id} className="transition-colors hover:bg-muted/40">
-                      <td className="px-4 py-3 font-medium">{u.displayName ?? u.name ?? "—"}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{u.email}</td>
+                      {/* Nom tronqué avec « … » (nom complet au survol / lecteur d'écran) au lieu d'un retour à la
+                          ligne mot par mot. Sous `lg` l'email reste sur une ligne et la table défile horizontalement (avec
+                          ombre) ; sur ordinateur, où la place ne manque pas, il passe à la ligne comme avant. */}
+                      <td className="px-4 py-3 font-medium">
+                        <span className="block max-w-[11rem] truncate lg:max-w-[14rem]" title={u.displayName ?? u.name ?? undefined}>
+                          {u.displayName ?? u.name ?? "—"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-muted-foreground lg:whitespace-normal">{u.email}</td>
                       <td className="px-4 py-3">
                         <Badge variant="outline">{roleLabel[u.role as typeof UserRole.COMMERCANT | typeof UserRole.ANNONCEUR]}</Badge>
                       </td>
@@ -210,20 +222,21 @@ export function UsersClient({ initialUsers }: { initialUsers: AdminUserListItem[
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
-                          <Button size="icon-sm" variant="ghost" aria-label={t("viewDetail")} render={<Link href={`/admin/users/${u.id}`} />}>
+                          <Button size="icon-sm" variant="ghost" className={TOUCH_ICON_BUTTON} aria-label={t("viewDetail")} render={<Link href={`/admin/users/${u.id}`} />}>
                             <Eye className="size-4" />
                           </Button>
                           {u.suspended ? (
                             <Button
                               size="icon-sm"
                               variant="ghost"
+                              className={TOUCH_ICON_BUTTON}
                               aria-label={t("reactivate")}
                               onClick={() => openDialog("reactivate", u)}
                             >
                               <RotateCcw className="size-4" />
                             </Button>
                           ) : (
-                            <Button size="icon-sm" variant="ghost" aria-label={t("suspend")} onClick={() => openDialog("suspend", u)}>
+                            <Button size="icon-sm" variant="ghost" className={TOUCH_ICON_BUTTON} aria-label={t("suspend")} onClick={() => openDialog("suspend", u)}>
                               <Ban className="size-4" />
                             </Button>
                           )}
@@ -231,7 +244,7 @@ export function UsersClient({ initialUsers }: { initialUsers: AdminUserListItem[
                             size="icon-sm"
                             variant="ghost"
                             aria-label={t("delete")}
-                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            className={`${TOUCH_ICON_BUTTON} text-destructive hover:bg-destructive/10 hover:text-destructive`}
                             onClick={() => openDialog("delete", u)}
                           >
                             <Trash2 className="size-4" />

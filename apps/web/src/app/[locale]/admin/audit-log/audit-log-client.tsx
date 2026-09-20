@@ -177,18 +177,19 @@ export function AuditLogClient({ initialEntries }: { initialEntries: AuditLogEnt
             </div>
           </div>
 
+          {/* Les deux dates se partagent la largeur sur mobile (w-40 ×2 ne tenait pas dans 320px). */}
           <div className="flex items-end gap-2">
-            <div className="flex flex-col gap-1">
+            <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-none">
               <Label htmlFor="from" className="text-xs text-muted-foreground">
                 {t("fromLabel")}
               </Label>
-              <Input id="from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-40" />
+              <Input id="from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-full sm:w-40" />
             </div>
-            <div className="flex flex-col gap-1">
+            <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-none">
               <Label htmlFor="to" className="text-xs text-muted-foreground">
                 {t("toLabel")}
               </Label>
-              <Input id="to" type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-40" />
+              <Input id="to" type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-full sm:w-40" />
             </div>
           </div>
         </div>
