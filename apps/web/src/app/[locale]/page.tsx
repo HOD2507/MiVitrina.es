@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { UserRole } from "@mivitrina/shared";
 import { PosterRing } from "@/components/poster-ring";
 import { PointerGlow } from "@/components/pointer-glow";
-import { IntroPosterSplash } from "@/components/intro-poster-splash";
 import { SmoothScroll } from "@/components/smooth-scroll";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionPanel } from "@/components/ui/accordion";
 import {
@@ -37,12 +36,7 @@ const TONE_CYCLE = [
   { badge: "bg-glow-plum/14 text-glow-plum", tile: "bg-glow-plum/5" },
 ] as const;
 
-/**
- * Landing page. L'animation hero (public/animations/hero-poster-loop.json)
- * a été générée avec le skill "text-to-lottie" (.claude/skills/text-to-lottie,
- * MIT, diffusionstudio/lottie) : une affiche se pose sur une vitrine,
- * confirmée par un badge, en boucle — illustre le concept produit.
- */
+/** Landing page publique : hero, étapes commerçant/annonceur, fonctionnalités, galerie et FAQ. */
 export default function LandingPage() {
   const t = useTranslations("Landing");
 
@@ -88,7 +82,6 @@ export default function LandingPage() {
   return (
     <>
       <SmoothScroll />
-      <IntroPosterSplash />
       <SiteHeader />
 
       <main>
