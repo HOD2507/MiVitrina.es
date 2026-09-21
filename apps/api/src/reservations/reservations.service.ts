@@ -16,6 +16,7 @@ import {
 import { PrismaService } from "../prisma/prisma.service";
 import { StorageService } from "../storage/storage.service";
 import { StripeService } from "../stripe/stripe.service";
+import { canReceiveBookings, MERCHANT_NOT_BOOKABLE_CODE } from "../commercants/booking-availability";
 import { CreateReservationDto } from "./dto/create-reservation.dto";
 import { RespondReservationDto } from "./dto/respond-reservation.dto";
 import { ConfirmPhotoStepDto } from "./dto/confirm-photo-step.dto";
@@ -88,6 +89,13 @@ export class ReservationsService {
     }
     if (pricingOption.space.commercantProfile.verificationStatus !== VerificationStatus.VERIFIED) {
       throw new BadRequestException("Ce commerce n'est pas encore vérifié.");
+    }
+    // Sans Stripe Connect terminé, on encaisserait l'annonceur sans pouvoir reverser le commerçant.
+    if (!canReceiveBookings(pricingOption.space.commercantProfile)) {
+      throw new BadRequestException({
+        message: "Ce commerce ne peut pas encore recevoir de réservations.",
+        code: MERCHANT_NOT_BOOKABLE_CODE,
+      });
     }
 
     if (pricingOption.durationType === RentalDurationType.LIBRE) {

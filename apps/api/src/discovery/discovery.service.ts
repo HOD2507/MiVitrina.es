@@ -3,6 +3,7 @@ import { Prisma } from "@mivitrina/database";
 import { ReservationStatus, VerificationStatus } from "@mivitrina/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { StorageService } from "../storage/storage.service";
+import { canReceiveBookings } from "../commercants/booking-availability";
 
 /** Statuts qui bloquent réellement le créneau d'un espace — même liste que ReservationsService. */
 const BLOCKING_STATUSES: ReservationStatus[] = [
@@ -36,6 +37,10 @@ export class DiscoveryService {
    * pour éviter de calculer `acos` sur toute la table, puis affinés par
    * la vraie distance dans la sous-requête externe.
    *
+   * Seuls les commerces qui peuvent réellement encaisser (onboarding Stripe
+   * terminé, voir `canReceiveBookings`) sont listés : un commerce qui ne peut
+   * pas recevoir de réservation n'a rien à faire sur la carte.
+   *
    * `LEAST`/`GREATEST` protègent `acos` d'un argument théoriquement hors
    * de [-1, 1] à cause des imprécisions flottantes (deux points quasi
    * identiques peuvent produire 1.0000000000000002).
@@ -63,6 +68,7 @@ export class DiscoveryService {
           )) AS "distanceKm"
         FROM commercant_profiles cp
         WHERE cp."verificationStatus" = ${VerificationStatus.VERIFIED}::"VerificationStatus"
+          AND cp."stripeOnboardingComplete" = true
           AND cp.latitude BETWEEN ${lat - latDelta} AND ${lat + latDelta}
           AND cp.longitude BETWEEN ${lng - lngDelta} AND ${lng + lngDelta}
       ) sub
@@ -130,7 +136,12 @@ export class DiscoveryService {
     );
   }
 
-  /** Fiche publique d'un commerce vérifié, avec tous ses espaces actifs. */
+  /**
+   * Fiche publique d'un commerce vérifié, avec tous ses espaces actifs.
+   * `bookable` = le commerce peut recevoir des réservations (Stripe prêt) : la
+   * fiche reste consultable (lien direct, favori) mais le frontend n'affiche
+   * alors ni bouton "Réserver" ni tarifs cliquables, seulement un avis.
+   */
   async getPublicProfile(id: string) {
     const profile = await this.prisma.commercantProfile.findUnique({
       where: { id },
@@ -182,6 +193,7 @@ export class DiscoveryService {
       country: profile.country,
       latitude: profile.latitude,
       longitude: profile.longitude,
+      bookable: canReceiveBookings(profile),
       showcasePhotos,
       spaces,
     };

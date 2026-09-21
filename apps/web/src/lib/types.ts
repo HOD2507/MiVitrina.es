@@ -123,6 +123,8 @@ export interface PublicCommerceProfile {
   country: Country;
   latitude: number;
   longitude: number;
+  /** false tant que le commerçant n'a pas terminé l'onboarding Stripe : la fiche s'affiche mais on ne peut pas réserver. */
+  bookable: boolean;
   showcasePhotos: Photo[];
   spaces: VitrineSpace[];
 }

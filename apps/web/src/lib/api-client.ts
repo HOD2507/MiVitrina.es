@@ -13,6 +13,8 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    /** Code stable envoyé par l'API pour certaines erreurs, afin de les traduire côté web (le `message` est en français). */
+    public code?: string,
   ) {
     super(message);
     this.name = "ApiError";
@@ -33,8 +35,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const body = isJson ? await res.json().catch(() => null) : null;
 
   if (!res.ok) {
-    const message = (body as { message?: string | string[] } | null)?.message;
-    throw new ApiError(res.status, Array.isArray(message) ? message.join(" ") : (message ?? "Une erreur est survenue."));
+    const { message, code } = (body as { message?: string | string[]; code?: string } | null) ?? {};
+    throw new ApiError(res.status, Array.isArray(message) ? message.join(" ") : (message ?? "Une erreur est survenue."), code);
   }
 
   return body as T;

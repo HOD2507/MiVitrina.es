@@ -129,7 +129,11 @@ export function ReserverClient({
       toast.success(t("bookingSentSuccess"));
       router.push("/mes-reservations");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : tErrors("generic"));
+      if (err instanceof ApiError && err.code === "MERCHANT_NOT_BOOKABLE") {
+        setError(t("merchantNotBookableError"));
+      } else {
+        setError(err instanceof ApiError ? err.message : tErrors("generic"));
+      }
     } finally {
       setSubmitting(false);
     }

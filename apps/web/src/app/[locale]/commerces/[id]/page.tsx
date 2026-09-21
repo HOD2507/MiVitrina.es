@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { MapPin } from "lucide-react";
+import { Info, MapPin } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { serverApiGet } from "@/lib/api-server";
@@ -83,6 +83,18 @@ export default async function CommerceDetailPage({ params }: { params: Promise<{
         <h2 className="mb-4 text-lg font-semibold">
           {t("availableSpacesTitle", { count: profile.spaces.length })}
         </h2>
+        {!profile.bookable && (
+          <div
+            role="status"
+            className="mb-4 flex items-start gap-3 rounded-lg border border-amber-300/60 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
+          >
+            <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <div>
+              <p className="font-semibold">{t("notBookableTitle")}</p>
+              <p className="mt-0.5">{t("notBookableDesc")}</p>
+            </div>
+          </div>
+        )}
         <div className="flex flex-col gap-4">
           {profile.spaces.length === 0 && (
             <Card>
@@ -128,27 +140,29 @@ export default async function CommerceDetailPage({ params }: { params: Promise<{
                       </span>
                       <div className="flex items-center gap-3">
                         <span className="font-semibold">{Number(option.price).toFixed(2)} €</span>
-                        <Button
-                          size="sm"
-                          render={
-                            <Link
-                              href={{
-                                pathname: "/reserver",
-                                query: {
-                                  spaceId: space.id,
-                                  pricingOptionId: option.id,
-                                  businessName: profile.businessName,
-                                  spaceName: space.name,
-                                  durationType: option.durationType,
-                                  price: option.price,
-                                  minDurationDays: option.minDurationDays ?? undefined,
-                                },
-                              }}
-                            />
-                          }
-                        >
-                          {t("bookCta")}
-                        </Button>
+                        {profile.bookable && (
+                          <Button
+                            size="sm"
+                            render={
+                              <Link
+                                href={{
+                                  pathname: "/reserver",
+                                  query: {
+                                    spaceId: space.id,
+                                    pricingOptionId: option.id,
+                                    businessName: profile.businessName,
+                                    spaceName: space.name,
+                                    durationType: option.durationType,
+                                    price: option.price,
+                                    minDurationDays: option.minDurationDays ?? undefined,
+                                  },
+                                }}
+                              />
+                            }
+                          >
+                            {t("bookCta")}
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}

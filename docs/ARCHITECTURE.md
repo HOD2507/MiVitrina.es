@@ -221,6 +221,17 @@ réservation → transaction avec calcul de commission depuis `PlatformSettings`
   frais) et `GET /commercants/me/stripe/status` (relit l'état réel
   auprès de Stripe et resynchronise `stripeOnboardingComplete` en base —
   utile juste après le retour d'onboarding, sans attendre le webhook).
+- **Un commerce sans onboarding Stripe terminé ne peut pas recevoir de réservations**
+  (règle unique : `canReceiveBookings`, `commercants/booking-availability.ts`,
+  basée sur `stripeOnboardingComplete` en base — pas d'appel Stripe à chaque
+  recherche ; le champ est tenu à jour par le webhook `account.updated` et par
+  `GET /commercants/me/stripe/status`). Effets : `GET /discovery/search` ne
+  liste pas ces commerces ; `GET /discovery/commercants/:id` reste consultable
+  mais renvoie `bookable: false` (le web affiche un avis et retire les boutons
+  "Réserver") ; `ReservationsService.create` refuse avec le code
+  `MERCHANT_NOT_BOOKABLE` (le web le traduit). Les réservations déjà payées
+  avant que la règle existe ne sont pas touchées : `respond` → `approve` reste
+  bloqué tant que l'onboarding n'est pas fini, et annuler/refuser rembourse.
 - `ReservationsService` : `createCheckoutSession` (vérifie propriété +
   `PENDING_VALIDATION` + pas déjà payée) ; `respond()` en `approve` exige
   désormais `transaction.status === PAID` ET un onboarding Stripe

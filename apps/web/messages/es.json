@@ -259,8 +259,8 @@
     "paymentsTitle": "Pagos",
     "stripeConnectedDesc": "Tu cuenta de Stripe está conectada, ya puedes recibir transferencias.",
     "connected": "Conectado",
-    "stripeIncompleteDesc": "Tu configuración de Stripe no está terminada — no podrás aceptar reservas de pago hasta completarla.",
-    "stripeMissingDesc": "Conecta una cuenta de Stripe para recibir los pagos de tus reservas. Sin esto, no podrás aceptar ninguna solicitud.",
+    "stripeIncompleteDesc": "Tu configuración de Stripe no está terminada. Mientras no la completes, tu comercio no aparece en las búsquedas y no recibirás solicitudes nuevas.",
+    "stripeMissingDesc": "Conecta una cuenta de Stripe para cobrar tus reservas. Mientras no lo hagas, tu comercio no aparece en las búsquedas y no recibirás solicitudes nuevas.",
     "stripeFinishSetup": "Terminar la configuración de Stripe",
     "stripeConnect": "Conectar Stripe",
     "paymentReceivedToast": "¡Pago recibido! El comercio va a revisar tu solicitud.",
@@ -340,6 +340,8 @@
     "availableSpacesTitle": "Espacios disponibles ({count})",
     "noSpacesPublished": "Este comercio aún no ha publicado ningún espacio disponible.",
     "noPricingPublished": "Ningún precio publicado para este espacio.",
+    "notBookableTitle": "Este comercio aún no puede recibir reservas",
+    "notBookableDesc": "Todavía no ha terminado de configurar los cobros. Puedes ver sus espacios, pero no reservarlos hasta que lo complete.",
     "bookCta": "Reservar",
     "backToResults": "Volver a resultados",
     "contactCommerce": "Contactar con este comercio",
@@ -428,6 +430,7 @@
     "secureNote": "Pagarás de forma segura con Stripe en el paso siguiente, desde «Mis reservas».",
     "refundNote": "Si el comerciante rechaza tu solicitud, te reembolsamos el importe completo automáticamente.",
     "payPanelTitle": "Pago pendiente",
+    "merchantNotBookableError": "Este comercio aún no puede recibir reservas. Inténtalo de nuevo más adelante o elige otro comercio.",
     "payPanelDesc": "Pago seguro con Stripe. Si el comerciante rechaza tu solicitud, te reembolsamos automáticamente."
   },
   "Ajustes": {

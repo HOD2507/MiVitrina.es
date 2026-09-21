@@ -259,8 +259,8 @@
     "paymentsTitle": "Payments",
     "stripeConnectedDesc": "Your Stripe account is connected, you can now receive transfers.",
     "connected": "Connected",
-    "stripeIncompleteDesc": "Your Stripe setup isn't finished — you won't be able to accept paid bookings until it's complete.",
-    "stripeMissingDesc": "Connect a Stripe account to receive payments for your bookings. Without this, you won't be able to accept any request.",
+    "stripeIncompleteDesc": "Your Stripe setup isn't finished. Until you complete it, your shop won't appear in search results and you won't receive new requests.",
+    "stripeMissingDesc": "Connect a Stripe account to get paid for your bookings. Until you do, your shop won't appear in search results and you won't receive new requests.",
     "stripeFinishSetup": "Finish Stripe setup",
     "stripeConnect": "Connect Stripe",
     "paymentReceivedToast": "Payment received! The shop will review your request.",
@@ -340,6 +340,8 @@
     "availableSpacesTitle": "Available spaces ({count})",
     "noSpacesPublished": "This shop hasn't published any available space yet.",
     "noPricingPublished": "No rate published for this space yet.",
+    "notBookableTitle": "This shop can't take bookings yet",
+    "notBookableDesc": "It hasn't finished setting up payments. You can browse its spaces, but you can't book them until it does.",
     "bookCta": "Book",
     "backToResults": "Back to results",
     "contactCommerce": "Contact this shop",
@@ -428,6 +430,7 @@
     "secureNote": "You'll pay securely with Stripe in the next step, from \"My bookings\".",
     "refundNote": "If the shop owner declines your request, you are automatically refunded in full.",
     "payPanelTitle": "Payment pending",
+    "merchantNotBookableError": "This shop can't take bookings yet. Try again later or choose another shop.",
     "payPanelDesc": "Secure payment with Stripe. If the shop owner declines your request, you are refunded automatically."
   },
   "Ajustes": {
