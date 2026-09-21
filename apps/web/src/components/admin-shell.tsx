@@ -2,12 +2,23 @@
 
 import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import { LayoutDashboard, Users, CalendarCheck, ShieldCheck, ShieldAlert, Scale, ShieldUser, ScrollText } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  CalendarCheck,
+  ShieldCheck,
+  ShieldAlert,
+  Scale,
+  ShieldUser,
+  ScrollText,
+  LifeBuoy,
+} from "lucide-react";
 import { AdminPermission, hasAdminPermission } from "@mivitrina/shared";
 import type { AuthUser } from "@/lib/types";
 import { LogoutButton } from "@/components/logout-button";
 import { Badge } from "@/components/ui/badge";
 import { SidebarShell, type NavItem } from "@/components/sidebar-shell";
+import { useCount } from "@/lib/use-count";
 
 /**
  * Même mécanique de sidebar que le panel commerçant/annonceur (voir AppShell/SidebarShell) — un seul système, pas deux styles différents.
@@ -16,9 +27,21 @@ import { SidebarShell, type NavItem } from "@/components/sidebar-shell";
  * l'accès réel reste imposé côté backend par AdminPermissionGuard, même si
  * un lien caché ici était atteint directement par URL.
  */
-export function AdminShell({ user, children }: { user: AuthUser; children: ReactNode }) {
+export function AdminShell({
+  user,
+  supportAwaiting,
+  children,
+}: {
+  user: AuthUser;
+  /** Tickets de soporte vivos que esperan respuesta del equipo (0 si este admin no tiene acceso a soporte). */
+  supportAwaiting: number;
+  children: ReactNode;
+}) {
   const t = useTranslations("Admin.nav");
   const level = user.adminLevel ?? null;
+  const canSupport = hasAdminPermission(level, AdminPermission.SUPPORT_MANAGE);
+  // Solo se consulta si el admin puede abrir la bandeja (la API respondería 403 al resto).
+  const awaiting = useCount(canSupport ? "/admin/support/awaiting-count" : null, supportAwaiting);
 
   const nav: NavItem[] = [
     { href: "/admin", label: t("overview"), icon: LayoutDashboard },
@@ -33,6 +56,17 @@ export function AdminShell({ user, children }: { user: AuthUser; children: React
       : []),
     ...(hasAdminPermission(level, AdminPermission.FINANCE_VIEW)
       ? [{ href: "/admin/disputes", label: t("disputes"), icon: ShieldAlert }]
+      : []),
+    ...(canSupport
+      ? [
+          {
+            href: "/admin/support",
+            label: t("support"),
+            icon: LifeBuoy,
+            badge: awaiting,
+            badgeAria: t("supportAwaitingAria", { count: awaiting }),
+          },
+        ]
       : []),
     ...(hasAdminPermission(level, AdminPermission.SETTINGS_MANAGE)
       ? [{ href: "/admin/settings", label: t("platformRules"), icon: Scale }]

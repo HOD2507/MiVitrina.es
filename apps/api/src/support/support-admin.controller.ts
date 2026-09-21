@@ -20,6 +20,11 @@ export class SupportAdminController {
     return this.support.list(query);
   }
 
+  @Get("awaiting-count")
+  awaitingCount() {
+    return this.support.awaitingCount();
+  }
+
   @Get("tickets/:id")
   get(@Param("id") id: string) {
     return this.support.getOne(id);

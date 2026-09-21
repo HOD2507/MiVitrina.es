@@ -13,6 +13,10 @@ export interface NavItem {
   href: string;
   label: string;
   icon: LucideIcon;
+  /** Contador pendiente (p. ej. respuestas de soporte sin leer): se muestra como pastilla si es > 0. */
+  badge?: number;
+  /** Texto para lectores de pantalla de la pastilla (el número solo no dice qué cuenta). */
+  badgeAria?: string;
 }
 
 /**
@@ -35,6 +39,8 @@ export function SidebarShell({
   const t = useTranslations("AppShell");
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  // En móvil el menú está plegado: un punto sobre el icono avisa de que hay algo pendiente dentro.
+  const hasPending = nav.some((item) => (item.badge ?? 0) > 0);
 
   function isActive(href: string) {
     return href === "/dashboard" || href === "/admin" ? pathname === href : pathname.startsWith(href);
@@ -77,6 +83,14 @@ export function SidebarShell({
             )}
             <item.icon className="relative z-10 size-4.5" />
             <span className="relative z-10">{item.label}</span>
+            {item.badge ? (
+              <span
+                aria-label={item.badgeAria}
+                className="relative z-10 ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground"
+              >
+                {item.badge > 99 ? "99+" : item.badge}
+              </span>
+            ) : null}
           </Link>
         );
       })}
@@ -126,9 +140,10 @@ export function SidebarShell({
             type="button"
             aria-label={t("openMenuAria")}
             onClick={() => setMobileOpen(true)}
-            className="flex size-11 items-center justify-center rounded-lg text-foreground hover:bg-muted"
+            className="relative flex size-11 items-center justify-center rounded-lg text-foreground hover:bg-muted"
           >
             <Menu className="size-5" />
+            {hasPending && <span aria-hidden className="absolute top-2.5 right-2.5 size-2.5 rounded-full bg-primary ring-2 ring-card" />}
           </button>
         </header>
 

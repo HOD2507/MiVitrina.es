@@ -76,6 +76,19 @@ describe("SupportAdminService", () => {
     });
   });
 
+  describe("indicador del menú", () => {
+    it("cuenta solo tickets vivos que esperan respuesta del equipo", async () => {
+      const { service, prisma } = build();
+      (prisma.supportTicket as unknown as { count: jest.Mock }).count = jest.fn().mockResolvedValue(4);
+
+      await expect(service.awaitingCount()).resolves.toEqual({ count: 4 });
+
+      expect((prisma.supportTicket as unknown as { count: jest.Mock }).count).toHaveBeenCalledWith({
+        where: { status: { in: ["OPEN", "IN_PROGRESS"] }, lastMessageStaff: false },
+      });
+    });
+  });
+
   describe("responder", () => {
     it("respuesta pública: guarda, pasa OPEN → IN_PROGRESS, marca respuesta del equipo y avisa por email en el idioma del usuario", async () => {
       const { service, prisma, mail } = build();

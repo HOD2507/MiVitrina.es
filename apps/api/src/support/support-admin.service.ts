@@ -111,6 +111,14 @@ export class SupportAdminService {
     };
   }
 
+  /** Tickets vivos cuyo último mensaje es del usuario: lo que el equipo aún tiene que contestar (indicador del menú). */
+  async awaitingCount() {
+    const count = await this.prisma.supportTicket.count({
+      where: { status: { in: ACTIVE_STATUSES }, lastMessageStaff: false },
+    });
+    return { count };
+  }
+
   async getOne(ticketId: string) {
     const ticket = await this.prisma.supportTicket.findUnique({
       where: { id: ticketId },

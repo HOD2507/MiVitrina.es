@@ -710,3 +710,32 @@ d'application" ci-dessus (sidebar, tableaux de bord chiffrés).
     Confirme que le sweep par accents ne peut pas être exhaustif —
     reste un risque résiduel pour tout mot français sans caractère
     accentué.
+
+## Soporte al cliente (tickets)
+
+Canal usuario ↔ equipo para consultas generales, problemas técnicos y dudas de pago,
+**separado del chat** anunciante-comerciante (que trata de una reserva concreta entre dos
+partes). Tablas propias (`SupportTicket`, `SupportMessage`) en vez de reutilizar
+`ChatThread`, que exige comerciante + anunciante y es único por pareja.
+
+- **Modelo**: ticket con número legible, estado (OPEN → IN_PROGRESS → RESOLVED → CLOSED),
+  categoría (Pago, Reserva, Cuenta, Técnico, Otro) y prioridad (Normal/Urgente, solo la fija el
+  equipo). Un mensaje puede ser una **nota interna** (`isInternal`): nunca sale hacia el usuario
+  (las consultas de `SupportService` filtran siempre `isInternal: false` y solo seleccionan
+  `content`, `fromStaff`, `createdAt`).
+- **Usuario** (`/soporte`, `/soporte/[id]`; API `/support/*`): abrir solicitud, ver las suyas y
+  responder. Responder a un ticket Resuelto lo reabre; uno Cerrado no admite respuestas
+  (`TICKET_CLOSED`). Tope de 5 tickets activos por usuario. Sin la moderación anti-contacto del
+  chat: en soporte hay que poder dar email o teléfono.
+- **Equipo** (`/admin/support`; API `/admin/support/*`, permiso `support.manage` = SUPERADMIN y
+  SUPPORT): bandeja con filtros (estado, categoría, urgentes, "espera respuesta", búsqueda por
+  #número/asunto/email), detalle con datos de la cuenta y sus últimas reservas (enlace a la ficha
+  de usuario, que muestra todas), respuesta, nota interna y cambio de estado/prioridad. Los
+  cambios de estado y prioridad se registran en la auditoría (`support.ticket_update`).
+- **Avisos**: email al usuario cuando el equipo responde (en su idioma, con el texto escapado y
+  recortado; un fallo de envío no pierde la respuesta) y un indicador de "sin leer" en el menú
+  (`/support/unread-count`, refresco cada 30 s, al cambiar de página y tras leer/responder). La
+  tabla `Notification` sigue sin usarse: nada la escribe ni la lee. El menú de admin muestra los
+  tickets que esperan respuesta (`/admin/support/awaiting-count`).
+- **Sin websockets**: el hilo se refresca por polling (8 s usuario, 10 s equipo) solo con la
+  pestaña visible, para no marcar como leído lo que nadie ha visto.

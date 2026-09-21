@@ -27,5 +27,12 @@ export default async function AppGroupLayout({ children }: { children: ReactNode
     redirect({ href: "/admin", locale });
   }
 
-  return <AppShell user={authedUser}>{children}</AppShell>;
+  // Contador del menú "Soporte" (respuestas sin leer). Un fallo aquí no debe romper el panel: se muestra 0.
+  const { data: unread } = await serverApiGet<{ count: number }>("/support/unread-count");
+
+  return (
+    <AppShell user={authedUser} supportUnread={unread?.count ?? 0}>
+      {children}
+    </AppShell>
+  );
 }

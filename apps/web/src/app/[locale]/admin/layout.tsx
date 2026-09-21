@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { getLocale } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
-import { UserRole } from "@mivitrina/shared";
+import { AdminPermission, hasAdminPermission, UserRole } from "@mivitrina/shared";
 import { serverApiGet } from "@/lib/api-server";
 import type { AuthUser } from "@/lib/types";
 import { AdminShell } from "@/components/admin-shell";
@@ -21,5 +21,14 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     redirect({ href: "/dashboard", locale });
   }
 
-  return <AdminShell user={authedUser}>{children}</AdminShell>;
+  // Indicador del menú "Soporte": solo para quien tiene acceso a la bandeja (SUPERADMIN y SUPPORT).
+  const awaiting = hasAdminPermission(authedUser.adminLevel, AdminPermission.SUPPORT_MANAGE)
+    ? (await serverApiGet<{ count: number }>("/admin/support/awaiting-count")).data?.count ?? 0
+    : 0;
+
+  return (
+    <AdminShell user={authedUser} supportAwaiting={awaiting}>
+      {children}
+    </AdminShell>
+  );
 }

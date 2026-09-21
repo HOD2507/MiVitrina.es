@@ -11,6 +11,9 @@ import type {
   TransactionStatus,
   DisputeStatus,
   AdminLevel,
+  SupportTicketStatus,
+  SupportTicketCategory,
+  SupportTicketPriority,
 } from "@mivitrina/shared";
 
 /** Reflète la sortie de AuthService.toSafeUser côté API (sans passwordHash/tokenVersion). */
@@ -359,4 +362,96 @@ export interface AnnonceurStats {
   pendingRequestsCount: number;
   completedReservationsCount: number;
   totalSpent: number;
+}
+
+// ---------------------------------------------------------------------------
+// Soporte (tickets usuario <-> equipo)
+// ---------------------------------------------------------------------------
+
+/** Resumen de un ticket para el propio usuario (GET /support/tickets). Sin prioridad: la fija el equipo. */
+export interface SupportTicketSummary {
+  id: string;
+  number: number;
+  subject: string;
+  category: SupportTicketCategory;
+  status: SupportTicketStatus;
+  createdAt: string;
+  lastMessageAt: string;
+  /** El equipo respondió después de la última vez que el usuario abrió el ticket. */
+  unread: boolean;
+}
+
+export interface SupportThreadMessage {
+  id: string;
+  content: string;
+  fromStaff: boolean;
+  createdAt: string;
+}
+
+/** GET /support/tickets/:id — hilo visible (sin notas internas). */
+export interface SupportTicketDetail extends SupportTicketSummary {
+  messages: SupportThreadMessage[];
+}
+
+/** GET /admin/support/tickets. */
+export interface AdminSupportTicketListItem {
+  id: string;
+  number: number;
+  subject: string;
+  category: SupportTicketCategory;
+  status: SupportTicketStatus;
+  priority: SupportTicketPriority;
+  createdAt: string;
+  lastMessageAt: string;
+  /** El último mensaje es del usuario y el ticket sigue vivo. */
+  awaitingStaff: boolean;
+  user: { email: string; role: UserRole; displayName: string };
+}
+
+export interface AdminSupportInbox {
+  counts: Record<SupportTicketStatus, number>;
+  tickets: AdminSupportTicketListItem[];
+}
+
+export interface AdminSupportMessage extends SupportThreadMessage {
+  isInternal: boolean;
+  /** Miembro del equipo que escribió (null si es del usuario o su cuenta se eliminó). */
+  staffAuthor: string | null;
+}
+
+/** GET /admin/support/tickets/:id. */
+export interface AdminSupportTicketDetail {
+  id: string;
+  number: number;
+  subject: string;
+  category: SupportTicketCategory;
+  status: SupportTicketStatus;
+  priority: SupportTicketPriority;
+  createdAt: string;
+  lastMessageAt: string;
+  resolvedAt: string | null;
+  closedAt: string | null;
+  messages: AdminSupportMessage[];
+  user: {
+    id: string;
+    email: string;
+    name: string | null;
+    role: UserRole;
+    locale: "ES" | "EN";
+    suspended: boolean;
+    createdAt: string;
+    displayName: string;
+    verificationStatus: string | null;
+  };
+  reservations: {
+    id: string;
+    status: string;
+    startDate: string;
+    endDate: string;
+    createdAt: string;
+    spaceName: string;
+    businessName: string;
+    amount: number | null;
+    paymentStatus: string | null;
+  }[];
 }
