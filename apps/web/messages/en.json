@@ -376,6 +376,7 @@
     "toastApproved": "Booking confirmed.",
     "toastRejected": "Request rejected.",
     "toastCancelled": "Booking cancelled.",
+    "toastAlreadyPaid": "This payment was already received: your booking has been updated.",
     "toastPaymentError": "Couldn't start the payment.",
     "toastChatError": "Couldn't open the conversation.",
     "bookTitle": "Book a space",

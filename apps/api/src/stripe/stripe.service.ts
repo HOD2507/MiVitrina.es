@@ -93,6 +93,16 @@ export class StripeService {
     return session;
   }
 
+  /** Relit une session (état `open|complete|expired`, `payment_status`, `url`) — source de vérité si le webhook n'est pas arrivé. */
+  async retrieveCheckoutSession(sessionId: string) {
+    return this.client.checkout.sessions.retrieve(sessionId);
+  }
+
+  /** Invalide une session encore ouverte pour qu'elle ne puisse plus être payée (annulation, montant changé). */
+  async expireCheckoutSession(sessionId: string) {
+    return this.client.checkout.sessions.expire(sessionId);
+  }
+
   /** Virement vers le commerçant — uniquement la part hors commission. */
   async createTransfer(params: { amountCents: number; destinationAccountId: string; reservationId: string }) {
     return this.client.transfers.create({

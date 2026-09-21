@@ -84,8 +84,16 @@ export function ReservationCard({ reservation, viewer, onUpdated }: ReservationC
   async function handlePay() {
     setPaying(true);
     try {
-      const { url } = await api.post<{ url: string }>(`/reservations/${reservation.id}/checkout`);
-      window.location.href = url;
+      // `paid`: Stripe ya cobró esta reserva pero el aviso (webhook) aún no había llegado;
+      // el servidor lo concilia y no hay nada más que pagar.
+      const result = await api.post<{ url: string } | { paid: true }>(`/reservations/${reservation.id}/checkout`);
+      if ("paid" in result) {
+        toast.success(t("toastAlreadyPaid"));
+        setPaying(false);
+        router.refresh();
+        return;
+      }
+      window.location.href = result.url;
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : t("toastPaymentError"));
       setPaying(false);

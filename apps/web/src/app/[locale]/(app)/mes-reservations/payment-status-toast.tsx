@@ -19,6 +19,9 @@ export function PaymentStatusToast({ payment }: { payment?: string }) {
   useEffect(() => {
     if (payment === "success") {
       toast.success(t("paymentReceivedToast"));
+      // Stripe avisa al servidor por webhook, casi a la vez que redirige aquí: sin este
+      // refresco la tarjeta podría seguir mostrando "Pago pendiente" con la página ya cargada.
+      setTimeout(() => router.refresh(), 2000);
     } else if (payment === "cancelled") {
       toast.info(t("paymentCancelledToast"));
     } else {

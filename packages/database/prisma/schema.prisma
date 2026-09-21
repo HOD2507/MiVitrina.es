@@ -418,6 +418,11 @@ model Transaction {
 
   stripePaymentIntentId String? @unique
   stripeTransferId      String?
+  /// Dernière session Stripe Checkout créée pour régler cette transaction (cs_...). Sert à
+  /// (1) ne pas en ouvrir une seconde tant que la première est encore valide (double paiement),
+  /// (2) réconcilier un paiement dont le webhook n'est pas arrivé, (3) diagnostiquer sans passer
+  /// par le dashboard Stripe. Remplacée si la session expire et qu'on en recrée une.
+  stripeCheckoutSessionId String? @unique
 
   /// Montant total payé par l'annonceur.
   amount Decimal @db.Decimal(10, 2)

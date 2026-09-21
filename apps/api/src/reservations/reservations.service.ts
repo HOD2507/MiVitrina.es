@@ -1,4 +1,11 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from "@nestjs/common";
 import {
   ModerationStatus,
   RentalDurationType,
@@ -25,8 +32,13 @@ function toCents(amount: { toString(): string } | number): number {
   return Math.round(Number(amount) * 100);
 }
 
+/** Résultat de `markPaid` — le webhook le journalise tel quel. */
+export type MarkPaidOutcome = "PAID" | "ALREADY_PAID" | "NOT_FOUND" | "UNEXPECTED_STATUS";
+
 @Injectable()
 export class ReservationsService {
+  private readonly logger = new Logger(ReservationsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
@@ -197,31 +209,94 @@ export class ReservationsService {
       throw new BadRequestException("Cette réservation est déjà payée.");
     }
 
-    // La page Stripe est hébergée par Stripe (on n'en contrôle pas la mise en
-    // page), mais on maîtrise ce qu'elle dit : nom du produit, détail de la
-    // réservation et message de réassurance, dans la langue de l'annonceur.
-    const isEnglish = reservation.annonceurProfile.user.locale === "EN";
-    const dateFmt = new Intl.DateTimeFormat(isEnglish ? "en-GB" : "es-ES", { dateStyle: "medium", timeZone: "UTC" });
-    const businessName = reservation.space.commercantProfile.businessName;
-    const period = `${dateFmt.format(reservation.startDate)} → ${dateFmt.format(reservation.endDate)}`;
+    // Un seul "Pagar" à la fois par réservation : sans verrou, deux clics rapprochés
+    // (ou deux onglets) créeraient deux sessions Stripe payables. Le verrou de ligne
+    // sérialise les appels ; le second voit la session du premier et la réutilise.
+    return this.prisma.$transaction(
+      async (tx) => {
+        await tx.$queryRaw`SELECT id FROM transactions WHERE "reservationId" = ${reservationId} FOR UPDATE`;
+        const current = await tx.transaction.findUniqueOrThrow({ where: { reservationId } });
+        if (current.status === TransactionStatus.PAID) {
+          throw new BadRequestException("Cette réservation est déjà payée.");
+        }
 
-    const session = await this.stripe.createCheckoutSession({
-      amountCents: toCents(reservation.transaction!.amount),
-      reservationId,
-      customerEmail: reservation.annonceurProfile.user.email,
-      successUrl: `${webAppUrl}/mes-reservations?payment=success`,
-      cancelUrl: `${webAppUrl}/mes-reservations?payment=cancelled`,
-      locale: isEnglish ? "en" : "es",
-      productName: isEnglish
-        ? `Shop-window ad space — ${businessName}`
-        : `Espacio publicitario en escaparate — ${businessName}`,
-      productDescription: `${reservation.space.name} · ${period}`,
-      submitMessage: isEnglish
-        ? "If the shop owner declines your request, you are automatically refunded in full."
-        : "Si el comerciante rechaza tu solicitud, te reembolsamos el importe completo automáticamente.",
-    });
+        const amountCents = toCents(current.amount);
 
-    return { url: session.url };
+        if (current.stripeCheckoutSessionId) {
+          const existing = await this.stripe.retrieveCheckoutSession(current.stripeCheckoutSessionId);
+
+          if (existing.payment_status === "paid") {
+            // Payée chez Stripe mais le webhook n'est pas (encore) passé : on réconcilie ici
+            // plutôt que d'ouvrir une seconde session et de faire payer deux fois.
+            const paymentIntentId =
+              typeof existing.payment_intent === "string" ? existing.payment_intent : existing.payment_intent?.id;
+            if (paymentIntentId) {
+              const outcome = await this.markPaid(reservationId, paymentIntentId, existing.id, tx);
+              this.logger.log(`Checkout ${existing.id}: payé côté Stripe, réconcilié sans webhook (${outcome}).`);
+              return { paid: true as const };
+            }
+          } else if (existing.status === "open" && existing.url) {
+            if (existing.amount_total === amountCents) {
+              this.logger.log(`Checkout ${existing.id}: session encore ouverte, réutilisée (réservation ${reservationId}).`);
+              return { url: existing.url };
+            }
+            // Le montant a changé depuis : on invalide l'ancienne pour qu'elle ne soit pas payée au mauvais prix.
+            await this.stripe.expireCheckoutSession(existing.id);
+            this.logger.warn(`Checkout ${existing.id}: montant obsolète, session expirée et recréée.`);
+          } else if (existing.status === "complete") {
+            // Formulaire soumis mais paiement pas encore confirmé (moyen de paiement asynchrone).
+            throw new ConflictException("Le paiement est en cours de traitement.");
+          }
+          // status "expired" : on repart sur une nouvelle session ci-dessous.
+        }
+
+        // La page Stripe est hébergée par Stripe (on n'en contrôle pas la mise en
+        // page), mais on maîtrise ce qu'elle dit : nom du produit, détail de la
+        // réservation et message de réassurance, dans la langue de l'annonceur.
+        const isEnglish = reservation.annonceurProfile.user.locale === "EN";
+        const dateFmt = new Intl.DateTimeFormat(isEnglish ? "en-GB" : "es-ES", { dateStyle: "medium", timeZone: "UTC" });
+        const businessName = reservation.space.commercantProfile.businessName;
+        const period = `${dateFmt.format(reservation.startDate)} → ${dateFmt.format(reservation.endDate)}`;
+
+        const session = await this.stripe.createCheckoutSession({
+          amountCents,
+          reservationId,
+          customerEmail: reservation.annonceurProfile.user.email,
+          successUrl: `${webAppUrl}/mes-reservations?payment=success`,
+          cancelUrl: `${webAppUrl}/mes-reservations?payment=cancelled`,
+          locale: isEnglish ? "en" : "es",
+          productName: isEnglish
+            ? `Shop-window ad space — ${businessName}`
+            : `Espacio publicitario en escaparate — ${businessName}`,
+          productDescription: `${reservation.space.name} · ${period}`,
+          submitMessage: isEnglish
+            ? "If the shop owner declines your request, you are automatically refunded in full."
+            : "Si el comerciante rechaza tu solicitud, te reembolsamos el importe completo automáticamente.",
+        });
+
+        await tx.transaction.update({ where: { reservationId }, data: { stripeCheckoutSessionId: session.id } });
+        this.logger.log(`Checkout ${session.id}: sesión creada (réservation ${reservationId}, ${amountCents} cts).`);
+        return { url: session.url! };
+      },
+      // Le verrou reste tenu pendant les appels à Stripe (quelques centaines de ms).
+      { timeout: 20_000, maxWait: 5_000 },
+    );
+  }
+
+  /**
+   * Annulation/refus d'une demande non payée : invalide la session Checkout encore
+   * ouverte, sinon une page Stripe restée ouverte pourrait être payée après coup.
+   * Best effort — si Stripe refuse (déjà expirée ou payée), on journalise seulement ;
+   * le cas "payée" est signalé ensuite par le webhook (UNEXPECTED_STATUS).
+   */
+  private async expireOpenCheckout(transaction: { stripeCheckoutSessionId: string | null }) {
+    const sessionId = transaction.stripeCheckoutSessionId;
+    if (!sessionId) return;
+    try {
+      await this.stripe.expireCheckoutSession(sessionId);
+    } catch (err) {
+      this.logger.warn(`Checkout ${sessionId}: expiration impossible (${err instanceof Error ? err.message : err}).`);
+    }
   }
 
   async cancel(userId: string, reservationId: string) {
@@ -234,6 +309,7 @@ export class ReservationsService {
     if (wasPaid && reservation.transaction!.stripePaymentIntentId) {
       await this.stripe.refund(reservation.transaction!.stripePaymentIntentId);
     }
+    if (!wasPaid) await this.expireOpenCheckout(reservation.transaction!);
 
     return this.prisma.reservation.update({
       where: { id: reservationId },
@@ -354,6 +430,7 @@ export class ReservationsService {
     if (wasPaid && reservation.transaction!.stripePaymentIntentId) {
       await this.stripe.refund(reservation.transaction!.stripePaymentIntentId);
     }
+    if (!wasPaid) await this.expireOpenCheckout(reservation.transaction!);
 
     return this.prisma.reservation.update({
       where: { id: reservationId },
@@ -378,12 +455,45 @@ export class ReservationsService {
     });
   }
 
-  /** Appelé par le webhook Stripe `checkout.session.completed`. */
-  async markPaid(reservationId: string, paymentIntentId: string) {
-    await this.prisma.transaction.update({
-      where: { reservationId },
-      data: { status: TransactionStatus.PAID, paidAt: new Date(), stripePaymentIntentId: paymentIntentId },
+  /**
+   * Appelé par le webhook Stripe `checkout.session.completed` (et par la
+   * réconciliation de `createCheckoutSession`). Idempotent : Stripe rejoue
+   * les événements, un rejeu ne doit ni écraser `paidAt` ni échouer.
+   * Seule une transaction PENDING passe à PAID (`updateMany` conditionnel =
+   * atomique) ; une transaction déjà annulée/remboursée n'est PAS rouverte —
+   * l'appelant le journalise pour qu'un remboursement manuel soit décidé.
+   */
+  async markPaid(
+    reservationId: string,
+    paymentIntentId: string,
+    checkoutSessionId?: string,
+    /** Client à utiliser : la transaction en cours si l'appelant tient déjà le verrou de ligne (sinon on se bloquerait soi-même). */
+    db: Pick<PrismaService, "transaction"> = this.prisma,
+  ): Promise<MarkPaidOutcome> {
+    const { count } = await db.transaction.updateMany({
+      where: { reservationId, status: TransactionStatus.PENDING },
+      data: {
+        status: TransactionStatus.PAID,
+        paidAt: new Date(),
+        stripePaymentIntentId: paymentIntentId,
+        ...(checkoutSessionId ? { stripeCheckoutSessionId: checkoutSessionId } : {}),
+      },
     });
+    if (count > 0) return "PAID";
+
+    const existing = await db.transaction.findUnique({ where: { reservationId } });
+    if (!existing) return "NOT_FOUND";
+    if (existing.status === TransactionStatus.PAID) {
+      // Rejeu : on complète seulement ce qui manque (transactions payées avant ce champ).
+      if (checkoutSessionId && !existing.stripeCheckoutSessionId) {
+        await db.transaction.update({
+          where: { reservationId },
+          data: { stripeCheckoutSessionId: checkoutSessionId },
+        });
+      }
+      return "ALREADY_PAID";
+    }
+    return "UNEXPECTED_STATUS";
   }
 
   /**
