@@ -756,11 +756,14 @@
       "targetTypeDispute": "Dispute",
       "targetTypeCommercantProfile": "Merchant",
       "targetTypePlatformSettings": "Platform rules",
+      "targetTypeSupportTicket": "Support request",
       "level": {
         "SUPERADMIN": "Superadmin",
         "SUPPORT": "Support",
         "FINANCE": "Finance"
       },
+      "ticketStatus": {"OPEN": "Open", "IN_PROGRESS": "In progress", "RESOLVED": "Resolved", "CLOSED": "Closed"},
+      "ticketPriority": {"NORMAL": "Normal", "URGENT": "Urgent"},
       "actions": {
         "user": {
           "suspend": "User suspended",
@@ -783,6 +786,9 @@
         },
         "settings": {
           "update": "Platform rules changed"
+        },
+        "support": {
+          "ticket_update": "Support request change"
         },
         "poster": {
           "approve": "Poster approved",

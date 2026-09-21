@@ -756,11 +756,14 @@
       "targetTypeDispute": "Litigio",
       "targetTypeCommercantProfile": "Comerciante",
       "targetTypePlatformSettings": "Reglas de la plataforma",
+      "targetTypeSupportTicket": "Solicitud de soporte",
       "level": {
         "SUPERADMIN": "Superadmin",
         "SUPPORT": "Soporte",
         "FINANCE": "Finanzas"
       },
+      "ticketStatus": {"OPEN": "Abierto", "IN_PROGRESS": "En curso", "RESOLVED": "Resuelto", "CLOSED": "Cerrado"},
+      "ticketPriority": {"NORMAL": "Normal", "URGENT": "Urgente"},
       "actions": {
         "user": {
           "suspend": "Suspensión de usuario",
@@ -783,6 +786,9 @@
         },
         "settings": {
           "update": "Cambio de reglas de la plataforma"
+        },
+        "support": {
+          "ticket_update": "Cambio en solicitud de soporte"
         },
         "poster": {
           "approve": "Aprobación de afiche",

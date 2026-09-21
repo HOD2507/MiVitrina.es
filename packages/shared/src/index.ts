@@ -97,6 +97,8 @@ export const AdminPermission = {
   FINANCE_REFUND: "finance.refund",
   SETTINGS_MANAGE: "settings.manage",
   ADMINS_MANAGE: "admins.manage",
+  /** Bandeja de soporte : ver los tickets, responder, cambiar estado/prioridad, notas internas. */
+  SUPPORT_MANAGE: "support.manage",
 } as const;
 export type AdminPermission = (typeof AdminPermission)[keyof typeof AdminPermission];
 
@@ -104,7 +106,12 @@ export const ADMIN_PERMISSIONS: Record<AdminLevel, AdminPermission[]> = {
   [AdminLevel.SUPERADMIN]: Object.values(AdminPermission),
   // "Soporte/Moderador" : voir/suspendre/vérifier les comptes — jamais les
   // supprimer (irréversible) ni toucher à l'argent ou à la gestion d'admins.
-  [AdminLevel.SUPPORT]: [AdminPermission.USERS_VIEW, AdminPermission.USERS_SUSPEND, AdminPermission.USERS_VERIFY],
+  [AdminLevel.SUPPORT]: [
+    AdminPermission.USERS_VIEW,
+    AdminPermission.USERS_SUSPEND,
+    AdminPermission.USERS_VERIFY,
+    AdminPermission.SUPPORT_MANAGE,
+  ],
   // "Finanzas" : transactions, remboursements, règles de commission —
   // jamais suspendre/supprimer un compte ni gérer d'autres admins.
   [AdminLevel.FINANCE]: [AdminPermission.FINANCE_VIEW, AdminPermission.FINANCE_REFUND, AdminPermission.SETTINGS_MANAGE],
@@ -142,6 +149,8 @@ export const AdminAuditAction = {
   RESERVATION_FORCE_REFUND: "reservation.force_refund",
   DISPUTE_RESOLVE: "dispute.resolve",
   SETTINGS_UPDATE: "settings.update",
+  /** Cambio de estado o prioridad de un ticket de soporte (las respuestas y notas quedan en el propio hilo). */
+  SUPPORT_TICKET_UPDATE: "support.ticket_update",
   /** Réservé : approbation d'une affiche publicitaire par un admin (file de modération non encore implémentée). */
   POSTER_APPROVE: "poster.approve",
   /** Réservé : rejet d'une affiche publicitaire par un admin. */
@@ -226,6 +235,43 @@ export const ModerationStatus = {
   REJECTED: "REJECTED",
 } as const;
 export type ModerationStatus = (typeof ModerationStatus)[keyof typeof ModerationStatus];
+
+// ---------------------------------------------------------------------------
+// Support client (tickets)
+// ---------------------------------------------------------------------------
+
+export const SupportTicketStatus = {
+  OPEN: "OPEN",
+  IN_PROGRESS: "IN_PROGRESS",
+  RESOLVED: "RESOLVED",
+  CLOSED: "CLOSED",
+} as const;
+export type SupportTicketStatus = (typeof SupportTicketStatus)[keyof typeof SupportTicketStatus];
+
+export const SupportTicketCategory = {
+  PAYMENT: "PAYMENT",
+  RESERVATION: "RESERVATION",
+  ACCOUNT: "ACCOUNT",
+  TECHNICAL: "TECHNICAL",
+  OTHER: "OTHER",
+} as const;
+export type SupportTicketCategory = (typeof SupportTicketCategory)[keyof typeof SupportTicketCategory];
+
+export const SupportTicketPriority = {
+  NORMAL: "NORMAL",
+  URGENT: "URGENT",
+} as const;
+export type SupportTicketPriority = (typeof SupportTicketPriority)[keyof typeof SupportTicketPriority];
+
+/** Límites compartidos: la API valida, el formulario web los aplica (maxLength) para no llegar a un 400. */
+export const SUPPORT_LIMITS = {
+  SUBJECT_MIN: 3,
+  SUBJECT_MAX: 120,
+  MESSAGE_MIN: 1,
+  MESSAGE_MAX: 5000,
+  /** Tickets abiertos (OPEN/IN_PROGRESS) simultáneos por usuario: freno básico al spam (no hay rate limiter global). */
+  MAX_ACTIVE_TICKETS_PER_USER: 5,
+} as const;
 
 export const TransactionStatus = {
   PENDING: "PENDING",

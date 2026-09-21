@@ -141,33 +141,57 @@ enum NotificationType {
   REVIEW_RECEIVED
 }
 
+/// Cycle de vie d'un ticket de support. OPEN -> IN_PROGRESS dès la première réponse d'un admin ;
+/// RESOLVED = l'admin considère le sujet réglé (l'utilisateur peut encore répondre, ce qui
+/// rouvre le ticket) ; CLOSED = définitif (il faut ouvrir un nouveau ticket).
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum SupportTicketCategory {
+  PAYMENT
+  RESERVATION
+  ACCOUNT
+  TECHNICAL
+  OTHER
+}
+
+/// Ordre de déclaration = ordre de tri (URGENT > NORMAL en `desc`).
+enum SupportTicketPriority {
+  NORMAL
+  URGENT
+}
+
 // ---------------------------------------------------------------------------
 // Utilisateurs & profils
 // ---------------------------------------------------------------------------
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
+  id            String      @id @default(cuid())
+  email         String      @unique
   passwordHash  String
   role          UserRole
   /// Uniquement pour role = ADMIN — quel périmètre du panel admin ce
   /// compte peut toucher (voir enum AdminLevel + AdminPermission côté API).
   adminLevel    AdminLevel?
-  locale        Locale    @default(ES)
+  locale        Locale      @default(ES)
   /// Nom de la personne qui gère le compte (page "Ajustes") — distinct du
   /// nom du commerce/de la société, qui vit sur le profil métier.
   name          String?
   phone         String?
   avatarUrl     String?
-  emailVerified Boolean   @default(false)
+  emailVerified Boolean     @default(false)
   /// Suspension par l'admin (litige grave, fraude...) sans supprimer l'historique.
-  suspended     Boolean   @default(false)
+  suspended     Boolean     @default(false)
   /// Incrémenté pour invalider tous les refresh tokens existants
   /// (déconnexion globale, changement de mot de passe, suspension).
-  tokenVersion  Int       @default(0)
+  tokenVersion  Int         @default(0)
   lastLoginAt   DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   commercantProfile CommercantProfile?
   annonceurProfile  AnnonceurProfile?
@@ -181,6 +205,8 @@ model User {
   moderatedPosters        Reservation[]      @relation("PosterModeratedBy")
   cancelledReservations   Reservation[]      @relation("ReservationCancelledBy")
   platformSettingsUpdates PlatformSettings[] @relation("PlatformSettingsUpdatedBy")
+  supportTickets          SupportTicket[]    @relation("SupportTicketOwner")
+  supportMessages         SupportMessage[]   @relation("SupportMessageSender")
 
   @@map("users")
 }
@@ -416,8 +442,8 @@ model Transaction {
   reservationId String      @unique
   reservation   Reservation @relation(fields: [reservationId], references: [id])
 
-  stripePaymentIntentId String? @unique
-  stripeTransferId      String?
+  stripePaymentIntentId   String? @unique
+  stripeTransferId        String?
   /// Dernière session Stripe Checkout créée pour régler cette transaction (cs_...). Sert à
   /// (1) ne pas en ouvrir une seconde tant que la première est encore valide (double paiement),
   /// (2) réconcilier un paiement dont le webhook n'est pas arrivé, (3) diagnostiquer sans passer
@@ -600,6 +626,71 @@ model Notification {
 }
 
 // ---------------------------------------------------------------------------
+// Support client (tickets) — distinct du chat annonceur<->commerçant, qui porte
+// sur une réservation précise entre deux parties ; ici : utilisateur <-> équipe.
+// ---------------------------------------------------------------------------
+
+model SupportTicket {
+  id String @id @default(cuid())
+
+  /// Numéro lisible ("#1042") pour les emails et pour que l'utilisateur et le support parlent du même ticket.
+  number Int @unique @default(autoincrement())
+
+  userId String
+  user   User   @relation("SupportTicketOwner", fields: [userId], references: [id], onDelete: Cascade)
+
+  subject  String
+  category SupportTicketCategory
+  status   SupportTicketStatus   @default(OPEN)
+  /// Fixée par l'équipe (l'utilisateur ne la choisit pas).
+  priority SupportTicketPriority @default(NORMAL)
+
+  /// Dernier message VISIBLE par l'utilisateur (les notes internes ne le font pas bouger) : tri des listes.
+  lastMessageAt    DateTime  @default(now())
+  /// true si ce dernier message vient de l'équipe -> le ticket attend l'utilisateur ; false -> il attend l'équipe.
+  lastMessageStaff Boolean   @default(false)
+  /// Dernière réponse de l'équipe visible par l'utilisateur, et dernière lecture du ticket par l'utilisateur :
+  /// non lu = lastStaffReplyAt > userLastReadAt (ou jamais lu).
+  lastStaffReplyAt DateTime?
+  userLastReadAt   DateTime?
+
+  resolvedAt DateTime?
+  closedAt   DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  messages SupportMessage[]
+
+  @@index([userId, lastMessageAt])
+  @@index([status, category])
+  @@index([status, priority, lastMessageAt])
+  @@map("support_tickets")
+}
+
+model SupportMessage {
+  id String @id @default(cuid())
+
+  ticketId String
+  ticket   SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  /// Auteur. Nul si le compte de l'admin a été supprimé depuis : le message reste (historique du ticket).
+  senderId  String?
+  sender    User?   @relation("SupportMessageSender", fields: [senderId], references: [id], onDelete: SetNull)
+  /// Message de l'équipe (vs de l'utilisateur) — indépendant du compte, donc stable si l'admin disparaît.
+  fromStaff Boolean @default(false)
+
+  content String
+
+  /// Note interne de l'équipe : JAMAIS renvoyée à l'utilisateur (toutes les requêtes côté utilisateur filtrent dessus).
+  isInternal Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([ticketId, createdAt])
+  @@map("support_messages")
+}
+
+// ---------------------------------------------------------------------------
 // Paramètres plateforme (singleton géré par l'admin)
 // ---------------------------------------------------------------------------
 
@@ -644,8 +735,8 @@ model AuditLog {
   /// Ex: "user.suspend", "user.unsuspend", "user.delete", "verification.review", "dispute.resolve", "reservation.force_refund".
   action String
 
-  targetType String
-  targetId   String
+  targetType  String
+  targetId    String
   targetLabel String?
 
   /// Détails libres selon l'action (ex: { "reason": "...", "refundAmount": 42.5 }).

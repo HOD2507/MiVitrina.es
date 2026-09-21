@@ -31,6 +31,7 @@ const ACTION_TONE: Record<AdminAuditAction, "default" | "destructive" | "warning
   [AdminAuditAction.RESERVATION_FORCE_REFUND]: "warning",
   [AdminAuditAction.DISPUTE_RESOLVE]: "outline",
   [AdminAuditAction.SETTINGS_UPDATE]: "outline",
+  [AdminAuditAction.SUPPORT_TICKET_UPDATE]: "outline",
   [AdminAuditAction.POSTER_APPROVE]: "success",
   [AdminAuditAction.POSTER_REJECT]: "destructive",
   [AdminAuditAction.POSTER_DELETE]: "destructive",
@@ -42,6 +43,7 @@ const TARGET_TYPE_KEY: Record<string, string> = {
   dispute: "targetTypeDispute",
   commercant_profile: "targetTypeCommercantProfile",
   platform_settings: "targetTypePlatformSettings",
+  support_ticket: "targetTypeSupportTicket",
 };
 
 /** Résume les champs pertinents de `metadata` en une phrase lisible — le détail varie par type d'action (voir AdminService.logAction, côté API). */
@@ -84,6 +86,14 @@ function describeMetadata(entry: AuditLogEntry, t: ReturnType<typeof useTranslat
       if (after && "freeCancellationHours" in after && before) {
         parts.push(`${t("freeCancellation")} ${before.freeCancellationHours}h → ${after.freeCancellationHours}h`);
       }
+      return parts.length ? parts.join(" · ") : null;
+    }
+    case AdminAuditAction.SUPPORT_TICKET_UPDATE: {
+      const parts: string[] = [];
+      const status = m.status as { from?: string; to?: string } | undefined;
+      const priority = m.priority as { from?: string; to?: string } | undefined;
+      if (status?.from && status.to) parts.push(`${t(`ticketStatus.${status.from}`)} → ${t(`ticketStatus.${status.to}`)}`);
+      if (priority?.from && priority.to) parts.push(`${t(`ticketPriority.${priority.from}`)} → ${t(`ticketPriority.${priority.to}`)}`);
       return parts.length ? parts.join(" · ") : null;
     }
     default:
